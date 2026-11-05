@@ -39,7 +39,7 @@ docker ps
 ### Adım 2: Backend API'yi Çalıştırma
 Backend projesini derleyip `http://localhost:5000` portunda başlatın:
 ```bash
-dotnet run --project backend/src/Host/ApiHost/ApiHost.csproj --urls "http://localhost:5000"
+dotnet run --project backend/src/ApiHost/ApiHost.csproj --urls "http://localhost:5000"
 ```
 Doğrulama:
 * Tarayıcıdan veya curl ile sağlık ucunu test edin:
@@ -97,5 +97,5 @@ Kök dizindeki [RULES.md](../../RULES.md) ve `.cursorrules` dosyaları şu deği
 * **Vite Proxy Hatası (ECONNREFUSED):** Backend API'nin `http://localhost:5000` portunda çalıştığından emin olun. `apps/web-app/vite.config.ts` dosyası istekleri bu porta iletir.
 * **Migration Hatası:** Migration script'ini container'a elle uygulamak isterseniz:
   ```bash
-  dotnet ef migrations script --project backend/src/Modules/Admin/Admin.Infrastructure/Admin.Infrastructure.csproj --startup-project backend/src/Host/ApiHost/ApiHost.csproj --context AdminDbContext | docker exec -i modular_admin_postgres psql -U admin_user -d ecommerce_admin
+  dotnet ef migrations script --project backend/src/Infrastructure/Infrastructure.csproj --startup-project backend/src/ApiHost/ApiHost.csproj --context AdminDbContext | docker exec -i modular_admin_postgres psql -U admin_user -d ecommerce_admin
   ```

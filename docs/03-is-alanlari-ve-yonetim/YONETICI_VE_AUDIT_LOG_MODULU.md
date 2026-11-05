@@ -2,7 +2,7 @@
 
 > **Modül Kodu:** `MOD-01`  
 > **Durum:** Canlı / Kalıcı Çekirdek (Production MVP)  
-> **Sorumlu Katman:** `backend/src/Modules/Admin/` ve `packages/admin-core/`  
+> **Sorumlu Katman:** `backend/src/` (`Domain`, `Application`, `Infrastructure`, `Endpoints` katmanları altındaki `Admin/`) ve `packages/admin-core/`  
 > **Veritabanı Şeması:** `admin` (`AdminUsers`, `AuditLogs`)  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 

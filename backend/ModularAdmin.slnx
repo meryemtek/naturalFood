@@ -1,13 +1,18 @@
 <Solution>
   <Folder Name="/src/" />
-  <Folder Name="/src/Host/">
-    <Project Path="src/Host/ApiHost/ApiHost.csproj" />
+  <Folder Name="/src/Domain/">
+    <Project Path="src/Domain/Domain.csproj" />
   </Folder>
-  <Folder Name="/src/Modules/" />
-  <Folder Name="/src/Modules/Admin/">
-    <Project Path="src/Modules/Admin/Admin.Application/Admin.Application.csproj" />
-    <Project Path="src/Modules/Admin/Admin.Domain/Admin.Domain.csproj" />
-    <Project Path="src/Modules/Admin/Admin.Endpoints/Admin.Endpoints.csproj" />
-    <Project Path="src/Modules/Admin/Admin.Infrastructure/Admin.Infrastructure.csproj" />
+  <Folder Name="/src/Application/">
+    <Project Path="src/Application/Application.csproj" />
+  </Folder>
+  <Folder Name="/src/Infrastructure/">
+    <Project Path="src/Infrastructure/Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Endpoints/">
+    <Project Path="src/Endpoints/Endpoints.csproj" />
+  </Folder>
+  <Folder Name="/src/ApiHost/">
+    <Project Path="src/ApiHost/ApiHost.csproj" />
   </Folder>
 </Solution>

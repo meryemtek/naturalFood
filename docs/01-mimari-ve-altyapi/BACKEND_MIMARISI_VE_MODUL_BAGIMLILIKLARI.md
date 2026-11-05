@@ -7,30 +7,49 @@
 
 ---
 
-## 🏛️ 1. Mimari Genel Bakış (Modüler Monolit)
+## 🏛️ 1. Mimari Genel Bakış (Klasik Onion Architecture)
 
-Bu projede backend, mikroservislerin getirdiği ağ karmaşıklığı (network latency, distributed transaction) olmadan, mikroservislerin modülerlik ve ayrışma avantajlarını sağlayan **Modüler Monolit (Modular Monolith)** mimarisi üzerine inşa edilmiştir.
+Bu projede backend, bağımlılıkların içe doğru aktığı **Klasik Onion Architecture (Soğan Mimarisi)** üzerine inşa edilmiştir. Modüller (Admin, Catalog, Inventory vb.) katmanların üstünde değil, **mimari katmanların altında** yer alır.
 
 ### Temel Prensipler:
-1. **Tek Bir Host (ApiHost):** Tüm modüller tek bir ASP.NET Core 10 Web API uygulaması altında çalışır.
-2. **Kendi Kendine Yeten Modüller:** Her modül kendi Domain, Application, Infrastructure ve Endpoints katmanlarına sahiptir.
-3. **Katı Kapsülleme (Encapsulation):** Host projesi modüllerin iç sınıflarını (DbContext, Repository, Entity) bilmez. Yalnızca modülün sunduğu `AdminModuleExtensions` üzerinden DI kaydı (`AddAdminModule`) ve rota haritalaması (`MapAdminEndpoints`) yapar.
+1. **Tek Bir Host (ApiHost):** Tüm uygulama tek bir ASP.NET Core 10 Web API uygulaması altında çalışır.
+2. **Katmanlar Altında Modüller:** Çekirdek katmanlar (`Domain`, `Application`, `Infrastructure`, `Endpoints`) en üsttedir; `Admin` ve diğer iş alanları bu katmanların altında ilgili klasörlerde toplanır (örn. `Domain/Entities/Admin`, `Application/DTOs/Admin`, `Infrastructure/Persistence/Configurations/Admin`, `Endpoints/Admin`).
+3. **Katı Kapsülleme ve Bağımlılık Yönü (Dependency Inversion):**
+   - `Domain` saf iş modellerini barındırır, hiçbir katmana bağımlı değildir.
+   - `Application` yalnızca `Domain`'e bağımlıdır; DTO ve servis arayüzlerini içerir.
+   - `Infrastructure` veri tabanı, ORM (EF Core) ve dış servis bağımlılıklarını yönetir; `Application` arayüzlerini implemente eder.
+   - `Endpoints` Minimal API rotalarını haritalar; `ApiHost`'a modül sözleşmesini sunar.
+   - `ApiHost` modülün iç sınıflarını doğrudan bilmek zorunda kalmaz; `Endpoints.Admin` içerisindeki `AdminModuleExtensions` üzerinden DI kaydı (`AddAdminModule`) ve rota haritalaması (`MapAdminEndpoints`) yapar.
 4. **Veritabanı Şema İzolasyonu:** Her modül PostgreSQL üzerinde kendi şemasına (`admin`, `inventory`, `catalog`) sahiptir.
 
 ```
 backend/
 ├── ModularAdmin.slnx
 └── src/
-    ├── Host/
-    │   └── ApiHost/                    --> ASP.NET Core 10 Minimal API Host
-    │       ├── Program.cs
-    │       └── appsettings.json
-    └── Modules/
-        └── Admin/
-            ├── Admin.Domain/           --> Entity'ler, Enum'lar, Domain Exceptions
-            ├── Admin.Application/      --> DTO'lar, Servisler, CQRS, Hashers, Validation
-            ├── Admin.Infrastructure/   --> AdminDbContext, EF Core 10 Configurations, Migrations
-            └── Admin.Endpoints/        --> Minimal API Rotaları, AdminModuleExtensions
+    ├── Domain/
+    │   ├── Domain.csproj
+    │   ├── Entities/Admin/             --> AdminUser, AuditLog
+    │   └── Enums/Admin/                --> AdminRole
+    ├── Application/
+    │   ├── Application.csproj
+    │   ├── Common/                     --> IAdminDbContext, PasswordHasher
+    │   ├── DTOs/Admin/                 --> AdminDtos, Pagination
+    │   ├── Services/Admin/             --> IAdminService
+    │   └── Validators/Admin/           --> FluentValidation sınıfları
+    ├── Infrastructure/
+    │   ├── Infrastructure.csproj
+    │   ├── DependencyInjection.cs      --> AddAdminInfrastructure
+    │   ├── Persistence/AdminDbContext.cs
+    │   ├── Persistence/Configurations/Admin/ --> AdminUserConfiguration, AuditLogConfiguration
+    │   ├── Persistence/Migrations/Admin/     --> EF Core Migrations & ModelSnapshot
+    │   └── Services/Admin/             --> AdminService
+    ├── Endpoints/
+    │   ├── Endpoints.csproj
+    │   └── Admin/                      --> AdminEndpointsHandler, AdminModuleExtensions
+    └── ApiHost/
+        └── ApiHost.csproj              --> ASP.NET Core 10 Minimal API Host
+            ├── Program.cs
+            └── appsettings.json
 ```
 
 ---

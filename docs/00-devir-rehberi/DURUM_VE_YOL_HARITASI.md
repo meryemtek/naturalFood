@@ -21,7 +21,7 @@ Aşağıdaki checkpoint'ler başarıyla tamamlanmış, derlenmiş ve canlı orta
 * **Kapsam:**
   - Kök dizinde PostgreSQL 18 için `docker-compose.yml` yapılandırıldı.
   - Backend tarafında .NET 10 solution'ı (`ModularAdmin.slnx`) oluşturuldu.
-  - Katmanlar kuruldu: `Host/ApiHost`, `Modules/Admin/Admin.Domain`, `Admin.Application`, `Admin.Infrastructure`, `Admin.Endpoints`.
+  - Katmanlar kuruldu: `ApiHost`, `Modules/Admin/Admin.Domain`, `Admin.Application`, `Admin.Infrastructure`, `Admin.Endpoints`.
   - Frontend tarafında `npm workspaces` tabanlı React 19 + TypeScript + Vite monorepo iskeleti kuruldu (`packages/admin-core`, `apps/web-app`).
 * **Kazanım:** Modüler monolit mimarisinin backend ve frontend temeli atıldı.
 
@@ -86,11 +86,28 @@ Aşağıdaki checkpoint'ler başarıyla tamamlanmış, derlenmiş ve canlı orta
 
 ---
 
+### ✅ CHECKPOINT 7: Backend Mimarisinin Klasik Onion Architecture'a Dönüştürülmesi
+* **Tarih:** 5 Kasım 2026
+* **Kapsam:**
+  - Hatalı modül-katman hiyerarşisi (Modules altında Onion katmanları) düzeltildi.
+  - Mimari katmanlar (`Domain`, `Application`, `Infrastructure`, `Endpoints`, `ApiHost`) projenin en üst seviyesine taşındı.
+  - Modüller (`Admin` vb.) katmanların altına alındı:
+    - `Domain/Entities/Admin/` (AdminUser, AuditLog) & `Domain/Enums/Admin/` (AdminRole)
+    - `Application/DTOs/Admin/`, `Application/Services/Admin/`, `Application/Validators/Admin/`
+    - `Infrastructure/Persistence/Configurations/Admin/`, `Infrastructure/Persistence/Migrations/Admin/`, `Infrastructure/Services/Admin/`
+    - `Endpoints/Admin/` (AdminEndpointsHandler, AdminModuleExtensions)
+  - Tüm C# namespace'leri, using direktifleri, proje referansları ve `ModularAdmin.slnx` çözüm dosyası klasik Onion Architecture modeline uyarlandı.
+  - Kod bütünlüğü ve davranışsal mantık (business logic) korunarak 0 hata ve 0 uyarı ile derleme sağlandı.
+* **Kazanım:** Backend e-ticaret genişlemesine uygun, standart Klasik Onion Architecture omurgasına kavuştu.
+
+---
+
 ## 📋 3. Güncel To-Do Listesi (Aktif & Planlanan İşler)
 
 ### Faz 1: Çekirdek Kabuk ve Yönetici Altyapısı (TAMAMLANDI)
 - [x] Docker Compose ile PostgreSQL 18 container kurulumu
-- [x] .NET 10 Solution ve Admin katmanları (Domain, Application, Infrastructure, Endpoints)
+- [x] Klasik Onion Architecture katmanları (Domain, Application, Infrastructure, Endpoints, Host)
+- [x] Katmanlar altında Admin modülü varlık, DTO, servis ve endpoint yapılandırması
 - [x] `admin` veritabanı şeması ve `__EFMigrationsHistory_Admin` izolasyonu
 - [x] PBKDF2 SHA-256 şifre hash'leme altyapısı
 - [x] Admin kullanıcı CRUD servisleri ve Minimal API uçları
@@ -156,7 +173,7 @@ Aşağıdaki checkpoint'ler başarıyla tamamlanmış, derlenmiş ve canlı orta
 | Rol | Sorumlu Kişi / Birim | İlgili Dizin |
 |---|---|---|
 | **Çekirdek Mimari & Shell** | Mimari Ekip | `packages/admin-core`, `docs/01-mimari-ve-altyapi` |
-| **Backend & Veritabanı** | Backend Ekibi | `backend/src/Modules/`, `backend/src/Host/` |
+| **Backend & Veritabanı** | Backend Ekibi | `backend/src/Modules/`, `backend/src/ApiHost/` |
 | **İş Modülleri UI** | Frontend Ekibi | `apps/web-app/src/modules/` |
 | **Güvenlik & DevSecOps** | Güvenlik Sorumlusu | `docker/`, `docs/02-kasa-ve-operasyon/` |
 | **QA & Otomasyon** | Test Ekibi | `docs/04-test-ve-rehberler/` |

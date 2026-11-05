@@ -1,8 +1,8 @@
 # Geliştirici & AI Kuralları
 
-- Bu projede **Modüler Kabuk (Pluggable Shell)** mimarisi kullanılır.
-- **ÇEKİRDEK KURAL:** `"packages/admin-core"` altındaki `Layout`, `Shell` veya `Sidebar` dosyalarına dokunulamaz, içeriği elle değiştirilemez.
-- Yeni bir özellik/sayfa ekleneceği zaman:
-  1. `"src/modules/[ozellik-adi]/"` (veya tüketici uygulamada `apps/web-app/src/modules/[ozellik-adi]/`) altında yeni bir klasör açılır.
-  2. Sayfa bileşeni yazılır ve `AdminFeatureModule` sözleşmesi (`id`, `title`, `navItems`, `routes`) ile `export` edilir.
-  3. Oluşturulan modül, yalnızca `App.tsx` içindeki `AdminShell` bileşeninin `modules` dizisine parametre olarak eklenir.
+- **TEMİZ FRONTEND MİMARİSİ:** Frontend tek bir `frontend/src/` dizini altında standart React 19 + TypeScript + Vite mimarisine sahiptir (gereksiz monorepo ve çoklu src yapıları kaldırılmıştır).
+- **DASHBOARD VE ADMİN AYRIMI:** Gösterge Paneli (`pages/dashboard/DashboardPage.tsx`) ile Sistem Yöneticisi sayfaları (`pages/admin/UsersPage.tsx`, `pages/admin/AuditLogsPage.tsx`) kesinlikle aynı yerde tutulamaz; bağımsız sayfa ve rotalar olarak yapılandırılır.
+- **BİLEŞEN VE DÜZEN STANDARDI:**
+  - Ortak navigasyon ve şablon `src/components/layout/` (`Sidebar`, `Header`, `MainLayout`) altındadır.
+  - Tekrar kullanılabilir arayüz parçaları `src/components/common/` (`Modal`, `StatCard`, `StatusBadge` vb.) altındadır.
+  - Yeni bir iş alanı veya sayfa ekleneceğinde `src/pages/[alan-adi]/` altında bağımsız sayfası oluşturulur ve `src/App.tsx` rotalarına eklenir.

@@ -2,7 +2,7 @@
 
 > **Modül Kodu:** `MOD-03`  
 > **Durum:** Planlandı / Tasarım Aşamasında  
-> **Sorumlu Katman:** Planlanan `backend/src/Modules/Catalog/` ve `apps/web-app/src/modules/catalog/`  
+> **Sorumlu Katman:** Planlanan `backend/src/` (`Domain`, `Application`, `Infrastructure`, `Endpoints` katmanları altındaki `Catalog/`) ve `apps/web-app/src/modules/catalog/`  
 > **Hedef Veritabanı Şeması:** `catalog`  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 
