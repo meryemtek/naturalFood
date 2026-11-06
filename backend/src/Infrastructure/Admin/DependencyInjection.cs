@@ -17,7 +17,7 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("AdminDb") 
             ?? configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=localhost;Port=5433;Database=ecommerce_admin;Username=postgres;Password=postgres;SearchPath=admin,public";
+            ?? throw new InvalidOperationException("Veritabanı bağlantısı yapılandırılmalı.");
 
         services.AddDbContext<AdminDbContext>(options =>
         {

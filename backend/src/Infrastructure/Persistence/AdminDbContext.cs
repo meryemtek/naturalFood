@@ -22,8 +22,8 @@ public class AdminDbContext : DbContext, IAdminDbContext
         // Modül şeması izolasyonu
         modelBuilder.HasDefaultSchema(DefaultSchema);
 
-        // Fluent API IEntityTypeConfiguration sınıflarını uygula
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AdminDbContext).Assembly);
+        // Yalnızca Admin modülüne ait konfigürasyonları uygula
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AdminDbContext).Assembly, t => t.Namespace?.Contains("Admin") == true);
     }
 }
 
