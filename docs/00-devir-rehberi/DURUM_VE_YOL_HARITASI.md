@@ -30,7 +30,7 @@ Aşağıdaki checkpoint'ler başarıyla tamamlanmış, derlenmiş ve canlı orta
 ### ✅ CHECKPOINT 2: PostgreSQL 18 Veritabanı ve Admin.Domain Katmanı
 * **Tarih:** 5 Kasım 2026
 * **Kapsam:**
-  - Docker üzerinde PostgreSQL 18 container'ı (`modular_admin_postgres`, Port: 5432) ayağa kaldırıldı (`docker compose up -d`).
+  - Docker üzerinde PostgreSQL 18 container'ı (`modular_admin_postgres`, Port: 5433) ayağa kaldırıldı (`docker compose up -d`).
   - `AdminUser` ve `AuditLog` domain entity'leri ile `AdminRole` (SuperAdmin, Admin, Moderator) enum'ı yazıldı.
   - EF Core 10 ile `AdminDbContext` oluşturuldu. Varsayılan şema `"admin"` olarak ayarlandı (`modelBuilder.HasDefaultSchema("admin")`).
   - Modül bağımsızlığı için migration geçmiş tablosu `"__EFMigrationsHistory_Admin"` olarak izole edildi.

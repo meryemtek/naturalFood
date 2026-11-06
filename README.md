@@ -1,4 +1,4 @@
-# Modüler Monolit E-Ticaret Admin Modülü
+﻿# Modüler Monolit E-Ticaret Admin Modülü
 
 Bu proje, **Modüler Monolit (Modular Monolith)** mimari prensipleri doğrultusunda geliştirilmiş, yeniden kullanılabilir ve şema düzeyinde izole bir **Admin Modülü** içerir.
 
@@ -92,12 +92,22 @@ Yeni bir modülü uygulamaya bağlarken `ApiHost/Program.cs` dosyasına kayıt v
 
 ## 🚀 Başlatma ve Çalıştırma
 
+### ⚡ Hızlı Başlatma (Windows - Çift Tıklama)
+Tüm servisleri (PostgreSQL + Backend + Frontend + Tarayıcı) tek adımda çalıştırmak veya durdurmak için kök dizindeki scriptleri çift tıklayabilirsiniz:
+- **aslat.bat**: PostgreSQL (Docker), .NET 10 API ve React Vite sunucularını başlatır, otomatik olarak tarayıcıda http://localhost:3000 sayfasını açar.
+- **durdur.bat**: Backend, Frontend ve Docker konteynerlerini tek tıkla güvenle kapatır.
+- **kontrol-paneli.bat**: Başlatma, durdurma, yeniden başlatma ve servis durumlarını görüntüleme seçenekleri sunan interaktif yönetim konsolunu açar.
+
+---
+
+### Manuel Başlatma Adımları
+
 ### 1. PostgreSQL 18 Başlatma (Docker)
 ```bash
 docker compose up -d
 ```
-- PostgreSQL Bağlantısı: `localhost:5432` (Kullanıcı: `postgres`, Şifre: `postgres`, DB: `ecommerce_admin`)
-- PgAdmin 4: `http://localhost:5050` (E-posta: `admin@ecommerce.local`, Şifre: `postgres`)
+- PostgreSQL Bağlantısı: `localhost:5433` (Kullanıcı: `postgres`, Şifre: `postgres`, DB: `ecommerce_admin`)
+- PgAdmin 4: `http://localhost:5050` (E-posta: `admin@ecommerce.com`, Şifre: `postgres`)
 
 ### 2. Backend (.NET 10 Web API)
 ```bash
@@ -125,3 +135,4 @@ npm run dev
 npm run build
 ```
 - Web Portalı: `http://localhost:3000`
+

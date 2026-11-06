@@ -54,7 +54,7 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 | **Yönetici & Kullanıcı Yönetimi** | Canlı Kalıcı Çekirdek | `admin` (`AdminUsers`) | Var (`UsersPage.tsx`) | Var (`/api/admin/users`) | Var (E2E API & UI Doğrulandı) | Evet (Admin CRUD, Aktif/Pasif, PBKDF2 Hash) |
 | **Denetim İzi (Audit Log)** | Canlı Kalıcı Çekirdek | `admin` (`AuditLogs`) | Var (`AuditLogsPage.tsx`) | Var (`/api/admin/audit-logs`) | Var (E2E Veritabanı Doğrulandı) | Evet (Sayfalanabilir sistem geçmişi ve IP kaydı) |
 | **Pluggable Admin Shell** | Canlı Modüler Kabuk | Bağımsız (State-free) | Var (`AdminShell.tsx`) | N/A (Frontend Kabuğu) | Var (TypeScript strict derlendi) | Evet (`AdminFeatureModule` sözleşmesiyle dinamik) |
-| **Docker & DB Altyapısı** | Canlı Veritabanı | `admin` şeması, port 5432 | pgAdmin / psql | Var (EF Core 10 Npgsql) | Var (`docker compose` healthy) | Evet (PostgreSQL 18 container & volume) |
+| **Docker & DB Altyapısı** | Canlı Veritabanı | `admin` şeması, port 5433 | pgAdmin / psql | Var (EF Core 10 Npgsql) | Var (`docker compose` healthy) | Evet (PostgreSQL 18 container & volume) |
 | **Vite Dev Proxy & E2E Köprüsü** | Canlı Entegrasyon | N/A | Port 3000 -> 5000 | Port 5000 `ApiHost` | Var (CORS bypass doğrulandı) | Evet (Geliştirici ve test ortamı hazır) |
 
 ### B. Hedeflenen / Geliştirilecek Bileşenler (Gelecek Yol Haritası)
@@ -246,7 +246,7 @@ Sisteme güvenli giriş ve oturum sürekliliğini sağlayan güvenlik altyapıs�
 
 * **Şema Ayrımı:** Tüm tablolar `public` şeması yerine iş alanına ait şemada toplanır (`admin.AdminUsers`, `admin.AuditLogs`).
 * **Bağımsız Migration Tablosu:** Her modül kendi migration geçmişini ayrı tutar (`__EFMigrationsHistory_Admin`). Böylece yarın bir gün `InventoryModule` veya `CatalogModule` eklendiğinde birbirlerinin migration akışını kilitlemez veya kirletmez.
-* **Bağlantı ve Container:** PostgreSQL 18 container'ı port 5432'de kalıcı Docker volume ile çalışır.
+* **Bağlantı ve Container:** PostgreSQL 18 container'ı port 5433'de kalıcı Docker volume ile çalışır.
 
 ---
 

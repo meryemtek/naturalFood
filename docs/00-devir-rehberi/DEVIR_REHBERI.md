@@ -32,7 +32,7 @@ docker ps
 * **Veritabanı Adı:** `ecommerce_admin`
 * **Kullanıcı:** `admin_user`
 * **Şifre:** `AdminSecretPass123!`
-* **Dış Port:** `5432`
+* **Dış Port:** `5433`
 
 ---
 
@@ -68,7 +68,7 @@ Uygulama `http://localhost:3000` adresinde açılacaktır.
 | **Web Uygulaması (Shell)** | `http://localhost:3000/admin` | React 19 Admin Shell |
 | **Backend REST API** | `http://localhost:5000` | ASP.NET Core 10 Minimal API |
 | **API Health Check** | `http://localhost:5000/api/admin/health` | Modül canlılık kontrolü |
-| **PostgreSQL 18** | `localhost:5432` (Docker) | `admin` şeması ve tabloları |
+| **PostgreSQL 18** | `localhost:5433` (Docker) | `admin` şeması ve tabloları |
 | **Varsayılan SuperAdmin** | `superadmin@ecommerce.local` | Şifre: `Admin123!*` |
 
 ---
