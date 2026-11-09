@@ -32,6 +32,7 @@ public class Product
     public ICollection<ProductImage> Images { get; private set; } = new List<ProductImage>();
     public ICollection<ProductVariant> Variants { get; private set; } = new List<ProductVariant>();
     public ICollection<ProductAttribute> Attributes { get; private set; } = new List<ProductAttribute>();
+    public ICollection<ProductLot> Lots { get; private set; } = new List<ProductLot>();
 
     private Product() { }
 

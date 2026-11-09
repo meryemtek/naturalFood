@@ -10,6 +10,12 @@ import {
   NutritionalValuesDto,
   UpdateProductDetailsData,
 } from '../../services/productService';
+import {
+  lotService,
+  ProductLotDto,
+  CreateLotData,
+  LotSummaryMetricsDto,
+} from '../../services/lotService';
 
 // ==========================================
 // 1. GELİŞMİŞ ÜRÜN TANIMLAMA SAYFASI
@@ -2191,104 +2197,366 @@ export const AllergensNutritionPage: React.FC = () => {
 
 // ==========================================
 // 3. STT / TETT VE PARTİ (LOT) TAKİBİ SAYFASI
+// Backend (.NET 10 Minimal API & PostgreSQL) Bağlantılı
 // ==========================================
 export const LotExpiryTrackingPage: React.FC = () => {
-  const lotRecords = [
-    {
-      lotNo: 'LOT-2026-1102-KAS',
-      productName: 'Trakya Eski Kaşar Peyniri 350g',
-      producedAt: '02.10.2026',
-      expiryDate: '12.11.2026',
-      daysLeft: 6,
-      quantity: '34 Adet',
-      autoDiscount: '%30 Flaş İndirim',
-      status: 'Kritik Raf Ömrü',
-      statusColor: theme.colors.statusDanger,
-      statusBg: theme.colors.statusDangerBg,
-    },
-    {
-      lotNo: 'LOT-2026-1025-EGG',
-      productName: 'Organik Köy Yumurtası 10\'lu',
-      producedAt: '25.10.2026',
-      expiryDate: '15.11.2026',
-      daysLeft: 9,
-      quantity: '60 Paket',
-      autoDiscount: '%20 İndirim Uygulandı',
-      status: 'Yaklaşan STT',
-      statusColor: theme.colors.statusWarning,
-      statusBg: theme.colors.statusWarningBg,
-    },
-    {
-      lotNo: 'LOT-2026-1015-BTR',
-      productName: 'Doğal Yayık Köy Tereyağı 500g',
-      producedAt: '15.10.2026',
-      expiryDate: '28.11.2026',
-      daysLeft: 22,
-      quantity: '28 Kg',
-      autoDiscount: 'Normal Fiyat',
-      status: 'Güvenli Süre',
-      statusColor: theme.colors.statusSuccess,
-      statusBg: theme.colors.statusSuccessBg,
-    },
-    {
-      lotNo: 'LOT-2026-0920-OIL',
-      productName: 'Soğuk Sıkım Sızma Zeytinyağı 500ml',
-      producedAt: '20.09.2026',
-      expiryDate: '20.09.2027',
-      daysLeft: 318,
-      quantity: '142 Adet',
-      autoDiscount: 'Normal Fiyat',
-      status: 'Uzun Raf Ömrü',
-      statusColor: theme.colors.primary,
-      statusBg: theme.colors.primarySubtle,
-    },
-  ];
+  // Live Data & Filter State
+  const [lots, setLots] = useState<ProductLotDto[]>([]);
+  const [metrics, setMetrics] = useState<LotSummaryMetricsDto>({
+    totalLots: 0,
+    activeLots: 0,
+    nearExpiryCount: 0,
+    criticalCount: 0,
+    expiredCount: 0,
+    writtenOffCount: 0,
+  });
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Filters
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [expiringFilter, setExpiringFilter] = useState<number | undefined>(undefined);
+
+  // Modal State for New Lot Creation
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [availableProducts, setAvailableProducts] = useState<ProductDto[]>([]);
+
+  // Form State
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [formLotNumber, setFormLotNumber] = useState<string>('');
+  const [formProductionDate, setFormProductionDate] = useState<string>(
+    new Date().toISOString().split('T')[0]
+  );
+  const [formExpiryDate, setFormExpiryDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [formQuantity, setFormQuantity] = useState<number>(50);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr));
+    }, 4000);
+  };
+
+  // 1. Load Lots from API
+  const loadLots = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      const res = await lotService.getLots({
+        status: statusFilter !== 'all' ? statusFilter : undefined,
+        expiringWithinDays: expiringFilter,
+        search: searchTerm.trim() || undefined,
+        pageSize: 50,
+      });
+      setLots(res.items);
+      setMetrics(res.metrics);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Parti ve STT verileri yüklenemedi.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statusFilter, expiringFilter, searchTerm]);
+
+  useEffect(() => {
+    loadLots();
+  }, [loadLots]);
+
+  // Load products when opening create modal
+  const openCreateModal = async () => {
+    try {
+      if (availableProducts.length === 0) {
+        const res = await productService.getProducts({ pageSize: 100 });
+        setAvailableProducts(res.items);
+        if (res.items.length > 0) {
+          setSelectedProductId(res.items[0].id);
+        }
+      }
+      // Reset form
+      setFormLotNumber('');
+      setFormQuantity(50);
+      setIsModalOpen(true);
+    } catch (err: any) {
+      showToast('Ürün listesi yüklenirken hata oluştu.');
+    }
+  };
+
+  // Handle Create Lot Submit
+  const handleCreateLot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProductId) {
+      alert('Lütfen bir ürün seçiniz.');
+      return;
+    }
+    if (formQuantity <= 0) {
+      alert("Parti miktarı 0'dan büyük olmalıdır.");
+      return;
+    }
+    if (new Date(formExpiryDate) <= new Date(formProductionDate)) {
+      alert('Son tüketim tarihi (STT) üretim tarihinden sonra olmalıdır.');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const payload: CreateLotData = {
+        productId: selectedProductId,
+        lotNumber: formLotNumber.trim() || undefined,
+        productionDate: new Date(formProductionDate).toISOString(),
+        expiryDate: new Date(formExpiryDate).toISOString(),
+        quantity: Number(formQuantity),
+        status: 'Active',
+      };
+
+      await lotService.createLot(payload);
+      setIsModalOpen(false);
+      showToast('Yeni parti başarıyla eklendi ve bağlı ürünün genel stoğu artırıldı.');
+      loadLots();
+    } catch (err: any) {
+      alert(err.message || 'Parti eklenirken hata oluştu.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Status Update (e.g. Write-off / Fireye ayır)
+  const handleUpdateStatus = async (lot: ProductLotDto, newStatus: string) => {
+    const confirmMsg =
+      newStatus === 'WrittenOff'
+        ? `"${lot.lotNumber}" numaralı partiyi fire/imha olarak işaretlemek istediğinize emin misiniz? Parti miktarı kadar ürün stoğu düşülecektir.`
+        : `Parti durumunu "${newStatus}" olarak güncellemek istediğinize emin misiniz?`;
+
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      await lotService.updateLotStatus(lot.id, { status: newStatus });
+      showToast(`Parti durumu '${newStatus}' olarak güncellendi.`);
+      loadLots();
+    } catch (err: any) {
+      alert(err.message || 'Durum güncellenirken hata oluştu.');
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    } catch {
+      return dateStr;
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      {/* Header */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
-            Son Tüketim Tarihi (STT / TETT) ve Parti (Lot) Takibi
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: theme.radii.full, backgroundColor: theme.colors.statusWarningBg, color: theme.colors.statusWarning, border: '1px solid #FDF0E2' }}>
-            Parti & SKT Kontrolü
-          </span>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '24px',
+            backgroundColor: theme.colors.espresso,
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: theme.radii.md,
+            boxShadow: '0 4px 16px rgba(45, 36, 30, 0.15)',
+            fontSize: '13.5px',
+            fontWeight: 600,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: `1px solid ${theme.colors.primary}`,
+          }}
+        >
+          <span>✓</span>
+          <span>{toastMessage}</span>
         </div>
-        <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
-          Parti numarası (Lot) yönetimi ve raf ömrü yaklaşan taze gıda ürünleri için otomatik indirim ve erken uyarı kuralları.
-        </p>
+      )}
+
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
+              Son Tüketim Tarihi (STT / TETT) ve Parti (Lot) Takibi
+            </h1>
+            <span style={{ fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: theme.radii.full, backgroundColor: theme.colors.statusWarningBg, color: theme.colors.statusWarning, border: '1px solid #FDF0E2' }}>
+              Parti & SKT Motoru (Vertical Slice 4)
+            </span>
+          </div>
+          <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
+            PostgreSQL catalog.ProductLots tablosu ile FIFO kuralları, yaklaşan SKT flaş indirimleri ve otomatik parti stok takibi.
+          </p>
+        </div>
+
+        {/* Action Button: Create New Lot */}
+        <button
+          onClick={openCreateModal}
+          style={{
+            padding: '10px 20px',
+            borderRadius: theme.radii.md,
+            border: `1px solid ${theme.colors.primary}`,
+            backgroundColor: theme.colors.primary,
+            color: '#FFFFFF',
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: theme.shadows.subtle,
+            transition: 'background 0.2s',
+          }}
+        >
+          <span>＋</span>
+          <span>Yeni Parti Girişi</span>
+        </button>
       </div>
 
-      {/* Auto Discount Rules Summary */}
-      <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '20px' }}>
-        <h3 style={{ fontSize: '15px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      {/* Live Summary Metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+        {/* Card 1: Aktif Partiler */}
+        <div
+          onClick={() => {
+            setStatusFilter('Active');
+            setExpiringFilter(undefined);
+          }}
+          style={{
+            backgroundColor: theme.colors.bgCard,
+            borderRadius: theme.radii.md,
+            border: statusFilter === 'Active' ? `1.5px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
+            padding: '16px 20px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.taupe, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            Aktif Partiler
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: theme.colors.primary, marginTop: '4px' }}>
+            {metrics.activeLots}{' '}
+            <span style={{ fontSize: '13px', fontWeight: 500, color: theme.colors.taupe }}>/ {metrics.totalLots} Toplam</span>
+          </div>
+          <div style={{ fontSize: '11.5px', color: theme.colors.taupe, marginTop: '4px' }}>
+            Satışta olan geçerli partiler
+          </div>
+        </div>
+
+        {/* Card 2: Son 7 Gün (Kritik) */}
+        <div
+          onClick={() => {
+            setStatusFilter('all');
+            setExpiringFilter(7);
+          }}
+          style={{
+            backgroundColor: expiringFilter === 7 ? '#FFF5F3' : theme.colors.bgCard,
+            borderRadius: theme.radii.md,
+            border: expiringFilter === 7 ? `1.5px solid ${theme.colors.statusDanger}` : `1px solid ${theme.colors.border}`,
+            padding: '16px 20px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.statusDanger, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            🚨 Son 7 Gün Kalanlar (&lt; 7 Gün)
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: theme.colors.statusDanger, marginTop: '4px' }}>
+            {metrics.criticalCount}
+          </div>
+          <div style={{ fontSize: '11.5px', color: theme.colors.taupe, marginTop: '4px' }}>
+            %30 Flaş İndirim tanımlı partiler
+          </div>
+        </div>
+
+        {/* Card 3: Son 15 Gün (Erken SKT) */}
+        <div
+          onClick={() => {
+            setStatusFilter('all');
+            setExpiringFilter(15);
+          }}
+          style={{
+            backgroundColor: expiringFilter === 15 ? '#FFF9F2' : theme.colors.bgCard,
+            borderRadius: theme.radii.md,
+            border: expiringFilter === 15 ? `1.5px solid ${theme.colors.statusWarning}` : `1px solid ${theme.colors.border}`,
+            padding: '16px 20px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.statusWarning, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            ⚠️ 8 - 15 Gün Kalanlar
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: theme.colors.statusWarning, marginTop: '4px' }}>
+            {Math.max(0, metrics.nearExpiryCount - metrics.criticalCount)}
+          </div>
+          <div style={{ fontSize: '11.5px', color: theme.colors.taupe, marginTop: '4px' }}>
+            %15 Erken SKT İndirimi tanımlı
+          </div>
+        </div>
+
+        {/* Card 4: Süresi Dolan & Fire */}
+        <div
+          onClick={() => {
+            setStatusFilter('Expired');
+            setExpiringFilter(undefined);
+          }}
+          style={{
+            backgroundColor: statusFilter === 'Expired' ? theme.colors.bgSurface : theme.colors.bgCard,
+            borderRadius: theme.radii.md,
+            border: statusFilter === 'Expired' ? `1.5px solid ${theme.colors.espresso}` : `1px solid ${theme.colors.border}`,
+            padding: '16px 20px',
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+            🛑 Süresi Dolan / Fire
+          </div>
+          <div style={{ fontSize: '24px', fontWeight: 800, color: theme.colors.espresso, marginTop: '4px' }}>
+            {metrics.expiredCount}{' '}
+            <span style={{ fontSize: '13px', fontWeight: 500, color: theme.colors.taupe }}>+ {metrics.writtenOffCount} Fire</span>
+          </div>
+          <div style={{ fontSize: '11.5px', color: theme.colors.taupe, marginTop: '4px' }}>
+            Satıştan çekilen ve imha edilen
+          </div>
+        </div>
+      </div>
+
+      {/* Auto Discount Rules Summary Banner */}
+      <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '18px 20px' }}>
+        <h3 style={{ fontSize: '14.5px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span>⚡</span> Otomatik İndirim ve Erken Uyarı Motoru Kuralları
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
-          <div style={{ padding: '14px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.statusDangerBg, border: '1px solid #F5D3CE' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.statusDanger }}>🚨 Kural 1: Son 7 Gün</div>
-            <div style={{ fontSize: '12px', color: theme.colors.espresso, marginTop: '4px' }}>
-              STT'sine 7 günden az kalan ürünlere anında <b>%30 Otomatik Sepet İndirimi</b> tanımlanır ve "Taze Fırsat" rozeti eklenir.
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+          <div style={{ padding: '12px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.statusDangerBg, border: '1px solid #F5D3CE' }}>
+            <div style={{ fontSize: '12.5px', fontWeight: 700, color: theme.colors.statusDanger }}>🚨 Kural 1: Son 7 Gün</div>
+            <div style={{ fontSize: '11.5px', color: theme.colors.espresso, marginTop: '3px' }}>
+              STT'sine 7 gün ve daha az kalan ürünlere anında <b>%30 Otomatik Flaş İndirim</b> tanımlanır.
             </div>
           </div>
-          <div style={{ padding: '14px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.statusWarningBg, border: '1px solid #FDF0E2' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.statusWarning }}>⚠️ Kural 2: Son 15 Gün</div>
-            <div style={{ fontSize: '12px', color: theme.colors.espresso, marginTop: '4px' }}>
-              STT'sine 15 gün kalan süt ve şarküteri ürünlerine <b>%15 Flaş İndirim</b> tanımlanır ve depo sorumlusuna bildirim düşer.
+          <div style={{ padding: '12px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.statusWarningBg, border: '1px solid #FDF0E2' }}>
+            <div style={{ fontSize: '12.5px', fontWeight: 700, color: theme.colors.statusWarning }}>⚠️ Kural 2: Son 15 Gün</div>
+            <div style={{ fontSize: '11.5px', color: theme.colors.espresso, marginTop: '3px' }}>
+              STT'sine 15 gün kalan taze ve süt ürünlerine <b>%15 Erken SKT İndirimi</b> uygulanır.
             </div>
           </div>
-          <div style={{ padding: '14px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.bgSurface, border: `1px solid ${theme.colors.border}` }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.cedar }}>🛑 Kural 3: Son 48 Saat</div>
-            <div style={{ fontSize: '12px', color: theme.colors.espresso, marginTop: '4px' }}>
-              Otomatik satış kapatılır; ürün sistemde rezerve edilerek <b>Karantina / İade / Aşevi</b> çıkış listesine aktarılır.
+          <div style={{ padding: '12px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.bgSurface, border: `1px solid ${theme.colors.border}` }}>
+            <div style={{ fontSize: '12.5px', fontWeight: 700, color: theme.colors.cedar }}>🛑 Kural 3: Süresi Dolanlar</div>
+            <div style={{ fontSize: '11.5px', color: theme.colors.espresso, marginTop: '3px' }}>
+              Otomatik satış kapatılır; ürün stoktan düşülerek <b>Karantina / Aşevi / İmha</b> çıkışına aktarılır.
             </div>
           </div>
         </div>
       </div>
 
-      {/* Lot Tracking Table */}
+      {/* Lot Tracking Table Card */}
       <div
         style={{
           backgroundColor: theme.colors.bgCard,
@@ -2297,177 +2565,486 @@ export const LotExpiryTrackingPage: React.FC = () => {
           overflow: 'hidden',
         }}
       >
+        {/* Table Filter & Search Controls */}
         <div
           style={{
-            padding: '18px 20px',
+            padding: '16px 20px',
             borderBottom: `1px solid ${theme.colors.border}`,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
             flexWrap: 'wrap',
-            gap: '8px',
+            gap: '12px',
           }}
         >
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: theme.colors.espresso, margin: 0 }}>
-            Aktif Parti (Lot) ve Raf Ömrü Listesi
-          </h3>
-          <span style={{ fontSize: '12px', color: theme.colors.taupe }}>FIFO (İlk Giren İlk Çıkar) sıralı</span>
-        </div>
-
-        <div style={{ overflowX: 'auto', width: '100%' }}>
-          <table
-            style={{
-              width: '100%',
-              minWidth: '860px',
-              borderCollapse: 'collapse',
-              textAlign: 'left',
-              fontSize: '13px',
-            }}
-          >
-            <thead>
-              <tr
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso, marginRight: '4px' }}>
+              Filtrele:
+            </span>
+            {[
+              { id: 'all', label: 'Tüm Partiler' },
+              { id: 'Active', label: 'Aktif Partiler' },
+              { id: 'NearExpiry', label: 'Yaklaşan STT (≤15 Gün)' },
+              { id: 'Expired', label: 'Süresi Dolanlar' },
+              { id: 'WrittenOff', label: 'Fire / İmha' },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setStatusFilter(tab.id);
+                  setExpiringFilter(undefined);
+                }}
                 style={{
-                  backgroundColor: theme.colors.bgSurface,
-                  borderBottom: `1px solid ${theme.colors.border}`,
-                  color: theme.colors.taupe,
-                  fontSize: '11.5px',
-                  fontWeight: 600,
-                  letterSpacing: '0.4px',
-                  textTransform: 'uppercase',
+                  padding: '6px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: statusFilter === tab.id && !expiringFilter ? `1.5px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
+                  backgroundColor: statusFilter === tab.id && !expiringFilter ? theme.colors.primarySubtle : theme.colors.bgSurface,
+                  color: statusFilter === tab.id && !expiringFilter ? theme.colors.primary : theme.colors.cedar,
+                  fontSize: '12px',
+                  fontWeight: statusFilter === tab.id && !expiringFilter ? 700 : 500,
+                  cursor: 'pointer',
                 }}
               >
-                <th style={{ padding: '14px 20px', verticalAlign: 'middle' }}>Parti (Lot) No</th>
-                <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Ürün Adı</th>
-                <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Üretim Tarihi</th>
-                <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>STT / TETT</th>
-                <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Kalan Süre</th>
-                <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Parti Miktarı</th>
-                <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Otomatik İndirim</th>
-                <th style={{ padding: '14px 20px', textAlign: 'right', verticalAlign: 'middle' }}>Durum</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lotRecords.map((lot, idx) => (
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input
+              type="text"
+              placeholder="Parti No veya Ürün Ara..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                padding: '7px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                fontSize: '12.5px',
+                outline: 'none',
+                width: '210px',
+              }}
+            />
+            <button
+              onClick={loadLots}
+              style={{
+                padding: '7px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                color: theme.colors.espresso,
+                fontSize: '12px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Yenile
+            </button>
+          </div>
+        </div>
+
+        {/* Table Area */}
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          {isLoading ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: theme.colors.taupe, fontSize: '13.5px' }}>
+              Parti ve STT verileri PostgreSQL'den yükleniyor...
+            </div>
+          ) : lots.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: theme.colors.taupe, fontSize: '13.5px' }}>
+              Filtrelere uygun parti kaydı bulunamadı. Yukarıdaki <b>"Yeni Parti Girişi"</b> butonunu kullanarak ilk partiyi ekleyebilirsiniz.
+            </div>
+          ) : (
+            <table
+              style={{
+                width: '100%',
+                minWidth: '920px',
+                borderCollapse: 'collapse',
+                textAlign: 'left',
+                fontSize: '13px',
+              }}
+            >
+              <thead>
                 <tr
-                  key={idx}
                   style={{
-                    borderBottom: `1px solid ${theme.colors.borderSubtle}`,
-                    transition: 'background 0.15s',
+                    backgroundColor: theme.colors.bgSurface,
+                    borderBottom: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.taupe,
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    letterSpacing: '0.4px',
+                    textTransform: 'uppercase',
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.colors.bgSurface)}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                 >
-                  <td
-                    style={{
-                      padding: '14px 20px',
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                      color: theme.colors.primary,
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    {lot.lotNo}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 16px',
-                      fontWeight: 600,
-                      color: theme.colors.espresso,
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    {lot.productName}
-                  </td>
-                  <td style={{ padding: '14px 16px', color: theme.colors.taupe, verticalAlign: 'middle' }}>
-                    {lot.producedAt}
-                  </td>
-                  <td
-                    style={{
-                      padding: '14px 16px',
-                      fontWeight: 600,
-                      color: theme.colors.espresso,
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    {lot.expiryDate}
-                  </td>
-                  <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        padding: '4px 9px',
-                        borderRadius: theme.radii.xs,
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        backgroundColor: lot.statusBg,
-                        color: lot.statusColor,
-                        border: `1px solid ${lot.statusColor}33`,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span>⏳</span> {lot.daysLeft} Gün Kaldı
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 16px', color: theme.colors.espresso, verticalAlign: 'middle' }}>
-                    {lot.quantity}
-                  </td>
-                  <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: lot.autoDiscount.includes('%') ? '3px 8px' : '0',
-                        borderRadius: theme.radii.xs,
-                        fontSize: '12px',
-                        fontWeight: 600,
-                        backgroundColor: lot.autoDiscount.includes('%') ? theme.colors.statusDangerBg : 'transparent',
-                        color: lot.autoDiscount.includes('%') ? theme.colors.statusDanger : theme.colors.taupe,
-                        border: lot.autoDiscount.includes('%') ? '1px solid #F5D3CE' : 'none',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {lot.autoDiscount.includes('%') && <span>⚡</span>}
-                      {lot.autoDiscount}
-                    </span>
-                  </td>
-                  <td style={{ padding: '14px 20px', textAlign: 'right', verticalAlign: 'middle' }}>
-                    <span
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        padding: '4px 12px',
-                        borderRadius: theme.radii.full,
-                        fontSize: '11.5px',
-                        fontWeight: 600,
-                        backgroundColor: lot.statusBg,
-                        border: `1px solid ${lot.statusColor}`,
-                        color: lot.statusColor,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <span
-                        style={{
-                          width: '6px',
-                          height: '6px',
-                          borderRadius: '50%',
-                          backgroundColor: lot.statusColor,
-                          flexShrink: 0,
-                        }}
-                      />
-                      {lot.status}
-                    </span>
-                  </td>
+                  <th style={{ padding: '14px 20px', verticalAlign: 'middle' }}>Parti (Lot) No</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Ürün Adı</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Üretim Tarihi</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>STT / TETT</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Kalan Süre</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Parti Miktarı</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Otomatik İndirim</th>
+                  <th style={{ padding: '14px 16px', verticalAlign: 'middle' }}>Durum</th>
+                  <th style={{ padding: '14px 20px', textAlign: 'right', verticalAlign: 'middle' }}>Aksiyon</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {lots.map((lot) => {
+                  // Badge styling logic
+                  let badgeBg = theme.colors.statusSuccessBg;
+                  let badgeColor = theme.colors.statusSuccess;
+                  let badgeText = `✓ ${lot.daysLeft} Gün Kaldı`;
+
+                  if (lot.status === 'WrittenOff') {
+                    badgeBg = theme.colors.bgSurface;
+                    badgeColor = theme.colors.taupe;
+                    badgeText = '🛑 İmha Edildi';
+                  } else if (lot.daysLeft <= 0) {
+                    badgeBg = theme.colors.statusDangerBg;
+                    badgeColor = theme.colors.statusDanger;
+                    badgeText = '⛔ Süresi Doldu';
+                  } else if (lot.daysLeft <= 7) {
+                    badgeBg = theme.colors.statusDangerBg;
+                    badgeColor = theme.colors.statusDanger;
+                    badgeText = `⏳ ${lot.daysLeft} Gün Kaldı (Kritik)`;
+                  } else if (lot.daysLeft <= 15) {
+                    badgeBg = theme.colors.statusWarningBg;
+                    badgeColor = theme.colors.statusWarning;
+                    badgeText = `⏳ ${lot.daysLeft} Gün Kaldı`;
+                  }
+
+                  return (
+                    <tr
+                      key={lot.id}
+                      style={{
+                        borderBottom: `1px solid ${theme.colors.borderSubtle}`,
+                        transition: 'background 0.15s',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = theme.colors.bgSurface)}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <td
+                        style={{
+                          padding: '14px 20px',
+                          fontFamily: 'monospace',
+                          fontWeight: 700,
+                          color: theme.colors.primary,
+                          verticalAlign: 'middle',
+                        }}
+                      >
+                        {lot.lotNumber}
+                      </td>
+                      <td
+                        style={{
+                          padding: '14px 16px',
+                          fontWeight: 600,
+                          color: theme.colors.espresso,
+                          verticalAlign: 'middle',
+                        }}
+                      >
+                        <div>{lot.productName}</div>
+                        {lot.productSku && (
+                          <div style={{ fontSize: '11px', color: theme.colors.taupe, fontWeight: 400 }}>
+                            SKU: {lot.productSku}
+                          </div>
+                        )}
+                      </td>
+                      <td style={{ padding: '14px 16px', color: theme.colors.taupe, verticalAlign: 'middle' }}>
+                        {formatDate(lot.productionDate)}
+                      </td>
+                      <td
+                        style={{
+                          padding: '14px 16px',
+                          fontWeight: 600,
+                          color: theme.colors.espresso,
+                          verticalAlign: 'middle',
+                        }}
+                      >
+                        {formatDate(lot.expiryDate)}
+                      </td>
+                      <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '5px',
+                            padding: '4px 10px',
+                            borderRadius: theme.radii.xs,
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            backgroundColor: badgeBg,
+                            color: badgeColor,
+                            border: `1px solid ${badgeColor}33`,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {badgeText}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px', color: theme.colors.espresso, fontWeight: 600, verticalAlign: 'middle' }}>
+                        {lot.quantity} Adet
+                      </td>
+                      <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            padding: lot.autoDiscount?.includes('%') ? '3px 8px' : '0',
+                            borderRadius: theme.radii.xs,
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            backgroundColor: lot.autoDiscount?.includes('%') ? theme.colors.statusDangerBg : 'transparent',
+                            color: lot.autoDiscount?.includes('%') ? theme.colors.statusDanger : theme.colors.taupe,
+                            border: lot.autoDiscount?.includes('%') ? '1px solid #F5D3CE' : 'none',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {lot.autoDiscount?.includes('%') && <span>⚡</span>}
+                          {lot.autoDiscount}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 16px', verticalAlign: 'middle' }}>
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            padding: '3px 8px',
+                            borderRadius: theme.radii.xs,
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            backgroundColor:
+                              lot.status === 'WrittenOff'
+                                ? theme.colors.bgSurface
+                                : lot.status === 'Expired'
+                                ? theme.colors.statusDangerBg
+                                : lot.status === 'NearExpiry'
+                                ? theme.colors.statusWarningBg
+                                : theme.colors.statusSuccessBg,
+                            color:
+                              lot.status === 'WrittenOff'
+                                ? theme.colors.taupe
+                                : lot.status === 'Expired'
+                                ? theme.colors.statusDanger
+                                : lot.status === 'NearExpiry'
+                                ? theme.colors.statusWarning
+                                : theme.colors.statusSuccess,
+                          }}
+                        >
+                          {lot.status === 'WrittenOff'
+                            ? 'Fire / İmha'
+                            : lot.status === 'Expired'
+                            ? 'Süresi Doldu'
+                            : lot.status === 'NearExpiry'
+                            ? 'Yaklaşan SKT'
+                            : 'Aktif'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '14px 20px', textAlign: 'right', verticalAlign: 'middle' }}>
+                        {lot.status !== 'WrittenOff' ? (
+                          <button
+                            onClick={() => handleUpdateStatus(lot, 'WrittenOff')}
+                            title="Partiyi fire/imha olarak kaydet ve stoktan düş"
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: theme.radii.xs,
+                              border: '1px solid #F5D3CE',
+                              backgroundColor: theme.colors.statusDangerBg,
+                              color: theme.colors.statusDanger,
+                              fontSize: '11.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <span>🗑️</span>
+                            <span>Fireye Ayır</span>
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: '11.5px', color: theme.colors.taupe, fontStyle: 'italic' }}>
+                            İşlem Tamamlandı
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
+
+      {/* Modal: Yeni Parti Girişi */}
+      {isModalOpen && (
+        <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Parti (Lot) Girişi">
+          <form onSubmit={handleCreateLot} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '6px' }}>
+                İlişkili Ürün *
+              </label>
+              <select
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  fontSize: '13px',
+                  backgroundColor: '#FFFFFF',
+                  outline: 'none',
+                }}
+              >
+                {availableProducts.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} {p.sku ? `(${p.sku})` : ''} - Mevcut Stok: {p.stockQuantity}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '6px' }}>
+                Parti (Lot) Numarası
+              </label>
+              <input
+                type="text"
+                placeholder="Örn: LOT-2026-1109-KAS (Boş bırakılırsa otomatik üretilir)"
+                value={formLotNumber}
+                onChange={(e) => setFormLotNumber(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '6px' }}>
+                  Üretim Tarihi *
+                </label>
+                <input
+                  type="date"
+                  value={formProductionDate}
+                  onChange={(e) => setFormProductionDate(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: theme.radii.sm,
+                    border: `1px solid ${theme.colors.border}`,
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: theme.colors.statusDanger, marginBottom: '6px' }}>
+                  Son Tüketim Tarihi (STT / TETT) *
+                </label>
+                <input
+                  type="date"
+                  value={formExpiryDate}
+                  onChange={(e) => setFormExpiryDate(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '8px 10px',
+                    borderRadius: theme.radii.sm,
+                    border: `1.5px solid ${theme.colors.statusDanger}`,
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '6px' }}>
+                Parti Miktarı (Stok Girişi) *
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={formQuantity}
+                onChange={(e) => setFormQuantity(parseInt(e.target.value, 10) || 0)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                padding: '10px 14px',
+                borderRadius: theme.radii.sm,
+                backgroundColor: theme.colors.primarySubtle,
+                border: `1px solid ${theme.colors.primary}33`,
+                fontSize: '12px',
+                color: theme.colors.primary,
+                lineHeight: 1.5,
+              }}
+            >
+              ℹ️ <b>Otomatik Stok Entegrasyonu:</b> Yeni parti kaydedildiğinde girilen miktar bağlı ürünün genel envanter stoğuna otomatik olarak eklenecek ve <b>admin.AuditLogs</b> tablosuna denetim kaydı atılacaktır.
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                disabled={isSubmitting}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: theme.radii.md,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgCard,
+                  color: theme.colors.taupe,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                İptal
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: theme.radii.md,
+                  border: `1px solid ${theme.colors.primary}`,
+                  backgroundColor: theme.colors.primary,
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: isSubmitting ? 0.7 : 1,
+                }}
+              >
+                {isSubmitting ? 'Kaydediliyor...' : 'Partiyi Kaydet ve Stoğa Ekle'}
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
     </div>
   );
 };

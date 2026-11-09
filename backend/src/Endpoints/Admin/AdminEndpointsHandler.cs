@@ -321,6 +321,94 @@ internal static class AdminEndpointsHandler
         .Produces<InventoryItemDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
+        // =========================================================================
+        // 6. STT / TETT ve Parti (Lot) Takibi (Lots - Vertical Slice 4)
+        // =========================================================================
+        var lots = group.MapGroup("/lots").WithTags("Admin Lots");
+
+        // GET /api/admin/lots
+        lots.MapGet("/", async (
+            [FromQuery] Guid? productId,
+            [FromQuery] int? expiringWithinDays,
+            [FromQuery] string? status,
+            [FromQuery] string? search,
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
+            ILotService lotService,
+            CancellationToken ct) =>
+        {
+            var p = page ?? 1;
+            var ps = pageSize ?? 20;
+            var result = await lotService.GetLotsAsync(productId, expiringWithinDays, status, search, p, ps, ct);
+            return Results.Ok(result);
+        })
+        .WithName("GetAdminLots")
+        .Produces<PaginatedLotsResponse>(StatusCodes.Status200OK);
+
+        // POST /api/admin/lots
+        lots.MapPost("/", async (
+            CreateLotRequest req,
+            ILotService lotService,
+            CancellationToken ct) =>
+        {
+            if (req.ProductId == Guid.Empty)
+            {
+                return Results.BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Geçersiz İstek",
+                    Detail = "Ürün (ProductId) seçilmelidir."
+                });
+            }
+
+            if (req.Quantity <= 0)
+            {
+                return Results.BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Geçersiz İstek",
+                    Detail = "Parti miktarı 0'dan büyük olmalıdır."
+                });
+            }
+
+            if (req.ExpiryDate <= req.ProductionDate)
+            {
+                return Results.BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Geçersiz İstek",
+                    Detail = "Son tüketim tarihi üretim tarihinden sonra olmalıdır."
+                });
+            }
+
+            var createdLot = await lotService.CreateLotAsync(req, ct);
+            return Results.Created($"/api/admin/lots/{createdLot.Id}", createdLot);
+        })
+        .WithName("CreateAdminLot")
+        .Produces<ProductLotDto>(StatusCodes.Status201Created)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+
+        // PATCH /api/admin/lots/{id}/status
+        lots.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            UpdateLotStatusRequest req,
+            ILotService lotService,
+            CancellationToken ct) =>
+        {
+            var updated = await lotService.UpdateLotStatusAsync(id, req.Status, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Parti Bulunamadı",
+                    Detail = $"Durumu güncellenecek '{id}' Id numaralı parti bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminLotStatus")
+        .Produces<ProductLotDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         return group;
     }
 }

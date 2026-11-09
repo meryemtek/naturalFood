@@ -268,6 +268,57 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.ToTable("ProductImages", "catalog");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalog.ProductLot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LotNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ProductionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Quantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasDefaultValue("Active");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiryDate");
+
+                    b.HasIndex("LotNumber");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("ProductLots", "catalog");
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalog.ProductVariant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -398,6 +449,17 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalog.ProductLot", b =>
+                {
+                    b.HasOne("Domain.Entities.Catalog.Product", "Product")
+                        .WithMany("Lots")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalog.ProductVariant", b =>
                 {
                     b.HasOne("Domain.Entities.Catalog.Product", "Product")
@@ -421,6 +483,8 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.Navigation("Attributes");
 
                     b.Navigation("Images");
+
+                    b.Navigation("Lots");
 
                     b.Navigation("Variants");
                 });
