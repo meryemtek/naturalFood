@@ -20,8 +20,17 @@ interface SectionGroup {
   items: MenuItem[];
 }
 
-export const Sidebar: React.FC = () => {
+export interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
+
+  useEffect(() => {
+    onClose?.();
+  }, [location.pathname]);
 
   const SECTIONS: SectionGroup[] = [
     {
@@ -289,6 +298,7 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside
+      className={`admin-sidebar ${isOpen ? 'open' : ''}`}
       style={{
         width: '270px',
         backgroundColor: theme.colors.bgSurface,
@@ -306,38 +316,59 @@ export const Sidebar: React.FC = () => {
       {/* Brand Logo Header: Farm-to-Table Artisanal Identity */}
       <div
         style={{
-          padding: '18px 24px',
+          padding: '16px 20px',
           borderBottom: `1px solid ${theme.colors.border}`,
           display: 'flex',
           alignItems: 'center',
-          gap: '12px',
+          justifyContent: 'space-between',
         }}
       >
-        <div
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              borderRadius: theme.radii.md,
+              backgroundColor: theme.colors.primary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: theme.colors.textInverse,
+            }}
+          >
+            {/* Artisanal Botanical Leaf / Shield Icon */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: '15px', fontWeight: 700, letterSpacing: '-0.3px', color: theme.colors.espresso }}>
+              Natural Food
+            </div>
+            <div style={{ fontSize: '11px', color: theme.colors.taupe, fontWeight: 500 }}>
+              Organik Operasyon Paneli
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Menüyü Kapat"
+          className="mobile-only"
           style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: theme.radii.md,
-            backgroundColor: theme.colors.primary,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: theme.colors.textInverse,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: theme.colors.taupe,
+            fontSize: '18px',
+            padding: '4px 8px',
+            borderRadius: theme.radii.sm,
           }}
         >
-          {/* Artisanal Botanical Leaf / Shield Icon */}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-          </svg>
-        </div>
-        <div>
-          <div style={{ fontSize: '16px', fontWeight: 700, letterSpacing: '-0.3px', color: theme.colors.espresso }}>
-            Natural Food
-          </div>
-          <div style={{ fontSize: '11px', color: theme.colors.taupe, fontWeight: 500 }}>
-            Organik Operasyon Paneli
-          </div>
-        </div>
+          ✕
+        </button>
       </div>
 
       {/* Navigation Sections */}
@@ -374,6 +405,7 @@ export const Sidebar: React.FC = () => {
                     <NavLink
                       key={item.id}
                       to={item.path}
+                      onClick={() => onClose?.()}
                       style={({ isActive }) => ({
                         display: 'flex',
                         alignItems: 'center',
@@ -505,6 +537,7 @@ export const Sidebar: React.FC = () => {
                             <NavLink
                               key={sub.path}
                               to={sub.path}
+                              onClick={() => onClose?.()}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',

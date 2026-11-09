@@ -1,0 +1,168 @@
+/* Responsive Styles for Natural Food Artisanal Operations Admin */
+
+/* Utility Visibility Classes */
+.mobile-only {
+  display: none !important;
+}
+.mobile-only-flex {
+  display: none !important;
+}
+.desktop-only {
+  display: block !important;
+}
+.desktop-only-flex {
+  display: flex !important;
+}
+
+/* Base Body Adjustments */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+}
+
+/* Responsive Table Wrapper */
+.responsive-table-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 6px;
+  border: 1px solid #E7E5E0;
+}
+
+.responsive-table-container table {
+  min-width: 650px;
+}
+
+/* Custom Minimalist Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F7F6F2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D5D0C7;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #B8B0A2;
+}
+
+/* Tablet & Mobile Screens (<= 1024px) */
+@media (max-width: 1024px) {
+  .mobile-only {
+    display: block !important;
+  }
+  .mobile-only-flex {
+    display: flex !important;
+  }
+
+  .desktop-only,
+  .desktop-only-flex {
+    display: none !important;
+  }
+
+  /* Admin Layout */
+  .admin-layout-root {
+    position: relative;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  /* Admin Sidebar Drawer */
+  .admin-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    width: 280px !important;
+    max-width: 84vw !important;
+    z-index: 1100 !important;
+    transform: translateX(-100%) !important;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: none;
+    border-right: 1px solid #E7E5E0;
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0) !important;
+    box-shadow: 6px 0 28px rgba(45, 36, 30, 0.22) !important;
+  }
+
+  /* Mobile Backdrop */
+  .admin-backdrop {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(45, 36, 30, 0.48);
+    backdrop-filter: blur(2px);
+    z-index: 1050;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+
+  .admin-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Header on Mobile */
+  .admin-header {
+    height: 56px !important;
+    padding: 0 14px !important;
+  }
+
+  .admin-header-title {
+    font-size: 14.5px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Main Container on Mobile */
+  .admin-main-content {
+    padding: 16px 12px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
+}
+
+/* Small Mobile Screens (<= 640px) */
+@media (max-width: 640px) {
+  .admin-header-title {
+    max-width: 140px;
+    font-size: 13.5px !important;
+  }
+
+  .admin-header-pill {
+    padding: 3px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .mobile-text-wrap {
+    flex-wrap: wrap !important;
+  }
+
+  .grid-adaptive {
+    grid-template-columns: 1fr !important;
+  }
+}

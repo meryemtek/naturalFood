@@ -196,7 +196,7 @@ export const InventoryPage: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '14px' }}>
         <StatCard title="Toplam Ürün Çeşidi" value={`${totalCount} Kalem`} icon="📦" subtitle="catalog.Products verisi" />
         <StatCard title="Toplam Depo Stoğu" value={`${totalStockCount} Birim`} icon="📊" subtitle="Fiziksel mevcudiyet" />
         <StatCard title="Kritik Emniyet Stoğu" value={`${criticalStockCount} Ürün`} icon="⚠️" subtitle="5 ve altı kalanlar" isPositive={false} />

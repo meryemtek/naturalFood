@@ -362,7 +362,7 @@ export const ProductDefinitionPage: React.FC = () => {
       </div>
 
       {/* KPI Stats: Grounded & Artisanal */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))', gap: '16px' }}>
         {[
           { label: 'Toplam Kayıtlı Ürün', val: totalCount.toString(), badge: 'PostgreSQL DB', color: theme.colors.primary },
           { label: 'Kg & Gramaj Satışlı', val: products.filter(p => p.saleUnit === 'Kg' || p.saleUnit === 'Gramaj').length.toString(), badge: 'Tartılı Ürün', color: theme.colors.statusSuccess },
@@ -394,7 +394,7 @@ export const ProductDefinitionPage: React.FC = () => {
               backgroundColor: theme.colors.bgSurface,
               color: theme.colors.espresso,
               fontSize: '13.5px',
-              minWidth: '260px',
+              flex: '1 1 200px', maxWidth: '100%', boxSizing: 'border-box',
               outline: 'none',
             }}
           />
@@ -424,7 +424,7 @@ export const ProductDefinitionPage: React.FC = () => {
           </select>
 
           {/* Unit Filter Buttons */}
-          <div style={{ display: 'flex', gap: '6px' }}>
+          <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
             {[
               { id: 'all', label: 'Tüm Birimler' },
               { id: 'Kg', label: 'Kg' },
@@ -1440,12 +1440,12 @@ export const AllergensNutritionPage: React.FC = () => {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: 'clamp(18px, 4vw, 22px)', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
               İçerik ve Alerjen Bilgileri
             </h1>
-            <span style={{ fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: theme.radii.full, backgroundColor: theme.colors.statusDangerBg, color: theme.colors.statusDanger, border: '1px solid #F5D3CE' }}>
-              Gıda Güvenliği & Etiketleme (Vertical Slice 3)
+            <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 9px', borderRadius: theme.radii.full, backgroundColor: theme.colors.statusDangerBg, color: theme.colors.statusDanger, border: '1px solid #F5D3CE' }}>
+              Gıda Güvenliği & Etiketleme
             </span>
           </div>
           <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
@@ -1584,7 +1584,9 @@ export const AllergensNutritionPage: React.FC = () => {
               fontSize: '12.5px',
               color: theme.colors.espresso,
               outline: 'none',
-              width: '240px',
+              flex: '1 1 200px',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
             }}
           />
         </div>
@@ -1637,7 +1639,7 @@ export const AllergensNutritionPage: React.FC = () => {
           Ürün detayları ve besin değerleri yükleniyor...
         </div>
       ) : details ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 310px), 1fr))', gap: '16px' }}>
           {/* Left Card: Ingredients, Allergens & Certifications */}
           <div
             style={{
@@ -1730,7 +1732,7 @@ export const AllergensNutritionPage: React.FC = () => {
                       })}
                     </div>
                     {/* Custom Cert Input */}
-                    <div style={{ display: 'flex', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                       <input
                         type="text"
                         placeholder="Özel sertifika/nitelik ekle..."
@@ -1938,7 +1940,7 @@ export const AllergensNutritionPage: React.FC = () => {
                   </div>
 
                   {/* Custom Allergen Input */}
-                  <div style={{ display: 'flex', gap: '6px' }}>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     <input
                       type="text"
                       placeholder="Örn: Eser miktarda hardal içerebilir..."
@@ -3393,7 +3395,7 @@ export const StorageConditionsPage: React.FC = () => {
           Saklama koşulları yükleniyor...
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '14px' }}>
           {conditions.map((item) => {
             const style = getConditionStyle(item.name);
             const isSelected = filterCondition === item.id;
@@ -3636,8 +3638,8 @@ export const StorageConditionsPage: React.FC = () => {
         </div>
 
         {/* Products Table */}
-        <div style={{ overflowX: 'auto', border: `1px solid ${theme.colors.border}`, borderRadius: theme.radii.sm }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        <div style={{ overflowX: 'auto', border: `1px solid ${theme.colors.border}`, borderRadius: theme.radii.sm, width: '100%' }}>
+          <table style={{ width: '100%', minWidth: '780px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}` }}>
                 <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Ürün & SKU</th>
