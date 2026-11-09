@@ -148,6 +148,10 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("ShelfLocation")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("ShortDescription")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -167,6 +171,9 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
                         .HasDefaultValue(0);
+
+                    b.Property<Guid?>("StorageConditionId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("StorageConditions")
                         .HasMaxLength(1000)
@@ -191,6 +198,8 @@ namespace Infrastructure.Persistence.Migrations.Catalog
 
                     b.HasIndex("Slug")
                         .IsUnique();
+
+                    b.HasIndex("StorageConditionId");
 
                     b.HasIndex("IsActive", "BasePrice");
 
@@ -376,6 +385,50 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.ToTable("ProductVariants", "catalog");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Catalog.StorageCondition", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DefaultShelfZone")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int?>("MaxHumidity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("MaxTemperature")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<decimal>("MinTemperature")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<bool>("RequiresColdChain")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.HasKey("Id");
+
+                    b.ToTable("StorageConditions", "catalog");
+                });
+
             modelBuilder.Entity("Domain.Entities.Catalog.Category", b =>
                 {
                     b.HasOne("Domain.Entities.Catalog.Category", "ParentCategory")
@@ -393,6 +446,11 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Domain.Entities.Catalog.StorageCondition", "StorageCondition")
+                        .WithMany("Products")
+                        .HasForeignKey("StorageConditionId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.OwnsOne("Domain.Entities.Catalog.NutritionalValues", "NutritionalValues", b1 =>
                         {
@@ -427,6 +485,8 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.Navigation("Category");
 
                     b.Navigation("NutritionalValues");
+
+                    b.Navigation("StorageCondition");
                 });
 
             modelBuilder.Entity("Domain.Entities.Catalog.ProductAttribute", b =>
@@ -487,6 +547,11 @@ namespace Infrastructure.Persistence.Migrations.Catalog
                     b.Navigation("Lots");
 
                     b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Catalog.StorageCondition", b =>
+                {
+                    b.Navigation("Products");
                 });
 #pragma warning restore 612, 618
         }

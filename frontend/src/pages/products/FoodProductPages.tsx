@@ -16,6 +16,13 @@ import {
   CreateLotData,
   LotSummaryMetricsDto,
 } from '../../services/lotService';
+import {
+  storageService,
+  StorageConditionDto,
+  ProductStorageItemDto,
+  CreateStorageConditionData,
+  UpdateProductStorageData,
+} from '../../services/storageService';
 
 // ==========================================
 // 1. GELİŞMİŞ ÜRÜN TANIMLAMA SAYFASI
@@ -3051,163 +3058,1103 @@ export const LotExpiryTrackingPage: React.FC = () => {
 
 // ==========================================
 // 4. SAKLAMA KOŞULLARI SAYFASI
+// Backend (.NET 10 Minimal API & PostgreSQL - catalog.StorageConditions) Bağlantılı
 // ==========================================
 export const StorageConditionsPage: React.FC = () => {
-  const conditions = [
-    {
-      id: 'dry',
-      title: 'Kuru Gıda (Oda Sıcaklığı)',
-      tempRange: '18°C - 24°C',
-      description: 'Direkt güneş ışığından uzak, serin, nemsiz ve havadar ortamda muhafaza edilir.',
-      packaging: 'Hava geçirmez kraft paket, cam kavanoz veya vakumlu çuval.',
-      shippingMode: 'Standart Kargo (Özel Soğutma Gerekmez)',
-      icon: '🌾',
-      badgeColor: theme.colors.statusWarning,
-      bgColor: theme.colors.statusWarningBg,
-      productCount: 248,
-      examples: ['Organik Siyez Unu', 'Sızma Zeytinyağı', 'Kuru Bakliyat', 'Çiğ Badem / Ceviz'],
-    },
-    {
-      id: 'cold',
-      title: '+4°C Soğuk Muhafaza',
-      tempRange: '+2°C ile +4°C',
-      description: 'Buzdolabı sıcaklığında, soğuk hava deposunda ve sürekli sıcaklık takip sensörleriyle korunur.',
-      packaging: 'Sızdırmaz vakumlu gıda ambalajı ve koruyucu gazlı tabak.',
-      shippingMode: 'Soğuk Zincir (Termobox + Buz Aküsü / Frigorifik Kurye)',
-      icon: '❄️',
-      badgeColor: theme.colors.primary,
-      bgColor: theme.colors.primarySubtle,
-      productCount: 164,
-      examples: ['Eski Kaşar Peyniri', 'Köy Tereyağı', 'Taze Çiğ Süt', 'Köy Yumurtası'],
-    },
-    {
-      id: 'frozen',
-      title: '-18°C Donuk Muhafaza',
-      tempRange: '-18°C ve Altı',
-      description: 'Şok dondurucu ve derin dondurucu depolarında çözülme döngüsü olmadan saklanır.',
-      packaging: 'Düşük sıcaklığa dayanıklı dondurucu poşeti ve kilitli kutu.',
-      shippingMode: 'Kuru Buzlu Termobox / Özel Derin Donduruculu Lojistik',
-      icon: '🧊',
-      badgeColor: theme.colors.statusInfo,
-      bgColor: theme.colors.statusInfoBg,
-      productCount: 70,
-      examples: ['Dondurulmuş Yaban Mersini', 'Organik Şoklanmış Bezelye', 'Donuk Köfte'],
-    },
-  ];
+  // Live State
+  const [conditions, setConditions] = useState<StorageConditionDto[]>([]);
+  const [products, setProducts] = useState<ProductStorageItemDto[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Filters
+  const [filterCondition, setFilterCondition] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [coldChainFilter, setColdChainFilter] = useState<string>('all');
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<ProductStorageItemDto | null>(null);
+  const [editConditionId, setEditConditionId] = useState<string>('');
+  const [editShelfLocation, setEditShelfLocation] = useState<string>('');
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Create Condition Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
+  const [newCondName, setNewCondName] = useState<string>('');
+  const [newMinTemp, setNewMinTemp] = useState<number>(15);
+  const [newMaxTemp, setNewMaxTemp] = useState<number>(22);
+  const [newMaxHumidity, setNewMaxHumidity] = useState<string>('60');
+  const [newColdChain, setNewColdChain] = useState<boolean>(false);
+  const [newDefaultShelfZone, setNewDefaultShelfZone] = useState<string>('');
+  const [newDescription, setNewDescription] = useState<string>('');
+  const [isCreatingCondition, setIsCreatingCondition] = useState<boolean>(false);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr));
+    }, 4000);
+  };
+
+  // Load conditions and products
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      const [conditionsData, productsData] = await Promise.all([
+        storageService.getStorageConditions(),
+        storageService.getProductsStorage(),
+      ]);
+      setConditions(conditionsData);
+      setProducts(productsData);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Saklama koşulları ve ürün verileri yüklenemedi.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // Card theme helper
+  const getConditionStyle = (name: string) => {
+    const n = name.toLowerCase();
+    if (n.includes('kuru') || n.includes('bakliyat')) {
+      return {
+        icon: '🌾',
+        badgeColor: theme.colors.statusWarning,
+        bgColor: theme.colors.statusWarningBg,
+        borderColor: '#F1D5A5',
+      };
+    }
+    if (n.includes('soğuk') || n.includes('+4')) {
+      return {
+        icon: '❄️',
+        badgeColor: theme.colors.primary,
+        bgColor: theme.colors.primarySubtle,
+        borderColor: '#D5E5D4',
+      };
+    }
+    if (n.includes('donuk') || n.includes('dondurulmuş') || n.includes('-18')) {
+      return {
+        icon: '🧊',
+        badgeColor: theme.colors.statusInfo,
+        bgColor: theme.colors.statusInfoBg,
+        borderColor: '#BAE6FD',
+      };
+    }
+    if (n.includes('mahzen') || n.includes('manav')) {
+      return {
+        icon: '🏺',
+        badgeColor: '#7B1FA2',
+        bgColor: '#F3E5F5',
+        borderColor: '#E1BEE7',
+      };
+    }
+    return {
+      icon: '📦',
+      badgeColor: theme.colors.taupe,
+      bgColor: theme.colors.bgSurface,
+      borderColor: theme.colors.border,
+    };
+  };
+
+  // Open Edit Modal
+  const openEditModal = (product: ProductStorageItemDto) => {
+    setSelectedProduct(product);
+    setEditConditionId(product.storageConditionId || (conditions[0]?.id ?? ''));
+    setEditShelfLocation(product.shelfLocation || '');
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Save Product Storage
+  const handleSaveProductStorage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
+
+    try {
+      setIsSaving(true);
+      const updated = await storageService.updateProductStorage(selectedProduct.id, {
+        storageConditionId: editConditionId || null,
+        shelfLocation: editShelfLocation.trim() || null,
+      });
+
+      setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setIsEditModalOpen(false);
+      showToast(`"${updated.name}" saklama koşulu ve raf konumu başarıyla güncellendi.`);
+
+      // Refresh condition counts
+      const refreshedConditions = await storageService.getStorageConditions();
+      setConditions(refreshedConditions);
+    } catch (err: any) {
+      alert(err.message || 'Ürün saklama bilgisi güncellenirken hata oluştu.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Create Condition Template
+  const handleCreateCondition = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCondName.trim()) {
+      alert('Lütfen koşul adı giriniz.');
+      return;
+    }
+    if (!newDefaultShelfZone.trim()) {
+      alert('Lütfen varsayılan raf/bölge kodunu giriniz.');
+      return;
+    }
+
+    try {
+      setIsCreatingCondition(true);
+      const payload: CreateStorageConditionData = {
+        name: newCondName.trim(),
+        minTemperature: Number(newMinTemp),
+        maxTemperature: Number(newMaxTemp),
+        maxHumidity: newMaxHumidity ? parseInt(newMaxHumidity, 10) : null,
+        requiresColdChain: newColdChain,
+        defaultShelfZone: newDefaultShelfZone.trim(),
+        description: newDescription.trim() || null,
+      };
+
+      const created = await storageService.createStorageCondition(payload);
+      setConditions((prev) => [...prev, created]);
+      setIsCreateModalOpen(false);
+      showToast(`Yeni saklama koşulu şablonu (${created.name}) başarıyla oluşturuldu.`);
+
+      // Reset form
+      setNewCondName('');
+      setNewDefaultShelfZone('');
+      setNewDescription('');
+    } catch (err: any) {
+      alert(err.message || 'Saklama koşulu oluşturulurken hata oluştu.');
+    } finally {
+      setIsCreatingCondition(false);
+    }
+  };
+
+  // Filtered Products
+  const filteredProducts = products.filter((p) => {
+    if (filterCondition !== 'all' && p.storageConditionId !== filterCondition) {
+      return false;
+    }
+    if (coldChainFilter === 'cold' && !p.requiresColdChain) {
+      return false;
+    }
+    if (coldChainFilter === 'standard' && p.requiresColdChain) {
+      return false;
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase();
+      const matchName = p.name.toLowerCase().includes(q);
+      const matchSku = p.sku.toLowerCase().includes(q);
+      const matchCategory = p.category.toLowerCase().includes(q);
+      const matchShelf = (p.shelfLocation || '').toLowerCase().includes(q);
+      if (!matchName && !matchSku && !matchCategory && !matchShelf) return false;
+    }
+    return true;
+  });
+
+  const selectedConditionObj = conditions.find((c) => c.id === editConditionId);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      {/* Header */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
-            Saklama Koşulları ve Muhafaza Tanımları
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: theme.radii.full, backgroundColor: theme.colors.primarySubtle, color: theme.colors.primary, border: '1px solid #D5E5D4' }}>
-            Soğuk Zincir & Depo Standartları
-          </span>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            backgroundColor: theme.colors.espresso,
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: theme.radii.md,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+            fontSize: '13.5px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            zIndex: 9999,
+          }}
+        >
+          <span style={{ color: '#4ADE80', fontSize: '16px' }}>✓</span>
+          {toastMessage}
         </div>
-        <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
-          Ürünlerin depolama ve sevkiyat muhafaza durumları (kuru gıda, +4°C soğuk, -18°C donuk) tanımları ve lojistik gereksinimleri.
-        </p>
-      </div>
+      )}
 
-      {/* 3 Main Condition Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-        {conditions.map((item) => (
-          <div
-            key={item.id}
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
+              Saklama Koşulları ve Muhafaza Tanımları
+            </h1>
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                padding: '3px 10px',
+                borderRadius: theme.radii.full,
+                backgroundColor: theme.colors.primarySubtle,
+                color: theme.colors.primary,
+                border: '1px solid #D5E5D4',
+              }}
+            >
+              PostgreSQL Canlı Entegrasyon
+            </span>
+          </div>
+          <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
+            Doğal ürünlerin depolama sıcaklıkları, bağıl nem aralıkları, soğuk zincir lojistiği ve depo raf koordinatları.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => loadData()}
+            disabled={isLoading}
             style={{
+              padding: '9px 14px',
               backgroundColor: theme.colors.bgCard,
-              borderRadius: theme.radii.md,
+              color: theme.colors.espresso,
               border: `1px solid ${theme.colors.border}`,
-              padding: '24px',
+              borderRadius: theme.radii.sm,
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               display: 'flex',
-              flexDirection: 'column',
-              gap: '16px',
+              alignItems: 'center',
+              gap: '6px',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: theme.radii.md,
-                    backgroundColor: item.bgColor,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '22px',
-                  }}
-                >
-                  {item.icon}
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: theme.colors.espresso, margin: 0 }}>
-                    {item.title}
-                  </h3>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: item.badgeColor, marginTop: '2px' }}>
-                    Sıcaklık Aralığı: {item.tempRange}
-                  </div>
-                </div>
-              </div>
+            <span>🔄</span> Yenile
+          </button>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            style={{
+              padding: '9px 16px',
+              backgroundColor: theme.colors.primary,
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: theme.radii.sm,
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <span>+</span> Yeni Koşul Şablonu
+          </button>
+        </div>
+      </div>
 
-              <span
+      {/* Error Banner */}
+      {errorMessage && (
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: theme.colors.statusDangerBg,
+            border: `1px solid ${theme.colors.statusDanger}`,
+            color: theme.colors.statusDanger,
+            borderRadius: theme.radii.sm,
+            fontSize: '13px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>{errorMessage}</span>
+          <button
+            onClick={() => loadData()}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: theme.colors.statusDanger,
+              textDecoration: 'underline',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            Tekrar Dene
+          </button>
+        </div>
+      )}
+
+      {/* 4 Storage Condition Cards */}
+      {isLoading && conditions.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '36px', color: theme.colors.taupe }}>
+          Saklama koşulları yükleniyor...
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          {conditions.map((item) => {
+            const style = getConditionStyle(item.name);
+            const isSelected = filterCondition === item.id;
+            return (
+              <div
+                key={item.id}
+                onClick={() => setFilterCondition(isSelected ? 'all' : item.id)}
                 style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '3px 8px',
-                  borderRadius: theme.radii.xs,
-                  backgroundColor: item.bgColor,
-                  color: item.badgeColor,
-                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgCard,
+                  borderRadius: theme.radii.md,
+                  border: isSelected ? `2px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'all 0.15s ease',
+                  boxShadow: isSelected ? '0 4px 12px rgba(46, 125, 50, 0.12)' : 'none',
                 }}
               >
-                {item.productCount} Ürün
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        borderRadius: theme.radii.md,
+                        backgroundColor: style.bgColor,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '20px',
+                      }}
+                    >
+                      {style.icon}
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '15px', fontWeight: 700, color: theme.colors.espresso, margin: 0 }}>
+                        {item.name}
+                      </h3>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: style.badgeColor, marginTop: '2px' }}>
+                        {item.minTemperature}°C ile {item.maxTemperature}°C
+                      </div>
+                    </div>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '3px 8px',
+                      borderRadius: theme.radii.xs,
+                      backgroundColor: style.bgColor,
+                      color: style.badgeColor,
+                      border: `1px solid ${style.borderColor}`,
+                    }}
+                  >
+                    {item.productCount} Ürün
+                  </span>
+                </div>
+
+                <p style={{ fontSize: '12.5px', color: theme.colors.taupe, lineHeight: 1.45, margin: 0 }}>
+                  {item.description || 'Bu saklama koşulu için özel açıklama girilmedi.'}
+                </p>
+
+                <div
+                  style={{
+                    borderTop: `1px solid ${theme.colors.borderSubtle}`,
+                    paddingTop: '10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px',
+                    fontSize: '12px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: theme.colors.stoneMuted }}>Varsayılan Depo Alanı:</span>
+                    <span style={{ color: theme.colors.espresso, fontWeight: 600 }}>{item.defaultShelfZone}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: theme.colors.stoneMuted }}>Bağıl Nem Oranı:</span>
+                    <span style={{ color: theme.colors.espresso, fontWeight: 600 }}>
+                      {item.maxHumidity ? `%${item.maxHumidity} Nem` : 'Nem Sınırı Yok'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: theme.colors.stoneMuted }}>Sevkiyat / Lojistik:</span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: item.requiresColdChain ? theme.colors.statusDanger : theme.colors.primary,
+                      }}
+                    >
+                      {item.requiresColdChain ? '❄️ Soğuk Zincir Zorunlu' : 'Standart Sevkiyat'}
+                    </span>
+                  </div>
+                </div>
+
+                {item.sampleProducts && item.sampleProducts.length > 0 && (
+                  <div style={{ borderTop: `1px solid ${theme.colors.borderSubtle}`, paddingTop: '10px' }}>
+                    <div style={{ fontSize: '10.5px', fontWeight: 700, color: theme.colors.taupe, textTransform: 'uppercase', marginBottom: '5px' }}>
+                      Kayıtlı Örnek Ürünler
+                    </div>
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
+                      {item.sampleProducts.slice(0, 3).map((ex, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 7px',
+                            borderRadius: theme.radii.xs,
+                            backgroundColor: theme.colors.bgSurface,
+                            color: theme.colors.espresso,
+                            border: `1px solid ${theme.colors.border}`,
+                          }}
+                        >
+                          {ex}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Product Storage & Shelf Assignments Section */}
+      <div
+        style={{
+          backgroundColor: theme.colors.bgCard,
+          borderRadius: theme.radii.md,
+          border: `1px solid ${theme.colors.border}`,
+          padding: '20px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ fontSize: '16px', fontWeight: 700, color: theme.colors.espresso, margin: 0 }}>
+              Ürün Saklama ve Depo Raf Koordinatları
+            </h2>
+            <p style={{ fontSize: '12.5px', color: theme.colors.taupe, margin: '2px 0 0 0' }}>
+              Depodaki her ürünün muhafaza sıcaklık kuralı, lojistik hassasiyeti ve kesin raf/bölme konumu.
+            </p>
+          </div>
+
+          <span style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.taupe }}>
+            Toplam: {filteredProducts.length} Ürün Listeleniyor
+          </span>
+        </div>
+
+        {/* Filter Bar */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
+          <div style={{ flex: '1 1 240px', position: 'relative' }}>
+            <input
+              type="text"
+              placeholder="Ürün adı, SKU veya raf ara..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                fontSize: '13px',
+                color: theme.colors.espresso,
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <select
+              value={filterCondition}
+              onChange={(e) => setFilterCondition(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                fontSize: '13px',
+                color: theme.colors.espresso,
+                outline: 'none',
+              }}
+            >
+              <option value="all">Tüm Saklama Koşulları</option>
+              {conditions.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={coldChainFilter}
+              onChange={(e) => setColdChainFilter(e.target.value)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                fontSize: '13px',
+                color: theme.colors.espresso,
+                outline: 'none',
+              }}
+            >
+              <option value="all">Tüm Sevkiyat Tipleri</option>
+              <option value="cold">❄️ Sadece Soğuk Zincir</option>
+              <option value="standard">Standart Sevkiyat</option>
+            </select>
+
+            {(filterCondition !== 'all' || coldChainFilter !== 'all' || searchTerm) && (
+              <button
+                onClick={() => {
+                  setFilterCondition('all');
+                  setColdChainFilter('all');
+                  setSearchTerm('');
+                }}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: 'transparent',
+                  fontSize: '12px',
+                  color: theme.colors.taupe,
+                  cursor: 'pointer',
+                }}
+              >
+                Filtreleri Temizle
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Products Table */}
+        <div style={{ overflowX: 'auto', border: `1px solid ${theme.colors.border}`, borderRadius: theme.radii.sm }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+            <thead>
+              <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}` }}>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Ürün & SKU</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Kategori</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Stok</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Saklama Koşulu</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Sıcaklık Aralığı</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Depo / Raf Konumu</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600 }}>Lojistik</th>
+                <th style={{ padding: '12px 16px', color: theme.colors.taupe, fontWeight: 600, textAlign: 'right' }}>İşlemler</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} style={{ padding: '32px', textAlign: 'center', color: theme.colors.taupe }}>
+                    Kriterlere uygun ürün bulunamadı.
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map((p) => {
+                  const style = getConditionStyle(p.storageConditionName || '');
+                  return (
+                    <tr
+                      key={p.id}
+                      style={{
+                        borderBottom: `1px solid ${theme.colors.borderSubtle}`,
+                        transition: 'background-color 0.1s',
+                      }}
+                    >
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ fontWeight: 600, color: theme.colors.espresso }}>{p.name}</div>
+                        <div style={{ fontSize: '11px', color: theme.colors.taupe, marginTop: '2px' }}>
+                          SKU: {p.sku || '-'}
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        <span
+                          style={{
+                            fontSize: '11.5px',
+                            padding: '2px 8px',
+                            borderRadius: theme.radii.xs,
+                            backgroundColor: theme.colors.bgSurface,
+                            border: `1px solid ${theme.colors.border}`,
+                            color: theme.colors.espresso,
+                          }}
+                        >
+                          {p.category}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        <span style={{ fontWeight: 600, color: theme.colors.espresso }}>{p.stockQuantity}</span> adet
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        {p.storageConditionName ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '14px' }}>{style.icon}</span>
+                            <span style={{ fontWeight: 600, color: theme.colors.espresso }}>
+                              {p.storageConditionName}
+                            </span>
+                          </div>
+                        ) : (
+                          <span style={{ color: theme.colors.taupe, fontStyle: 'italic' }}>Tanımlanmadı</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        {p.minTemperature !== null && p.maxTemperature !== null ? (
+                          <span style={{ fontWeight: 600, color: style.badgeColor }}>
+                            {p.minTemperature}°C ~ {p.maxTemperature}°C
+                          </span>
+                        ) : (
+                          <span style={{ color: theme.colors.stoneMuted }}>-</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        {p.shelfLocation ? (
+                          <span
+                            style={{
+                              fontFamily: 'monospace',
+                              fontWeight: 600,
+                              fontSize: '12px',
+                              padding: '3px 8px',
+                              borderRadius: theme.radii.xs,
+                              backgroundColor: '#F7F6F2',
+                              border: `1px solid ${theme.colors.border}`,
+                              color: theme.colors.espresso,
+                            }}
+                          >
+                            📍 {p.shelfLocation}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11.5px', color: '#D97706', fontWeight: 500 }}>
+                            ⚠️ Raf Belirtilmedi
+                          </span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '12px 16px' }}>
+                        {p.requiresColdChain ? (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: theme.radii.xs,
+                              backgroundColor: theme.colors.statusDangerBg,
+                              color: theme.colors.statusDanger,
+                              border: `1px solid ${theme.colors.statusDanger}`,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            ❄️ Soğuk Zincir
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: theme.radii.xs,
+                              backgroundColor: theme.colors.bgSurface,
+                              color: theme.colors.taupe,
+                              border: `1px solid ${theme.colors.border}`,
+                            }}
+                          >
+                            Standart
+                          </span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <button
+                          onClick={() => openEditModal(p)}
+                          style={{
+                            padding: '6px 12px',
+                            backgroundColor: theme.colors.bgSurface,
+                            border: `1px solid ${theme.colors.border}`,
+                            borderRadius: theme.radii.sm,
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: theme.colors.espresso,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <span>✏️</span> Düzenle
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Edit Product Storage Modal */}
+      <Modal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Ürün Saklama Koşulu & Raf Konumu Düzenle"
+      >
+        {selectedProduct && (
+          <form onSubmit={handleSaveProductStorage} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+              style={{
+                backgroundColor: theme.colors.bgSurface,
+                borderRadius: theme.radii.sm,
+                padding: '12px',
+                border: `1px solid ${theme.colors.border}`,
+              }}
+            >
+              <div style={{ fontWeight: 700, fontSize: '14px', color: theme.colors.espresso }}>
+                {selectedProduct.name}
+              </div>
+              <div style={{ fontSize: '12px', color: theme.colors.taupe, marginTop: '4px' }}>
+                Kategori: {selectedProduct.category} | SKU: {selectedProduct.sku} | Stok: {selectedProduct.stockQuantity} adet
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+                Saklama Koşulu Şablonu
+              </label>
+              <select
+                value={editConditionId}
+                onChange={(e) => {
+                  const newId = e.target.value;
+                  setEditConditionId(newId);
+                  const matched = conditions.find((c) => c.id === newId);
+                  if (matched && (!editShelfLocation || editShelfLocation.trim() === '')) {
+                    setEditShelfLocation(`${matched.defaultShelfZone} / `);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  color: theme.colors.espresso,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <option value="">-- Saklama Koşulu Seçiniz --</option>
+                {conditions.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.minTemperature}°C ~ {c.maxTemperature}°C) {c.requiresColdChain ? '[Soğuk Zincir]' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {selectedConditionObj && (
+              <div
+                style={{
+                  backgroundColor: theme.colors.primarySubtle,
+                  borderRadius: theme.radii.sm,
+                  padding: '10px 12px',
+                  fontSize: '12px',
+                  color: theme.colors.primary,
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <span>
+                  Varsayılan Depo Alanı: <strong>{selectedConditionObj.defaultShelfZone}</strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEditShelfLocation(`${selectedConditionObj.defaultShelfZone} / Bölme-1`)}
+                  style={{
+                    padding: '3px 8px',
+                    fontSize: '11px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #D5E5D4',
+                    borderRadius: theme.radii.xs,
+                    color: theme.colors.primary,
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                  }}
+                >
+                  Otomatik Doldur
+                </button>
+              </div>
+            )}
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+                Depo / Raf Konumu (Aisle / Shelf / Bin)
+              </label>
+              <input
+                type="text"
+                placeholder="Örn: Kiler-A / Sıra-3 / Bölme-1 veya Soğuk Oda-1 / Kasa-04"
+                value={editShelfLocation}
+                onChange={(e) => setEditShelfLocation(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  color: theme.colors.espresso,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <span style={{ fontSize: '11px', color: theme.colors.taupe, marginTop: '4px', display: 'block' }}>
+                Depo personeli ve lojistik sipariş toplama fişlerinde görünecek lokasyon kodu.
               </span>
             </div>
 
-            <p style={{ fontSize: '13px', color: theme.colors.taupe, lineHeight: 1.5, margin: 0 }}>
-              {item.description}
-            </p>
-
-            <div style={{ borderTop: `1px solid ${theme.colors.borderSubtle}`, paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '12.5px' }}>
-              <div>
-                <span style={{ color: theme.colors.stoneMuted, fontWeight: 500 }}>Ambalaj Tipi: </span>
-                <span style={{ color: theme.colors.espresso, fontWeight: 600 }}>{item.packaging}</span>
-              </div>
-              <div>
-                <span style={{ color: theme.colors.stoneMuted, fontWeight: 500 }}>Lojistik / Sevkiyat: </span>
-                <span style={{ color: item.badgeColor, fontWeight: 600 }}>{item.shippingMode}</span>
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                style={{
+                  padding: '9px 16px',
+                  backgroundColor: 'transparent',
+                  border: `1px solid ${theme.colors.border}`,
+                  borderRadius: theme.radii.sm,
+                  fontSize: '13px',
+                  color: theme.colors.espresso,
+                  cursor: 'pointer',
+                }}
+              >
+                Vazgeç
+              </button>
+              <button
+                type="submit"
+                disabled={isSaving}
+                style={{
+                  padding: '9px 18px',
+                  backgroundColor: theme.colors.primary,
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: theme.radii.sm,
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: isSaving ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isSaving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}
+              </button>
             </div>
+          </form>
+        )}
+      </Modal>
 
-            <div style={{ borderTop: `1px solid ${theme.colors.borderSubtle}`, paddingTop: '12px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.taupe, textTransform: 'uppercase', marginBottom: '6px' }}>
-                Örnek Ürünler
-              </div>
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                {item.examples.map((ex, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      fontSize: '11.5px',
-                      padding: '3px 8px',
-                      borderRadius: theme.radii.xs,
-                      backgroundColor: theme.colors.bgSurface,
-                      color: theme.colors.espresso,
-                      border: `1px solid ${theme.colors.border}`,
-                    }}
-                  >
-                    {ex}
-                  </span>
-                ))}
-              </div>
+      {/* Create Condition Modal */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Yeni Saklama Koşulu Şablonu Tanımla"
+      >
+        <form onSubmit={handleCreateCondition} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
+              Koşul Adı *
+            </label>
+            <input
+              type="text"
+              placeholder="Örn: Kontrollü Atmosfer Deposu"
+              value={newCondName}
+              onChange={(e) => setNewCondName(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
+                Min Sıcaklık (°C) *
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={newMinTemp}
+                onChange={(e) => setNewMinTemp(Number(e.target.value))}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
+                Max Sıcaklık (°C) *
+              </label>
+              <input
+                type="number"
+                step="0.1"
+                value={newMaxTemp}
+                onChange={(e) => setNewMaxTemp(Number(e.target.value))}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
             </div>
           </div>
-        ))}
-      </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
+                Max Bağıl Nem (%)
+              </label>
+              <input
+                type="number"
+                placeholder="Örn: 75"
+                value={newMaxHumidity}
+                onChange={(e) => setNewMaxHumidity(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
+                Varsayılan Depo Bölgesi *
+              </label>
+              <input
+                type="text"
+                placeholder="Örn: Atmosfer-1"
+                value={newDefaultShelfZone}
+                onChange={(e) => setNewDefaultShelfZone(e.target.value)}
+                required
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0' }}>
+            <input
+              type="checkbox"
+              id="coldChainCheck"
+              checked={newColdChain}
+              onChange={(e) => setNewColdChain(e.target.checked)}
+              style={{ width: '16px', height: '16px' }}
+            />
+            <label htmlFor="coldChainCheck" style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.espresso, cursor: 'pointer' }}>
+              Soğuk Zincir Taşımacılığı Zorunlu (Termobox + Frigorifik Lojistik)
+            </label>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
+              Açıklama / Muhafaza Talimatı
+            </label>
+            <textarea
+              rows={2}
+              placeholder="Örn: Oksijen oranı %2 altında tutulan özel depolama ünitesi."
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                fontSize: '13px',
+                outline: 'none',
+                boxSizing: 'border-box',
+                resize: 'vertical',
+              }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+            <button
+              type="button"
+              onClick={() => setIsCreateModalOpen(false)}
+              style={{
+                padding: '8px 14px',
+                backgroundColor: 'transparent',
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: theme.radii.sm,
+                fontSize: '13px',
+                color: theme.colors.espresso,
+                cursor: 'pointer',
+              }}
+            >
+              Vazgeç
+            </button>
+            <button
+              type="submit"
+              disabled={isCreatingCondition}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: theme.colors.primary,
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: theme.radii.sm,
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: isCreatingCondition ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {isCreatingCondition ? 'Oluşturuluyor...' : 'Şablonu Oluştur'}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -73,6 +73,9 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.ShelfLife)
             .HasMaxLength(200);
 
+        builder.Property(p => p.ShelfLocation)
+            .HasMaxLength(100);
+
         builder.Property(p => p.IsBestSeller)
             .HasDefaultValue(false);
 
@@ -93,6 +96,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         // Performans ve filtreleme indexleri
         builder.HasIndex(p => p.CategoryId);
+        builder.HasIndex(p => p.StorageConditionId);
         builder.HasIndex(p => p.IsActive);
         builder.HasIndex(p => new { p.IsActive, p.IsBestSeller });
         builder.HasIndex(p => new { p.IsActive, p.IsFeatured });

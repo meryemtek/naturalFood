@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IProductService, ProductService>();
         services.AddScoped<IInventoryService, InventoryService>();
         services.AddScoped<ILotService, LotService>();
+        services.AddScoped<IStorageService, StorageService>();
 
         // Validatörler
         services.AddValidatorsFromAssemblyContaining<CreateAdminUserRequestValidator>();

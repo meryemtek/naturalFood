@@ -409,6 +409,79 @@ internal static class AdminEndpointsHandler
         .Produces<ProductLotDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
+        // =========================================================================
+        // 7. Saklama Koşulları ve Muhafaza Tanımları (Storage - Vertical Slice 5)
+        // =========================================================================
+        var storage = group.MapGroup("/storage-conditions").WithTags("Admin Storage Conditions");
+
+        // GET /api/admin/storage-conditions
+        storage.MapGet("/", async (
+            IStorageService storageService,
+            CancellationToken ct) =>
+        {
+            var conditions = await storageService.GetStorageConditionsAsync(ct);
+            return Results.Ok(conditions);
+        })
+        .WithName("GetAdminStorageConditions")
+        .Produces<IReadOnlyList<StorageConditionDto>>(StatusCodes.Status200OK);
+
+        // POST /api/admin/storage-conditions
+        storage.MapPost("/", async (
+            CreateStorageConditionRequest req,
+            IStorageService storageService,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Name))
+            {
+                return Results.BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Geçersiz İstek",
+                    Detail = "Saklama koşulu adı zorunludur."
+                });
+            }
+
+            var created = await storageService.CreateStorageConditionAsync(req, ct);
+            return Results.Created($"/api/admin/storage-conditions/{created.Id}", created);
+        })
+        .WithName("CreateAdminStorageCondition")
+        .Produces<StorageConditionDto>(StatusCodes.Status201Created)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+
+        // GET /api/admin/storage-conditions/products
+        storage.MapGet("/products", async (
+            [FromQuery] Guid? conditionId,
+            [FromQuery] string? search,
+            IStorageService storageService,
+            CancellationToken ct) =>
+        {
+            var products = await storageService.GetProductsStorageAsync(conditionId, search, ct);
+            return Results.Ok(products);
+        })
+        .WithName("GetAdminProductsStorage")
+        .Produces<IReadOnlyList<ProductStorageItemDto>>(StatusCodes.Status200OK);
+
+        // PATCH /api/admin/products/{id}/storage
+        products.MapPatch("/{id:guid}/storage", async (
+            Guid id,
+            UpdateProductStorageRequest req,
+            IStorageService storageService,
+            CancellationToken ct) =>
+        {
+            var updated = await storageService.UpdateProductStorageAsync(id, req, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Saklama koşulu güncellenecek '{id}' Id numaralı ürün bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminProductStorage")
+        .Produces<ProductStorageItemDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         return group;
     }
 }

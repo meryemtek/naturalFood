@@ -33,6 +33,9 @@ public class Product
     public ICollection<ProductVariant> Variants { get; private set; } = new List<ProductVariant>();
     public ICollection<ProductAttribute> Attributes { get; private set; } = new List<ProductAttribute>();
     public ICollection<ProductLot> Lots { get; private set; } = new List<ProductLot>();
+    public Guid? StorageConditionId { get; private set; }
+    public string? ShelfLocation { get; private set; }
+    public StorageCondition? StorageCondition { get; private set; }
 
     private Product() { }
 
@@ -166,6 +169,13 @@ public class Product
             throw new ArgumentOutOfRangeException(nameof(quantity), "Stok negatif olamaz.");
 
         StockQuantity = quantity;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void UpdateStorage(Guid? storageConditionId, string? shelfLocation)
+    {
+        StorageConditionId = storageConditionId;
+        ShelfLocation = shelfLocation;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 }
