@@ -124,7 +124,118 @@ internal static class AdminEndpointsHandler
         .WithTags("Admin Audit")
         .Produces<PaginatedList<AuditLogDto>>(StatusCodes.Status200OK);
 
+        // =========================================================================
+        // 4. Doğal Gıda Ürün Yönetimi (Products - Vertical Slice 1)
+        // =========================================================================
+        var products = group.MapGroup("/products").WithTags("Admin Products");
+
+        // GET /api/admin/products (Sayfalama, arama ve kategori/birim filtreli)
+        products.MapGet("/", async (
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
+            [FromQuery] string? search,
+            [FromQuery] string? category,
+            [FromQuery] string? unit,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var p = page ?? 1;
+            var ps = pageSize ?? 20;
+            var paginatedProducts = await productService.GetProductsAsync(p, ps, search, category, unit, ct);
+            return Results.Ok(paginatedProducts);
+        })
+        .WithName("GetAdminProducts")
+        .Produces<PaginatedList<ProductDto>>(StatusCodes.Status200OK);
+
+        // GET /api/admin/products/{id}
+        products.MapGet("/{id:guid}", async (
+            Guid id,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var product = await productService.GetProductByIdAsync(id, ct);
+            return product is not null
+                ? Results.Ok(product)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Id değeri '{id}' olan ürün bulunamadı."
+                });
+        })
+        .WithName("GetAdminProductById")
+        .Produces<ProductDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // POST /api/admin/products
+        products.MapPost("/", async (
+            CreateProductRequest req,
+            IValidator<CreateProductRequest> validator,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var validationResult = await validator.ValidateAsync(req, ct);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var createdProduct = await productService.CreateProductAsync(req, ct);
+            return Results.Created($"/api/admin/products/{createdProduct.Id}", createdProduct);
+        })
+        .WithName("CreateAdminProduct")
+        .Produces<ProductDto>(StatusCodes.Status201Created)
+        .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest);
+
+        // PUT /api/admin/products/{id}
+        products.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateProductRequest req,
+            IValidator<UpdateProductRequest> validator,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var validationResult = await validator.ValidateAsync(req, ct);
+            if (!validationResult.IsValid)
+            {
+                return Results.ValidationProblem(validationResult.ToDictionary());
+            }
+
+            var updatedProduct = await productService.UpdateProductAsync(id, req, ct);
+            return updatedProduct is not null
+                ? Results.Ok(updatedProduct)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Güncellenecek '{id}' Id numaralı ürün bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminProduct")
+        .Produces<ProductDto>(StatusCodes.Status200OK)
+        .Produces<HttpValidationProblemDetails>(StatusCodes.Status400BadRequest)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // DELETE /api/admin/products/{id}
+        products.MapDelete("/{id:guid}", async (
+            Guid id,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var success = await productService.DeleteProductAsync(id, ct);
+            return success
+                ? Results.Ok(new { Success = true, Message = "Ürün başarıyla silindi." })
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Silinecek '{id}' Id numaralı ürün bulunamadı."
+                });
+        })
+        .WithName("DeleteAdminProduct")
+        .Produces(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         return group;
     }
 }
-

@@ -33,11 +33,13 @@ public static class DependencyInjection
         // Güvenlik & Hash
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-        // Admin Servisleri
+        // Admin & Ürün Servisleri
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IProductService, ProductService>();
 
         // Validatörler
         services.AddValidatorsFromAssemblyContaining<CreateAdminUserRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
         return services;
     }
@@ -50,4 +52,3 @@ public static class DependencyInjection
         await context.Database.MigrateAsync();
     }
 }
-

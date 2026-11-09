@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../api/adminApi';
+import { theme } from '../../theme/tokens';
 
 export const Header: React.FC = () => {
   const [isBackendHealthy, setIsBackendHealthy] = useState<boolean | null>(null);
@@ -15,8 +16,8 @@ export const Header: React.FC = () => {
     <header
       style={{
         height: '64px',
-        backgroundColor: '#ffffff',
-        borderBottom: '1px solid #e2e8f0',
+        backgroundColor: theme.colors.bgSurface,
+        borderBottom: `1px solid ${theme.colors.border}`,
         padding: '0 28px',
         display: 'flex',
         alignItems: 'center',
@@ -27,54 +28,54 @@ export const Header: React.FC = () => {
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#0f172a' }}>
-          E-Ticaret Yönetim Portalı
+        <h2 style={{ fontSize: '15px', fontWeight: 600, color: theme.colors.espresso, letterSpacing: '-0.2px' }}>
+          Natural Food Operasyon & Yönetim Portalı
         </h2>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         {/* API Health Pill */}
         <div
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '5px 12px',
-            borderRadius: '9999px',
+            padding: '4px 12px',
+            borderRadius: theme.radii.full,
             fontSize: '12px',
             fontWeight: 500,
             backgroundColor:
               isBackendHealthy === true
-                ? '#ecfdf5'
+                ? theme.colors.statusSuccessBg
                 : isBackendHealthy === false
-                ? '#fef2f2'
-                : '#f8fafc',
+                ? theme.colors.statusDangerBg
+                : theme.colors.bgCanvas,
             color:
               isBackendHealthy === true
-                ? '#059669'
+                ? theme.colors.statusSuccess
                 : isBackendHealthy === false
-                ? '#dc2626'
-                : '#64748b',
+                ? theme.colors.statusDanger
+                : theme.colors.taupe,
             border: `1px solid ${
               isBackendHealthy === true
-                ? '#a7f3d0'
+                ? '#D5E5D4'
                 : isBackendHealthy === false
-                ? '#fecaca'
-                : '#e2e8f0'
+                ? '#F5D3CE'
+                : theme.colors.border
             }`,
           }}
         >
           <span
             style={{
-              width: '7px',
-              height: '7px',
+              width: '6px',
+              height: '6px',
               borderRadius: '50%',
               backgroundColor:
                 isBackendHealthy === true
-                  ? '#10b981'
+                  ? theme.colors.statusSuccess
                   : isBackendHealthy === false
-                  ? '#ef4444'
-                  : '#94a3b8',
+                  ? theme.colors.statusDanger
+                  : theme.colors.stoneMuted,
             }}
           />
           {isBackendHealthy === true
@@ -91,22 +92,22 @@ export const Header: React.FC = () => {
             alignItems: 'center',
             gap: '10px',
             padding: '4px 10px',
-            borderRadius: '8px',
-            backgroundColor: '#f8fafc',
-            border: '1px solid #e2e8f0',
+            borderRadius: theme.radii.md,
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
           }}
         >
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: theme.colors.espresso }}>
             Super Administrator
           </span>
           <span
             style={{
               fontSize: '11px',
               fontWeight: 600,
-              padding: '2px 6px',
-              borderRadius: '4px',
-              backgroundColor: '#eff6ff',
-              color: '#2563eb',
+              padding: '2px 7px',
+              borderRadius: theme.radii.xs,
+              backgroundColor: theme.colors.primarySubtle,
+              color: theme.colors.primary,
             }}
           >
             Root
@@ -116,4 +117,3 @@ export const Header: React.FC = () => {
     </header>
   );
 };
-

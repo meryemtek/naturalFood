@@ -5,7 +5,7 @@ import { Header } from './Header';
 
 export const MainLayout: React.FC = () => {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F7F6F2' }}>
       <Sidebar />
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
         <Header />
@@ -16,4 +16,3 @@ export const MainLayout: React.FC = () => {
     </div>
   );
 };
-

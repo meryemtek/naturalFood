@@ -51,7 +51,8 @@ app.MapGet("/", () => Results.Ok(new
         "/openapi/v1.json",
         "/api/admin/health",
         "/api/admin/users",
-        "/api/admin/audit-logs"
+        "/api/admin/audit-logs",
+        "/api/admin/products"
     }
 }));
 

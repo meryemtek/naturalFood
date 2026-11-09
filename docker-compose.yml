@@ -1,3 +1,5 @@
+name: admin_paneli
+
 services:
   postgres:
     image: postgres:18-alpine
