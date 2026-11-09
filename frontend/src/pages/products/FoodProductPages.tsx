@@ -6,6 +6,9 @@ import {
   ProductDto,
   CreateProductData,
   UpdateProductData,
+  ProductDetailsDto,
+  NutritionalValuesDto,
+  UpdateProductDetailsData,
 } from '../../services/productService';
 
 // ==========================================
@@ -1209,229 +1212,979 @@ export const ProductDefinitionPage: React.FC = () => {
 
 // ==========================================
 // 2. İÇERİK VE ALERJEN BİLGİLERİ SAYFASI
+// Backend (.NET 10 Minimal API & PostgreSQL) Bağlantılı
 // ==========================================
 export const AllergensNutritionPage: React.FC = () => {
-  const [selectedProduct, setSelectedProduct] = useState<number>(1);
+  // Products from API
+  const [products, setProducts] = useState<ProductDto[]>([]);
+  const [selectedProductId, setSelectedProductId] = useState<string>('');
+  const [productSearch, setProductSearch] = useState<string>('');
+  const [isLoadingProducts, setIsLoadingProducts] = useState<boolean>(true);
 
-  const productDetails = [
-    {
-      id: 1,
-      name: 'Şirden Mayalı Trakya Eski Kaşar Peyniri (350g)',
-      category: 'Süt Ürünleri',
-      ingredients: 'Pastörize inek ve koyun sütü, kaya tuzu, doğal şirden mayası, peynir kültürü. Koruyucu ve katkı maddesi içermez.',
-      allergens: ['Laktoz (Süt ve Süt Ürünleri)'],
-      dietaryFlags: ['Glutensiz', 'Doğal Probiyotik', 'GDO İçermez'],
-      nutritionPer100g: {
-        energyKcal: '382 kcal',
-        energyKj: '1585 kJ',
-        protein: '27.4 g',
-        fat: '30.1 g',
-        saturatedFat: '19.8 g',
-        carbs: '1.2 g',
-        sugar: '0.8 g',
-        salt: '1.9 g',
-        calcium: '780 mg (%97 BRD)',
-      },
-    },
-    {
-      id: 2,
-      name: 'Taş Değirmen Organik Siyez Unu (1kg)',
-      category: 'Tahıl Grubu',
-      ingredients: '%100 Taş değirmende öğütülmüş ata tohumu organik siyez buğdayı kepeği ve ruşeymiyle birlikte. Katkısız.',
-      allergens: ['Gluten (Siyez Buğdayı)'],
-      dietaryFlags: ['Organik Sertifikalı', 'Taş Değirmen', 'Düşük Glisemik İndeks'],
-      nutritionPer100g: {
-        energyKcal: '340 kcal',
-        energyKj: '1438 kJ',
-        protein: '14.8 g',
-        fat: '2.5 g',
-        saturatedFat: '0.4 g',
-        carbs: '65.2 g',
-        sugar: '1.4 g',
-        salt: '0.02 g',
-        fiber: '10.5 g',
-      },
-    },
-    {
-      id: 3,
-      name: 'Ham Çiğ Karışık Kuru Yemiş (250g)',
-      category: 'Atıştırmalık',
-      ingredients: 'Çiğ badem içi, çiğ kaju fıstığı, çiğ ceviz içi, kavrulmamış fındık. Tuzsuz ve yağ eklenmemiştir.',
-      allergens: ['Sert Kabuklu Yemişler (Fındık, Badem, Ceviz, Kaju)', 'Eser miktarda Yer Fıstığı ve Susam içerebilir.'],
-      dietaryFlags: ['Vegan', 'Glutensiz', 'Çiğ (Raw)', 'Tuzsuz'],
-      nutritionPer100g: {
-        energyKcal: '608 kcal',
-        energyKj: '2520 kJ',
-        protein: '18.2 g',
-        fat: '54.0 g',
-        saturatedFat: '5.8 g',
-        carbs: '13.5 g',
-        sugar: '4.2 g',
-        salt: '0.01 g',
-        fiber: '8.4 g',
-      },
-    },
+  // Selected Product Details from API
+  const [details, setDetails] = useState<ProductDetailsDto | null>(null);
+  const [isLoadingDetails, setIsLoadingDetails] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Form Edit State
+  const [formIngredients, setFormIngredients] = useState<string>('');
+  const [formAllergens, setFormAllergens] = useState<string[]>([]);
+  const [customAllergenInput, setCustomAllergenInput] = useState<string>('');
+  const [formCertifications, setFormCertifications] = useState<string[]>([]);
+  const [customCertInput, setCustomCertInput] = useState<string>('');
+  const [formNutrition, setFormNutrition] = useState<NutritionalValuesDto>({
+    energyKcal: 0,
+    fat: 0,
+    saturatedFat: 0,
+    carbohydrates: 0,
+    sugar: 0,
+    protein: 0,
+    salt: 0,
+  });
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr));
+    }, 4000);
+  };
+
+  // 1. Load Products on Mount
+  const loadProducts = useCallback(async () => {
+    try {
+      setIsLoadingProducts(true);
+      setErrorMessage(null);
+      const res = await productService.getProducts({ pageSize: 100 });
+      setProducts(res.items);
+      if (res.items.length > 0 && !selectedProductId) {
+        setSelectedProductId(res.items[0].id);
+      }
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Ürün listesi yüklenemedi.');
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  }, [selectedProductId]);
+
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  // 2. Load Selected Product Details
+  const loadProductDetails = useCallback(async (id: string) => {
+    try {
+      setIsLoadingDetails(true);
+      setErrorMessage(null);
+      const data = await productService.getProductDetails(id);
+      setDetails(data);
+      // Initialize edit form
+      setFormIngredients(data.ingredients || '');
+      setFormAllergens(data.allergens || []);
+      setFormCertifications(data.certifications || []);
+      setFormNutrition(
+        data.nutritionalValues || {
+          energyKcal: 0,
+          fat: 0,
+          saturatedFat: 0,
+          carbohydrates: 0,
+          sugar: 0,
+          protein: 0,
+          salt: 0,
+        }
+      );
+      setIsEditing(false);
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Ürün detayları yüklenemedi.');
+    } finally {
+      setIsLoadingDetails(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedProductId) {
+      loadProductDetails(selectedProductId);
+    }
+  }, [selectedProductId, loadProductDetails]);
+
+  // Handle Save
+  const handleSave = async () => {
+    if (!selectedProductId) return;
+    try {
+      setIsSaving(true);
+      setErrorMessage(null);
+
+      const payload: UpdateProductDetailsData = {
+        ingredients: formIngredients.trim() || null,
+        allergens: formAllergens,
+        certifications: formCertifications,
+        nutritionalValues: formNutrition,
+      };
+
+      const updated = await productService.updateProductDetails(selectedProductId, payload);
+      setDetails(updated);
+      setIsEditing(false);
+      showToast('İçerik ve besin değerleri PostgreSQL veritabanına başarıyla kaydedildi.');
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Güncelleme sırasında bir hata oluştu.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Quick Allergen & Certification Tags
+  const quickAllergens = [
+    'Gluten',
+    'Laktoz (Süt ve Süt Ürünleri)',
+    'Sert Kabuklu Yemişler',
+    'Soya',
+    'Yumurta',
+    'Balık',
+    'Susam',
+    'Kereviz',
+    'Hardal',
+    'Yer Fıstığı',
   ];
 
-  const current = productDetails.find((p) => p.id === selectedProduct) || productDetails[0];
+  const quickCertifications = [
+    'Organik Sertifikalı',
+    'Vegan',
+    'Vejetaryen',
+    'Helal',
+    'Glutensiz',
+    'Katkısız',
+    'Doğal Probiyotik',
+    'GDO İçermez',
+    'Soğuk Sıkım',
+    'Geleneksel Taş Baskı',
+  ];
+
+  const toggleAllergen = (item: string) => {
+    setFormAllergens((prev) =>
+      prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+    );
+  };
+
+  const addCustomAllergen = () => {
+    const val = customAllergenInput.trim();
+    if (val && !formAllergens.includes(val)) {
+      setFormAllergens((prev) => [...prev, val]);
+      setCustomAllergenInput('');
+    }
+  };
+
+  const toggleCert = (item: string) => {
+    setFormCertifications((prev) =>
+      prev.includes(item) ? prev.filter((x) => x !== item) : [...prev, item]
+    );
+  };
+
+  const addCustomCert = () => {
+    const val = customCertInput.trim();
+    if (val && !formCertifications.includes(val)) {
+      setFormCertifications((prev) => [...prev, val]);
+      setCustomCertInput('');
+    }
+  };
+
+  // Filtered Products for Selector
+  const filteredProducts = products.filter(
+    (p) =>
+      p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+      (p.sku && p.sku.toLowerCase().includes(productSearch.toLowerCase()))
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
-      {/* Header */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
-            İçerik ve Alerjen Bilgileri
-          </h1>
-          <span style={{ fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: theme.radii.full, backgroundColor: theme.colors.statusDangerBg, color: theme.colors.statusDanger, border: '1px solid #F5D3CE' }}>
-            Gıda Güvenliği & Etiketleme
-          </span>
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '24px',
+            backgroundColor: theme.colors.espresso,
+            color: '#FFFFFF',
+            padding: '12px 20px',
+            borderRadius: theme.radii.md,
+            boxShadow: '0 4px 16px rgba(45, 36, 30, 0.15)',
+            fontSize: '13.5px',
+            fontWeight: 600,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            border: `1px solid ${theme.colors.primary}`,
+          }}
+        >
+          <span>✓</span>
+          <span>{toastMessage}</span>
         </div>
-        <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
-          İçindekiler listesi, gluten, laktoz, fındık vb. alerjen uyarı etiketleri ve 100g besin değerleri tablosu yönetimi.
-        </p>
-      </div>
+      )}
 
-      {/* Product Selector Pills */}
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-        {productDetails.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setSelectedProduct(p.id)}
-            style={{
-              padding: '9px 18px',
-              borderRadius: theme.radii.md,
-              border: selectedProduct === p.id ? `1px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
-              backgroundColor: selectedProduct === p.id ? theme.colors.primarySubtle : theme.colors.bgCard,
-              color: selectedProduct === p.id ? theme.colors.primary : theme.colors.cedar,
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-            }}
-          >
-            <span>{selectedProduct === p.id ? '●' : '○'}</span>
-            {p.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Main Grid: Details + Nutrition Table Card */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
-        {/* Left Card: Ingredients & Allergens */}
-        <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <span style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-              Seçili Ürün
+      {/* Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: 0, letterSpacing: '-0.3px' }}>
+              İçerik ve Alerjen Bilgileri
+            </h1>
+            <span style={{ fontSize: '12px', fontWeight: 600, padding: '3px 10px', borderRadius: theme.radii.full, backgroundColor: theme.colors.statusDangerBg, color: theme.colors.statusDanger, border: '1px solid #F5D3CE' }}>
+              Gıda Güvenliği & Etiketleme (Vertical Slice 3)
             </span>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: theme.colors.espresso, marginTop: '2px', marginBottom: '8px' }}>
-              {current.name}
-            </h2>
-            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-              {current.dietaryFlags.map((flag, idx) => (
-                <span key={idx} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', borderRadius: theme.radii.xs, backgroundColor: theme.colors.statusSuccessBg, color: theme.colors.statusSuccess, border: '1px solid #D5E5D4' }}>
-                  ✓ {flag}
-                </span>
-              ))}
-            </div>
           </div>
+          <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '6px', marginBottom: 0 }}>
+            PostgreSQL catalog şemasından canlı çekilen içindekiler listesi, alerjen uyarıları, sertifikalar ve 100g besin değerleri tablosu yönetimi.
+          </p>
+        </div>
 
-          <div>
-            <h4 style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '8px', textTransform: 'uppercase' }}>
-              📜 İçindekiler Listesi (Bileşenler)
-            </h4>
-            <div style={{ padding: '14px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.bgSurface, border: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso, lineHeight: 1.6 }}>
-              {current.ingredients}
-            </div>
-          </div>
-
-          <div>
-            <h4 style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.statusDanger, marginBottom: '8px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span>⚠️</span> Alerjen Uyarıları (Yasal Etiket)
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {current.allergens.map((alg, idx) => (
-                <div
-                  key={idx}
+        {/* Global Action Button */}
+        {details && (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            {!isEditing ? (
+              <button
+                onClick={() => setIsEditing(true)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: theme.radii.md,
+                  border: `1px solid ${theme.colors.primary}`,
+                  backgroundColor: theme.colors.primary,
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: theme.shadows.subtle,
+                }}
+              >
+                <span>✏️</span>
+                <span>Bilgileri Düzenle</span>
+              </button>
+            ) : (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    // Reset to details
+                    if (details) {
+                      setFormIngredients(details.ingredients || '');
+                      setFormAllergens(details.allergens || []);
+                      setFormCertifications(details.certifications || []);
+                      setFormNutrition(
+                        details.nutritionalValues || {
+                          energyKcal: 0,
+                          fat: 0,
+                          saturatedFat: 0,
+                          carbohydrates: 0,
+                          sugar: 0,
+                          protein: 0,
+                          salt: 0,
+                        }
+                      );
+                    }
+                  }}
+                  disabled={isSaving}
                   style={{
-                    padding: '10px 14px',
-                    borderRadius: theme.radii.sm,
-                    backgroundColor: theme.colors.statusDangerBg,
-                    border: '1px solid #F5D3CE',
-                    color: theme.colors.statusDanger,
+                    padding: '9px 16px',
+                    borderRadius: theme.radii.md,
+                    border: `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.bgCard,
+                    color: theme.colors.taupe,
                     fontSize: '13px',
                     fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
+                    cursor: 'pointer',
                   }}
                 >
-                  <span style={{ fontSize: '14px' }}>⛔</span>
-                  <span>{alg}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Card: Official Nutrition Facts Table */}
-        <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '24px' }}>
-          <div style={{ border: `2px solid ${theme.colors.espresso}`, padding: '16px', borderRadius: theme.radii.sm }}>
-            <h3 style={{ fontSize: '20px', fontWeight: 900, color: theme.colors.espresso, borderBottom: `5px solid ${theme.colors.espresso}`, paddingBottom: '4px', margin: 0 }}>
-              Besin Öğeleri Değerleri
-            </h3>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.taupe, padding: '6px 0', borderBottom: `1px solid ${theme.colors.espresso}` }}>
-              Porsiyon / Referans Değer: <b>100 g için</b>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `3px solid ${theme.colors.espresso}`, fontSize: '15px', fontWeight: 800, color: theme.colors.espresso }}>
-              <span>Enerji Değeri</span>
-              <span>{current.nutritionPer100g.energyKcal} / {current.nutritionPer100g.energyKj}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
-              <span><b>Toplam Yağ</b></span>
-              <b>{current.nutritionPer100g.fat}</b>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0 5px 16px', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13px', color: theme.colors.taupe }}>
-              <span>- Doymuş Yağ</span>
-              <span>{current.nutritionPer100g.saturatedFat}</span>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
-              <span><b>Karbonhidrat</b></span>
-              <b>{current.nutritionPer100g.carbs}</b>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0 5px 16px', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13px', color: theme.colors.taupe }}>
-              <span>- Şekerler</span>
-              <span>{current.nutritionPer100g.sugar}</span>
-            </div>
-
-            {current.nutritionPer100g.fiber && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
-                <span><b>Lif</b></span>
-                <b>{current.nutritionPer100g.fiber}</b>
+                  Vazgeç
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: theme.radii.md,
+                    border: `1px solid ${theme.colors.statusSuccess}`,
+                    backgroundColor: theme.colors.statusSuccess,
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: isSaving ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    opacity: isSaving ? 0.7 : 1,
+                  }}
+                >
+                  <span>💾</span>
+                  <span>{isSaving ? 'Kaydediliyor...' : 'Değişiklikleri Kaydet'}</span>
+                </button>
               </div>
             )}
+          </div>
+        )}
+      </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
-              <span><b>Protein</b></span>
-              <b>{current.nutritionPer100g.protein}</b>
+      {/* Error Message */}
+      {errorMessage && (
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: theme.colors.statusDangerBg,
+            border: '1px solid #F5D3CE',
+            borderRadius: theme.radii.md,
+            color: theme.colors.statusDanger,
+            fontSize: '13px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <span>⚠️ {errorMessage}</span>
+          <button
+            onClick={() => setErrorMessage(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: theme.colors.statusDanger, fontWeight: 700 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* Product Selector Card */}
+      <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '16px 20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso }}>
+            Ürün Seçimi ({products.length} Ürün Mevcut):
+          </span>
+          <input
+            type="text"
+            placeholder="Ürün adı veya SKU ile ara..."
+            value={productSearch}
+            onChange={(e) => setProductSearch(e.target.value)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: theme.radii.sm,
+              border: `1px solid ${theme.colors.border}`,
+              fontSize: '12.5px',
+              color: theme.colors.espresso,
+              outline: 'none',
+              width: '240px',
+            }}
+          />
+        </div>
+
+        {isLoadingProducts ? (
+          <div style={{ padding: '16px', textAlign: 'center', color: theme.colors.taupe, fontSize: '13px' }}>
+            Ürünler yükleniyor...
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', maxHeight: '130px', overflowY: 'auto', paddingBottom: '4px' }}>
+            {filteredProducts.map((p) => {
+              const isSelected = selectedProductId === p.id;
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedProductId(p.id)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: theme.radii.md,
+                    border: isSelected ? `1.5px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
+                    backgroundColor: isSelected ? theme.colors.primarySubtle : theme.colors.bgSurface,
+                    color: isSelected ? theme.colors.primary : theme.colors.cedar,
+                    fontSize: '12.5px',
+                    fontWeight: isSelected ? 700 : 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <span style={{ fontSize: '10px' }}>{isSelected ? '●' : '○'}</span>
+                  <span>{p.name}</span>
+                  {p.sku && <span style={{ fontSize: '11px', opacity: 0.65 }}>({p.sku})</span>}
+                </button>
+              );
+            })}
+            {filteredProducts.length === 0 && (
+              <span style={{ fontSize: '13px', color: theme.colors.taupe, padding: '8px 0' }}>
+                Arama kriterine uygun ürün bulunamadı.
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Main Details View / Edit Area */}
+      {isLoadingDetails ? (
+        <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '40px', textAlign: 'center', color: theme.colors.taupe }}>
+          Ürün detayları ve besin değerleri yükleniyor...
+        </div>
+      ) : details ? (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+          {/* Left Card: Ingredients, Allergens & Certifications */}
+          <div
+            style={{
+              backgroundColor: theme.colors.bgCard,
+              borderRadius: theme.radii.md,
+              border: `1px solid ${theme.colors.border}`,
+              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '20px',
+            }}
+          >
+            {/* Product Meta */}
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.primary, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                  {details.category} • SKU: {details.sku}
+                </span>
+                {isEditing && (
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.primary, backgroundColor: theme.colors.primarySubtle, padding: '2px 8px', borderRadius: theme.radii.xs }}>
+                    DÜZENLEME MODU
+                  </span>
+                )}
+              </div>
+              <h2 style={{ fontSize: '19px', fontWeight: 700, color: theme.colors.espresso, marginTop: '3px', marginBottom: '10px' }}>
+                {details.name}
+              </h2>
+
+              {/* Certifications & Dietary Flags */}
+              <div style={{ marginTop: '8px' }}>
+                <h4 style={{ fontSize: '12px', fontWeight: 700, color: theme.colors.taupe, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  🏅 Sertifikalar ve Nitelikler:
+                </h4>
+                {isEditing ? (
+                  <div>
+                    {/* Active tags with remove button */}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                      {formCertifications.map((cert, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            padding: '4px 10px',
+                            borderRadius: theme.radii.xs,
+                            backgroundColor: theme.colors.statusSuccessBg,
+                            color: theme.colors.statusSuccess,
+                            border: '1px solid #D5E5D4',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          ✓ {cert}
+                          <button
+                            onClick={() => toggleCert(cert)}
+                            style={{ background: 'none', border: 'none', color: theme.colors.statusSuccess, cursor: 'pointer', padding: 0, fontSize: '12px' }}
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                      {formCertifications.length === 0 && (
+                        <span style={{ fontSize: '12px', color: theme.colors.taupe }}>Sertifika seçilmedi.</span>
+                      )}
+                    </div>
+                    {/* Quick selection chips */}
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      {quickCertifications.map((q) => {
+                        const active = formCertifications.includes(q);
+                        return (
+                          <button
+                            key={q}
+                            type="button"
+                            onClick={() => toggleCert(q)}
+                            style={{
+                              fontSize: '11px',
+                              padding: '3px 8px',
+                              borderRadius: theme.radii.xs,
+                              border: active ? `1px solid ${theme.colors.statusSuccess}` : `1px solid ${theme.colors.border}`,
+                              backgroundColor: active ? theme.colors.statusSuccessBg : theme.colors.bgSurface,
+                              color: active ? theme.colors.statusSuccess : theme.colors.taupe,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {active ? '✓ ' : '+ '}
+                            {q}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Custom Cert Input */}
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <input
+                        type="text"
+                        placeholder="Özel sertifika/nitelik ekle..."
+                        value={customCertInput}
+                        onChange={(e) => setCustomCertInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addCustomCert();
+                          }
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: theme.radii.sm,
+                          border: `1px solid ${theme.colors.border}`,
+                          fontSize: '12px',
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={addCustomCert}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: theme.radii.sm,
+                          border: `1px solid ${theme.colors.border}`,
+                          backgroundColor: theme.colors.bgSurface,
+                          color: theme.colors.espresso,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        + Ekle
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {details.certifications && details.certifications.length > 0 ? (
+                      details.certifications.map((flag, idx) => (
+                        <span
+                          key={idx}
+                          style={{
+                            fontSize: '11.5px',
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: theme.radii.xs,
+                            backgroundColor: theme.colors.statusSuccessBg,
+                            color: theme.colors.statusSuccess,
+                            border: '1px solid #D5E5D4',
+                          }}
+                        >
+                          ✓ {flag}
+                        </span>
+                      ))
+                    ) : (
+                      <span style={{ fontSize: '12px', color: theme.colors.taupe, fontStyle: 'italic' }}>
+                        Tanımlanmış özel sertifika veya diyet etiketi bulunmuyor.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `2px solid ${theme.colors.espresso}`, fontSize: '13.5px', color: theme.colors.espresso }}>
-              <span><b>Tuz / Sodyum</b></span>
-              <b>{current.nutritionPer100g.salt}</b>
+            {/* Ingredients Section */}
+            <div>
+              <h4 style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '8px', textTransform: 'uppercase' }}>
+                📜 İçindekiler Listesi (Bileşenler)
+              </h4>
+              {isEditing ? (
+                <textarea
+                  rows={4}
+                  value={formIngredients}
+                  onChange={(e) => setFormIngredients(e.target.value)}
+                  placeholder="Ürünün tüm ham maddeleri ve bileşenlerini virgülle ayırarak yazınız..."
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: theme.radii.sm,
+                    backgroundColor: theme.colors.bgSurface,
+                    border: `1.5px solid ${theme.colors.primary}`,
+                    fontSize: '13.5px',
+                    color: theme.colors.espresso,
+                    lineHeight: 1.6,
+                    fontFamily: 'inherit',
+                    outline: 'none',
+                    resize: 'vertical',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    padding: '14px',
+                    borderRadius: theme.radii.sm,
+                    backgroundColor: theme.colors.bgSurface,
+                    border: `1px solid ${theme.colors.border}`,
+                    fontSize: '13.5px',
+                    color: theme.colors.espresso,
+                    lineHeight: 1.6,
+                    minHeight: '60px',
+                  }}
+                >
+                  {details.ingredients ? (
+                    details.ingredients
+                  ) : (
+                    <span style={{ color: theme.colors.taupe, fontStyle: 'italic' }}>
+                      İçindekiler listesi henüz girilmemiş.
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div style={{ fontSize: '11px', color: theme.colors.taupe, marginTop: '10px' }}>
-              * Günlük referans alım değeri (BRD) 8400 kJ / 2000 kcal baz alınarak hesaplanmıştır.
+            {/* Allergens Section */}
+            <div>
+              <h4
+                style={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: theme.colors.statusDanger,
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <span>⚠️</span> Alerjen Uyarıları (Yasal Etiket)
+              </h4>
+
+              {isEditing ? (
+                <div>
+                  {/* Active Allergen Warnings */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
+                    {formAllergens.map((alg, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: theme.radii.sm,
+                          backgroundColor: theme.colors.statusDangerBg,
+                          border: '1px solid #F5D3CE',
+                          color: theme.colors.statusDanger,
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span>⛔</span>
+                          <span>{alg}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => toggleAllergen(alg)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: theme.colors.statusDanger,
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            fontWeight: 700,
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    {formAllergens.length === 0 && (
+                      <div style={{ padding: '8px 12px', borderRadius: theme.radii.sm, backgroundColor: theme.colors.statusSuccessBg, color: theme.colors.statusSuccess, border: '1px solid #D5E5D4', fontSize: '12.5px', fontWeight: 600 }}>
+                        ✓ Alerjen seçilmedi (Alerjen içermez olarak kaydedilir)
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Quick allergen pills */}
+                  <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {quickAllergens.map((q) => {
+                      const active = formAllergens.includes(q);
+                      return (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => toggleAllergen(q)}
+                          style={{
+                            fontSize: '11px',
+                            padding: '3px 8px',
+                            borderRadius: theme.radii.xs,
+                            border: active ? `1px solid ${theme.colors.statusDanger}` : `1px solid ${theme.colors.border}`,
+                            backgroundColor: active ? theme.colors.statusDangerBg : theme.colors.bgSurface,
+                            color: active ? theme.colors.statusDanger : theme.colors.taupe,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {active ? '⛔ ' : '+ '}
+                          {q}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Custom Allergen Input */}
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <input
+                      type="text"
+                      placeholder="Örn: Eser miktarda hardal içerebilir..."
+                      value={customAllergenInput}
+                      onChange={(e) => setCustomAllergenInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addCustomAllergen();
+                        }
+                      }}
+                      style={{
+                        flex: 1,
+                        padding: '6px 10px',
+                        borderRadius: theme.radii.sm,
+                        border: `1px solid ${theme.colors.border}`,
+                        fontSize: '12px',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={addCustomAllergen}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: theme.radii.sm,
+                        border: `1px solid ${theme.colors.border}`,
+                        backgroundColor: theme.colors.bgSurface,
+                        color: theme.colors.espresso,
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      + Ekle
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {details.allergens && details.allergens.length > 0 ? (
+                    details.allergens.map((alg, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: theme.radii.sm,
+                          backgroundColor: theme.colors.statusDangerBg,
+                          border: '1px solid #F5D3CE',
+                          color: theme.colors.statusDanger,
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                        }}
+                      >
+                        <span style={{ fontSize: '14px' }}>⛔</span>
+                        <span>{alg}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        borderRadius: theme.radii.sm,
+                        backgroundColor: theme.colors.statusSuccessBg,
+                        border: '1px solid #D5E5D4',
+                        color: theme.colors.statusSuccess,
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <span>✓</span>
+                      <span>Bilinen alerjen içermez.</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Card: Official Nutrition Facts Table */}
+          <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '24px' }}>
+            <div style={{ border: `2px solid ${theme.colors.espresso}`, padding: '18px', borderRadius: theme.radii.sm, backgroundColor: '#FFFFFF' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `5px solid ${theme.colors.espresso}`, paddingBottom: '4px' }}>
+                <h3 style={{ fontSize: '20px', fontWeight: 900, color: theme.colors.espresso, margin: 0, textTransform: 'uppercase', letterSpacing: '-0.3px' }}>
+                  Besin Öğeleri Değerleri
+                </h3>
+                {isEditing && (
+                  <span style={{ fontSize: '11px', fontWeight: 700, color: theme.colors.primary, backgroundColor: theme.colors.primarySubtle, padding: '2px 8px', borderRadius: theme.radii.xs }}>
+                    DÜZENLENİYOR
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.taupe, padding: '6px 0', borderBottom: `1px solid ${theme.colors.espresso}` }}>
+                Porsiyon / Referans Değer: <b>100 g / 100 ml için</b>
+              </div>
+
+              {isEditing ? (
+                /* Edit Mode: Numeric Inputs */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '13.5px', fontWeight: 700, color: theme.colors.espresso }}>
+                      Enerji (kcal):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formNutrition.energyKcal}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, energyKcal: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1.5px solid ${theme.colors.primary}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso }}>
+                      Toplam Yağ (g):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formNutrition.fat}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, fat: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1px solid ${theme.colors.border}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '14px' }}>
+                    <label style={{ fontSize: '12.5px', color: theme.colors.taupe }}>
+                      - Doymuş Yağ (g):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formNutrition.saturatedFat}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, saturatedFat: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1px solid ${theme.colors.border}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso }}>
+                      Karbonhidrat (g):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formNutrition.carbohydrates}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, carbohydrates: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1px solid ${theme.colors.border}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingLeft: '14px' }}>
+                    <label style={{ fontSize: '12.5px', color: theme.colors.taupe }}>
+                      - Şekerler (g):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formNutrition.sugar}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, sugar: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1px solid ${theme.colors.border}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso }}>
+                      Protein (g):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0"
+                      value={formNutrition.protein}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, protein: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1px solid ${theme.colors.border}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: theme.colors.espresso }}>
+                      Tuz / Sodyum (g):
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formNutrition.salt}
+                      onChange={(e) => setFormNutrition({ ...formNutrition, salt: parseFloat(e.target.value) || 0 })}
+                      style={{ width: '120px', padding: '6px 10px', borderRadius: theme.radii.sm, border: `1px solid ${theme.colors.border}`, fontSize: '13px', textAlign: 'right' }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* View Mode: Official Nutrition Facts Card */
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '9px 0', borderBottom: `3px solid ${theme.colors.espresso}`, fontSize: '15px', fontWeight: 800, color: theme.colors.espresso }}>
+                    <span>Enerji Değeri</span>
+                    <span>
+                      {details.nutritionalValues?.energyKcal ?? 0} kcal / {Math.round((details.nutritionalValues?.energyKcal ?? 0) * 4.184)} kJ
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
+                    <span><b>Toplam Yağ</b></span>
+                    <b>{details.nutritionalValues?.fat ?? 0} g</b>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 6px 16px', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13px', color: theme.colors.taupe }}>
+                    <span>- Doymuş Yağ</span>
+                    <span>{details.nutritionalValues?.saturatedFat ?? 0} g</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
+                    <span><b>Karbonhidrat</b></span>
+                    <b>{details.nutritionalValues?.carbohydrates ?? 0} g</b>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 6px 16px', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13px', color: theme.colors.taupe }}>
+                    <span>- Şekerler</span>
+                    <span>{details.nutritionalValues?.sugar ?? 0} g</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${theme.colors.border}`, fontSize: '13.5px', color: theme.colors.espresso }}>
+                    <span><b>Protein</b></span>
+                    <b>{details.nutritionalValues?.protein ?? 0} g</b>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `2px solid ${theme.colors.espresso}`, fontSize: '13.5px', color: theme.colors.espresso }}>
+                    <span><b>Tuz / Sodyum</b></span>
+                    <b>{details.nutritionalValues?.salt ?? 0} g</b>
+                  </div>
+
+                  {!details.nutritionalValues && (
+                    <div style={{ padding: '10px', backgroundColor: theme.colors.bgSurface, borderRadius: theme.radii.sm, marginTop: '12px', fontSize: '12px', color: theme.colors.taupe, textAlign: 'center' }}>
+                      ℹ️ Bu ürün için besin değerleri henüz girilmemiş. Yukarıdaki <b>"Bilgileri Düzenle"</b> butonuna basarak kaydedebilirsiniz.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{ fontSize: '11px', color: theme.colors.taupe, marginTop: '12px', lineHeight: 1.4 }}>
+                * Günlük referans alım değeri (BRD) ortalama bir yetişkin için 8400 kJ / 2000 kcal baz alınarak hesaplanmıştır.
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div style={{ backgroundColor: theme.colors.bgCard, borderRadius: theme.radii.md, border: `1px solid ${theme.colors.border}`, padding: '40px', textAlign: 'center', color: theme.colors.taupe }}>
+          Lütfen yukarıdaki listeden bir ürün seçiniz.
+        </div>
+      )}
     </div>
   );
 };

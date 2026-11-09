@@ -55,8 +55,14 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.Ingredients)
             .HasMaxLength(2000);
 
-        builder.Property(p => p.Allergens)
-            .HasMaxLength(1000);
+        builder.Property(p => p.Allergens);
+
+        builder.Property(p => p.Certifications);
+
+        builder.OwnsOne(p => p.NutritionalValues, b =>
+        {
+            b.ToJson();
+        });
 
         builder.Property(p => p.Origin)
             .HasMaxLength(200);

@@ -53,6 +53,34 @@ export interface UpdateProductData {
   imageUrl?: string | null;
 }
 
+export interface NutritionalValuesDto {
+  energyKcal: number;
+  fat: number;
+  saturatedFat: number;
+  carbohydrates: number;
+  sugar: number;
+  protein: number;
+  salt: number;
+}
+
+export interface ProductDetailsDto {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  ingredients?: string | null;
+  allergens: string[];
+  certifications: string[];
+  nutritionalValues?: NutritionalValuesDto | null;
+}
+
+export interface UpdateProductDetailsData {
+  ingredients?: string | null;
+  allergens?: string[];
+  certifications?: string[];
+  nutritionalValues?: NutritionalValuesDto | null;
+}
+
 // Vite proxy routes /api to http://localhost:5000/api
 const BASE_URL = '/api/admin/products';
 
@@ -135,6 +163,19 @@ export const productService = {
   deleteProduct: async (id: string): Promise<{ success: boolean; message: string }> => {
     return request<{ success: boolean; message: string }>(`${BASE_URL}/${id}`, {
       method: 'DELETE',
+    });
+  },
+
+  // GET /api/admin/products/{id}/details
+  getProductDetails: async (id: string): Promise<ProductDetailsDto> => {
+    return request<ProductDetailsDto>(`${BASE_URL}/${id}/details`);
+  },
+
+  // PUT /api/admin/products/{id}/details
+  updateProductDetails: async (id: string, data: UpdateProductDetailsData): Promise<ProductDetailsDto> => {
+    return request<ProductDetailsDto>(`${BASE_URL}/${id}/details`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
     });
   },
 };

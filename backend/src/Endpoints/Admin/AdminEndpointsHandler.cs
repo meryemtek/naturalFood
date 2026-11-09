@@ -236,6 +236,47 @@ internal static class AdminEndpointsHandler
         .Produces(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
+        // GET /api/admin/products/{id}/details
+        products.MapGet("/{id:guid}/details", async (
+            Guid id,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var details = await productService.GetProductDetailsAsync(id, ct);
+            return details is not null
+                ? Results.Ok(details)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Id değeri '{id}' olan ürünün detayları bulunamadı."
+                });
+        })
+        .WithName("GetAdminProductDetails")
+        .Produces<ProductDetailsDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // PUT /api/admin/products/{id}/details
+        products.MapPut("/{id:guid}/details", async (
+            Guid id,
+            UpdateProductDetailsRequest req,
+            IProductService productService,
+            CancellationToken ct) =>
+        {
+            var updatedDetails = await productService.UpdateProductDetailsAsync(id, req, ct);
+            return updatedDetails is not null
+                ? Results.Ok(updatedDetails)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Detayları güncellenecek '{id}' Id numaralı ürün bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminProductDetails")
+        .Produces<ProductDetailsDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         // =========================================================================
         // 5. Envanter ve Stok Yönetimi (Inventory - Vertical Slice 2)
         // =========================================================================

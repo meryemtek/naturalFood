@@ -260,6 +260,83 @@ public class ProductService : IProductService
         return MapToDto(product);
     }
 
+    public async Task<ProductDetailsDto?> GetProductDetailsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var product = await _catalogDb.Products
+            .AsNoTracking()
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+        if (product == null)
+            return null;
+
+        return MapToDetailsDto(product);
+    }
+
+    public async Task<ProductDetailsDto?> UpdateProductDetailsAsync(Guid id, UpdateProductDetailsRequest req, CancellationToken cancellationToken = default)
+    {
+        var product = await _catalogDb.Products
+            .Include(p => p.Category)
+            .FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+
+        if (product == null)
+            return null;
+
+        var nutritionalValues = req.NutritionalValues != null
+            ? new NutritionalValues(
+                req.NutritionalValues.EnergyKcal,
+                req.NutritionalValues.Fat,
+                req.NutritionalValues.SaturatedFat,
+                req.NutritionalValues.Carbohydrates,
+                req.NutritionalValues.Sugar,
+                req.NutritionalValues.Protein,
+                req.NutritionalValues.Salt)
+            : null;
+
+        product.UpdateDetails(
+            ingredients: req.Ingredients,
+            allergens: req.Allergens,
+            certifications: req.Certifications,
+            nutritionalValues: nutritionalValues
+        );
+
+        await _catalogDb.SaveChangesAsync(cancellationToken);
+
+        // Denetim Günlüğü Kaydı
+        var audit = new AuditLog(
+            action: "ProductDetailsUpdated",
+            resource: "Catalog.Product",
+            adminUserId: null,
+            details: $"Ürün içerik ve besin değerleri güncellendi: {product.Name} (ID: {product.Id})"
+        );
+        _adminDb.AuditLogs.Add(audit);
+        await _adminDb.SaveChangesAsync(cancellationToken);
+
+        return MapToDetailsDto(product);
+    }
+
+    private static ProductDetailsDto MapToDetailsDto(Product p)
+    {
+        return new ProductDetailsDto(
+            Id: p.Id,
+            Name: p.Name,
+            Sku: p.Sku,
+            Category: p.Category?.Name ?? "Genel",
+            Ingredients: p.Ingredients,
+            Allergens: p.Allergens ?? new List<string>(),
+            Certifications: p.Certifications ?? new List<string>(),
+            NutritionalValues: p.NutritionalValues != null ? new NutritionalValuesDto(
+                p.NutritionalValues.EnergyKcal,
+                p.NutritionalValues.Fat,
+                p.NutritionalValues.SaturatedFat,
+                p.NutritionalValues.Carbohydrates,
+                p.NutritionalValues.Sugar,
+                p.NutritionalValues.Protein,
+                p.NutritionalValues.Salt
+            ) : null
+        );
+    }
+
     public async Task<bool> DeleteProductAsync(Guid id, CancellationToken cancellationToken = default)
     {
         var product = await _catalogDb.Products

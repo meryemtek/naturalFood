@@ -41,3 +41,31 @@ public record UpdateProductRequest(
     string Status,
     string? ImageUrl
 );
+
+public record NutritionalValuesDto(
+    decimal EnergyKcal,
+    decimal Fat,
+    decimal SaturatedFat,
+    decimal Carbohydrates,
+    decimal Sugar,
+    decimal Protein,
+    decimal Salt
+);
+
+public record ProductDetailsDto(
+    Guid Id,
+    string Name,
+    string Sku,
+    string Category,
+    string? Ingredients,
+    List<string> Allergens,
+    List<string> Certifications,
+    NutritionalValuesDto? NutritionalValues
+);
+
+public record UpdateProductDetailsRequest(
+    string? Ingredients,
+    List<string>? Allergens,
+    List<string>? Certifications,
+    NutritionalValuesDto? NutritionalValues
+);

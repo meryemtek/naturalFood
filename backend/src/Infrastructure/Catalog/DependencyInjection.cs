@@ -91,14 +91,16 @@ public static class DependencyInjection
                     sku: "ZYT-ERK-001",
                     unitInfo: "1 Litre Cam Şişe",
                     ingredients: "%100 Saf Naturel Sızma Zeytinyağı",
-                    allergens: "Alerjen içermez.",
+                    allergens: new List<string>(),
                     origin: "Balıkesir / Edremit",
                     storageConditions: "Doğrudan güneş ışığı almayan serin ve kuru bir yerde kapağı kapalı olarak saklayınız.",
                     shelfLife: "Üretim tarihinden itibaren 2 yıl.",
                     isBestSeller: true,
                     isNew: false,
                     isFeatured: true,
-                    isSeasonal: false);
+                    isSeasonal: false,
+                    certifications: new List<string> { "Organik Sertifikalı", "Vegan", "Katkısız" },
+                    nutritionalValues: new NutritionalValues(884, 100, 14, 0, 0, 0, 0));
 
                 p1.Images.Add(new ProductImage(p1.Id, "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80", "Zeytinyağı Şişesi", 0, true));
                 p1.Images.Add(new ProductImage(p1.Id, "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80", "Zeytin Hasadı", 1, false));
@@ -120,14 +122,16 @@ public static class DependencyInjection
                     sku: "BAL-KRK-001",
                     unitInfo: "850 gr Kavanoz",
                     ingredients: "%100 Doğal Ham Karakovan Çiçek Balı",
-                    allergens: "1 yaşından küçük bebeklere bal verilmemelidir.",
+                    allergens: new List<string> { "1 yaşından küçük bebeklere bal verilmemelidir." },
                     origin: "Kars / Kağızman Yaylaları",
                     storageConditions: "Oda sıcaklığında (20-25°C) muhafaza ediniz. Hakiki ham bal kristalleşebilir (donabilir); 45°C'yi geçmeyen ılık suda bekleterek çözebilirsiniz.",
                     shelfLife: "Doğal bal süresiz saklanabilir.",
                     isBestSeller: true,
                     isNew: true,
                     isFeatured: true,
-                    isSeasonal: false);
+                    isSeasonal: false,
+                    certifications: new List<string> { "Doğal Ham Bal", "Katkısız" },
+                    nutritionalValues: new NutritionalValues(304, 0, 0, 82.4m, 82.1m, 0.3m, 0.01m));
 
                 p2.Images.Add(new ProductImage(p2.Id, "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=800&q=80", "Doğal Bal Kavanozu", 0, true));
 
@@ -147,14 +151,16 @@ public static class DependencyInjection
                     sku: "ZYT-HLH-001",
                     unitInfo: "1 kg Kavanoz (Süzme 650g)",
                     ingredients: "Halhalı Yeşil Zeytin, Su, Kaya Tuzu, Doğal Limon Suyu, Saf Zeytinyağı",
-                    allergens: "Alerjen içermez.",
+                    allergens: new List<string>(),
                     origin: "Hatay / Altınözü",
                     storageConditions: "Kendi salamura suyunda serin yerde saklayınız. Açıldıktan sonra üzerine biraz zeytinyağı gezdirmeniz tavsiye edilir.",
                     shelfLife: "12 Ay",
                     isBestSeller: false,
                     isNew: true,
                     isFeatured: true,
-                    isSeasonal: true);
+                    isSeasonal: true,
+                    certifications: new List<string> { "Vegan", "Geleneksel" },
+                    nutritionalValues: new NutritionalValues(145, 15.3m, 2.1m, 3.8m, 0.5m, 1.0m, 3.2m));
 
                 p3.Images.Add(new ProductImage(p3.Id, "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=800&q=80", "Kırma Yeşil Zeytin", 0, true));
 
@@ -171,14 +177,16 @@ public static class DependencyInjection
                     sku: "SLC-DMT-001",
                     unitInfo: "1 kg Cam Kavanoz",
                     ingredients: "%100 Köy Domatesi, Çankırı Kaya Tuzu (%2.5)",
-                    allergens: "Alerjen içermez.",
+                    allergens: new List<string>(),
                     origin: "Çanakkale / Biga",
                     storageConditions: "Serin ve karanlık yerde muhafaza ediniz. Açtıktan sonra üzerini kapatacak kadar zeytinyağı ilave edip buzdolabında saklayınız.",
                     shelfLife: "2 Yıl",
                     isBestSeller: true,
                     isNew: false,
                     isFeatured: true,
-                    isSeasonal: false);
+                    isSeasonal: false,
+                    certifications: new List<string> { "Vegan", "Güneşte Kurutulmuş", "Katkısız" },
+                    nutritionalValues: new NutritionalValues(82, 0.5m, 0.1m, 14.2m, 9.8m, 4.3m, 2.5m));
 
                 p4.Images.Add(new ProductImage(p4.Id, "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80", "Doğal Köy Salçası", 0, true));
 
@@ -195,4 +203,3 @@ public static class DependencyInjection
         }
     }
 }
-

@@ -14,7 +14,9 @@ public class Product
     public string Sku { get; private set; } = default!;
     public string UnitInfo { get; private set; } = default!;
     public string? Ingredients { get; private set; }
-    public string? Allergens { get; private set; }
+    public List<string> Allergens { get; private set; } = new();
+    public List<string> Certifications { get; private set; } = new();
+    public NutritionalValues? NutritionalValues { get; private set; }
     public string? Origin { get; private set; }
     public string? StorageConditions { get; private set; }
     public string? ShelfLife { get; private set; }
@@ -45,7 +47,7 @@ public class Product
         string sku,
         string unitInfo,
         string? ingredients = null,
-        string? allergens = null,
+        List<string>? allergens = null,
         string? origin = null,
         string? storageConditions = null,
         string? shelfLife = null,
@@ -55,7 +57,9 @@ public class Product
         bool isSeasonal = false,
         bool isActive = true,
         Guid? id = null,
-        DateTime? createdAtUtc = null)
+        DateTime? createdAtUtc = null,
+        List<string>? certifications = null,
+        NutritionalValues? nutritionalValues = null)
     {
         Id = id ?? Guid.NewGuid();
         Name = name;
@@ -69,7 +73,9 @@ public class Product
         Sku = sku;
         UnitInfo = unitInfo;
         Ingredients = ingredients;
-        Allergens = allergens;
+        Allergens = allergens ?? new List<string>();
+        Certifications = certifications ?? new List<string>();
+        NutritionalValues = nutritionalValues;
         Origin = origin;
         StorageConditions = storageConditions;
         ShelfLife = shelfLife;
@@ -93,7 +99,7 @@ public class Product
         string sku,
         string unitInfo,
         string? ingredients,
-        string? allergens,
+        List<string>? allergens,
         string? origin,
         string? storageConditions,
         string? shelfLife,
@@ -101,7 +107,9 @@ public class Product
         bool isNew,
         bool isFeatured,
         bool isSeasonal,
-        bool isActive)
+        bool isActive,
+        List<string>? certifications = null,
+        NutritionalValues? nutritionalValues = null)
     {
         Name = name;
         Slug = slug;
@@ -114,7 +122,9 @@ public class Product
         Sku = sku;
         UnitInfo = unitInfo;
         Ingredients = ingredients;
-        Allergens = allergens;
+        if (allergens != null) Allergens = allergens;
+        if (certifications != null) Certifications = certifications;
+        if (nutritionalValues != null) NutritionalValues = nutritionalValues;
         Origin = origin;
         StorageConditions = storageConditions;
         ShelfLife = shelfLife;
@@ -123,6 +133,19 @@ public class Product
         IsFeatured = isFeatured;
         IsSeasonal = isSeasonal;
         IsActive = isActive;
+        UpdatedAtUtc = DateTime.UtcNow;
+    }
+
+    public void UpdateDetails(
+        string? ingredients,
+        List<string>? allergens,
+        List<string>? certifications,
+        NutritionalValues? nutritionalValues)
+    {
+        Ingredients = ingredients;
+        Allergens = allergens ?? new List<string>();
+        Certifications = certifications ?? new List<string>();
+        NutritionalValues = nutritionalValues;
         UpdatedAtUtc = DateTime.UtcNow;
     }
 
