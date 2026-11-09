@@ -2,10 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { theme } from '../../theme/tokens';
 import { Modal } from '../../components/common/Modal';
 import {
-  productInventoryStore,
-  ProductItem,
-} from '../../services/productInventoryStore';
-import {
   productService,
   ProductDto,
   CreateProductData,
@@ -29,36 +25,6 @@ interface ProductFormData {
   status: string;
   imageUrl?: string;
 }
-
-// Helper: map API DTO to temporary frontend inventory store
-const mapDtoToInventoryItem = (dto: ProductDto, index: number): ProductItem => {
-  let mappedUnitType: 'Kg' | 'Gramaj' | 'Litre' | 'Adet' = 'Adet';
-  const u = dto.saleUnit?.toLowerCase();
-  if (u === 'kg' || u === 'kilogram') mappedUnitType = 'Kg';
-  else if (u === 'gram' || u === 'gramaj' || u === 'g') mappedUnitType = 'Gramaj';
-  else if (u === 'litre' || u === 'lt' || u === 'l') mappedUnitType = 'Litre';
-  else mappedUnitType = 'Adet';
-
-  let statusText: 'Satışta' | 'Kritik Stok' | 'Tükendi' = 'Satışta';
-  if (dto.status === 'OutOfStock' || dto.stockQuantity <= 0) {
-    statusText = 'Tükendi';
-  } else if (dto.status === 'LowStock' || dto.stockQuantity <= 5) {
-    statusText = 'Kritik Stok';
-  }
-
-  return {
-    id: index + 1,
-    name: dto.name,
-    category: dto.category,
-    sku: dto.sku || `SKU-${dto.id.slice(0, 8).toUpperCase()}`,
-    barcode: dto.barcode || '8690123450000',
-    unitType: mappedUnitType,
-    unitValue: `${dto.saleUnit}`,
-    price: `₺${Number(dto.sellingPrice).toFixed(2)}`,
-    stock: `${dto.stockQuantity} ${dto.saleUnit}`,
-    status: statusText,
-  };
-};
 
 export const ProductDefinitionPage: React.FC = () => {
   // Filters & Search
@@ -115,10 +81,6 @@ export const ProductDefinitionPage: React.FC = () => {
       });
       setProducts(res.items);
       setTotalCount(res.totalCount);
-
-      // Temporary bridge: sync to localStorage store so /inventory page continues seamlessly
-      const inventorySyncList = res.items.map(mapDtoToInventoryItem);
-      productInventoryStore.saveProducts(inventorySyncList, false);
     } catch (err: any) {
       console.error('Ürünler API den yüklenemedi:', err);
       setError(err?.message || 'Ürün listesi sunucudan yüklenirken bir hata oluştu.');

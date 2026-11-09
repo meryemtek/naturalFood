@@ -236,6 +236,50 @@ internal static class AdminEndpointsHandler
         .Produces(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
+        // =========================================================================
+        // 5. Envanter ve Stok Yönetimi (Inventory - Vertical Slice 2)
+        // =========================================================================
+        var inventory = group.MapGroup("/inventory").WithTags("Admin Inventory");
+
+        // GET /api/admin/inventory (Sayfalama, arama, kategori ve kritik stok filtreli)
+        inventory.MapGet("/", async (
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
+            [FromQuery] string? search,
+            [FromQuery] string? category,
+            [FromQuery] bool? criticalOnly,
+            IInventoryService inventoryService,
+            CancellationToken ct) =>
+        {
+            var p = page ?? 1;
+            var ps = pageSize ?? 50;
+            var result = await inventoryService.GetInventoryAsync(p, ps, search, category, criticalOnly, ct);
+            return Results.Ok(result);
+        })
+        .WithName("GetAdminInventory")
+        .Produces<PaginatedList<InventoryItemDto>>(StatusCodes.Status200OK);
+
+        // PATCH /api/admin/inventory/{id}/stock
+        inventory.MapPatch("/{id:guid}/stock", async (
+            Guid id,
+            UpdateStockRequest req,
+            IInventoryService inventoryService,
+            CancellationToken ct) =>
+        {
+            var updated = await inventoryService.UpdateStockAsync(id, req, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Ürün Bulunamadı",
+                    Detail = $"Stok miktarı güncellenecek '{id}' Id numaralı ürün bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminInventoryStock")
+        .Produces<InventoryItemDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         return group;
     }
 }

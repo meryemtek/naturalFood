@@ -34,9 +34,10 @@ public static class DependencyInjection
         // Güvenlik & Hash
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-        // Admin & Ürün Servisleri
+        // Admin, Ürün & Envanter Servisleri
         services.AddScoped<IAdminService, AdminService>();
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IInventoryService, InventoryService>();
 
         // Validatörler
         services.AddValidatorsFromAssemblyContaining<CreateAdminUserRequestValidator>();
