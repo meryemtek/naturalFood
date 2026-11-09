@@ -137,6 +137,8 @@ app.MapGet("/", () => Results.Ok(new
     }
 }));
 
-// Şema değişiklikleri ve örnek veriler açıkça yönetilir; API başlangıcında uygulanmaz.
+// Şema değişiklikleri ve tohum verileri başlat
+await app.Services.InitializeAdminModuleDatabaseAsync();
+await app.Services.InitializeCatalogModuleDatabaseAsync();
 
 app.Run();
