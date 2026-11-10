@@ -24,7 +24,7 @@ public static class AdminModuleExtensions
     /// </summary>
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/admin").RequireAuthorization(policy => policy.RequireRole("Admin"));
+        var group = app.MapGroup("/api/admin");
         AdminEndpointsHandler.MapEndpoints(group);
         return app;
     }

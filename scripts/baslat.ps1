@@ -26,7 +26,7 @@ Write-Host ""
 # 2. Backend (.NET 10 API Host)
 Write-Host "[2/4] Backend (.NET 10 Web API) baslatiliyor..." -ForegroundColor Yellow
 $backendProject = "backend\src\ApiHost\ApiHost.csproj"
-$backendArgs = "/k title Admin Paneli - Backend (.NET) && dotnet run --project `"$backendProject`" --no-launch-profile --urls http://localhost:5000"
+$backendArgs = "/k title Admin Paneli - Backend (.NET) & dotnet run --project `"$backendProject`" --no-launch-profile --urls http://localhost:5000"
 Start-Process -FilePath "cmd.exe" -WorkingDirectory $baseDir -ArgumentList $backendArgs
 Write-Host "  [OK] Backend ayri bir konsol penceresinde baslatildi (http://localhost:5000)." -ForegroundColor Green
 Write-Host ""
@@ -38,7 +38,7 @@ if (-not (Test-Path (Join-Path $frontendDir "node_modules"))) {
     Write-Host "  [*] Frontend bagimliliklari ilk kez yukleniyor, lutfen bekleyin..." -ForegroundColor Cyan
     Start-Process -FilePath "cmd.exe" -WorkingDirectory $frontendDir -ArgumentList "/c npm install" -Wait
 }
-$frontendArgs = "/k title Admin Paneli - Frontend (Vite) && npm run dev"
+$frontendArgs = "/k title Admin Paneli - Frontend (Vite) & npm run dev"
 Start-Process -FilePath "cmd.exe" -WorkingDirectory $frontendDir -ArgumentList $frontendArgs
 Write-Host "  [OK] Frontend ayri bir konsol penceresinde baslatildi (http://localhost:3000)." -ForegroundColor Green
 Write-Host ""

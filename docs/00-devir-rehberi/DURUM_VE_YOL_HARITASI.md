@@ -1,7 +1,7 @@
 # Modüler E-Ticaret Admin Paneli — Durum, Checkpoint'ler ve Yol Haritası
 
 > **Durum:** Canlı Takip & Yol Haritası  
-> **Son Güncelleme:** 5 Kasım 2026  
+> **Son Güncelleme:** 9 Kasım 2026  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 
 ---
@@ -102,6 +102,92 @@ Aşağıdaki checkpoint'ler başarıyla tamamlanmış, derlenmiş ve canlı orta
 
 ---
 
+### ✅ CHECKPOINT 8: 1. Dikey Dilim — Gelişmiş Ürün Tanımlama & Çekirdek Katalog Bağlantısı
+* **Tarih:** 9 Kasım 2026
+* **Kapsam:**
+  - Admin ürün yönetimi ile müşteri (public) kataloğu arasındaki veri tabanı ve şema haritalaması kesinleştirildi.
+  - Her iki tarafın da `catalog."Products"` tablosuna baktığı `CatalogDbContext` ve entity konfigürasyonları ile doğrulandı (Single Source of Truth).
+  - Doğal gıda sektörüne özel tartılı (Kg, Gramaj), hacimsel (Litre) ve adet/paket bazlı ürün tanımlama akışı devreye alındı.
+  - `AdminEndpointsHandler` altında `/api/admin/products` endpoint'leri genişletildi ve `ProductDefinitionPage` canlı PostgreSQL verisine bağlandı.
+* **Kazanım:** Ürün verisi için sahte/çift şema ayrımı ortadan kaldırıldı; admin panelinden eklenen ürünlerin anında müşteri vitrinine düşmesi garanti altına alındı.
+
+---
+
+### ✅ CHECKPOINT 9: 2. Dikey Dilim — Stok ve Envanter Yönetimi (/inventory)
+* **Tarih:** 9 Kasım 2026
+* **Kapsam:**
+  - `catalog.Products` tablosundaki `StockQuantity` alanı kullanılarak Minimal API envanter uçları açıldı:
+    - `GET /api/admin/inventory`: Ürün adı, SKU, kategori, stok miktarı ve kritik stok eşiği filtresiyle sayfalanmış liste.
+    - `PATCH /api/admin/inventory/{id}/stock`: Delta veya yeni değere göre stoğu güncelleyen, 0'ın altına düşürmeyen ve işlemi `admin.AuditLogs` tablosuna `'StockUpdated'` olarak kaydeden uç.
+  - Frontend'deki geçici `localStorage` (`ProductInventoryStore.ts`) mekanizması ve senkronizasyon kodları tamamen kaldırıldı.
+  - `inventoryService.ts` oluşturuldu; `/inventory` ekranındaki hızlı +1 / -1 butonları doğrudan canlı PostgreSQL veritabanını günceller hale getirildi.
+* **Kazanım:** Tarayıcı hafızasına bağımlılık sıfırlandı; stok güncellemeleri kurumsal audit log ile kayıt altına alındı.
+
+---
+
+### ✅ CHECKPOINT 10: 3. Dikey Dilim — İçerik, Alerjen ve Besin Değerleri Yönetimi
+* **Tarih:** 9 Kasım 2026
+* **Kapsam:**
+  - `catalog.Products` tablosuna doğal gıda güvenliği ve yasal etiketleme alanları eklendi:
+    - `Ingredients` (string/text, içindekiler listesi)
+    - `Allergens` (string[], örn: Gluten, Laktoz, Kuruyemiş vb.)
+    - `Certifications` (string[], örn: Organik Sertifikalı, Vegan, Taş Baskı)
+    - `NutritionalValues` (JSONB / DTO: EnergyKcal, Fat, SaturatedFat, Carbohydrates, Sugar, Protein, Salt)
+  - EF Core Migration oluşturuldu ve uygulandı: `20261109094455_Add_Product_Allergens_And_Nutrition`.
+  - Minimal API uçları açıldı:
+    - `GET /api/admin/products/{id}/details`: Ürünün içerik, alerjen ve 100g besin değerleri.
+    - `PUT /api/admin/products/{id}/details`: Bu detayları güncelleyen ve `admin.AuditLogs` tablosuna `'ProductDetailsUpdated'` aksiyonu yazan uç.
+  - Frontend `productService.ts` içine `getProductDetails` ve `updateProductDetails` eklendi; `AllergensNutritionPage` ekranı canlı API'ye bağlandı.
+* **Kazanım:** Yasal gıda etiketleme ve besin değerleri yönetimi canlı veritabanı entegrasyonuyla tamamlandı.
+
+---
+
+### ✅ CHECKPOINT 11: 4. Dikey Dilim — STT / TETT ve Parti (Lot) Takibi
+* **Tarih:** 9 Kasım 2026
+* **Kapsam:**
+  - `catalog` şeması altında `ProductLot` entity'si oluşturuldu (`Id`, `ProductId`, `LotNumber`, `ProductionDate`, `ExpiryDate`, `Quantity`, `Status`, `CreatedAtUtc`).
+  - EF Core Migration oluşturuldu ve uygulandı: `20261109104241_Add_Product_Lots_Table`.
+  - Minimal API uçları açıldı:
+    - `GET /api/admin/lots`: Partileri, bağlı ürün adını ve kalan gün hesaplamalarını dönen filtreli uç.
+    - `POST /api/admin/lots`: Yeni parti girişi yapan, bağlı ürünün `catalog.Products.StockQuantity` miktarını otomatik artıran ve `admin.AuditLogs` tablosuna `'ProductLotCreated'` yazan uç.
+    - `PATCH /api/admin/lots/{id}/status`: Partiyi `'WrittenOff'` (Fire/İmha) veya `'NearExpiry'` durumuna getiren uç.
+  - Frontend: `lotService.ts` servisi yazıldı; `LotExpiryTrackingPage` canlı veriye bağlandı, sakin renk kodlu rozetler ve yeni parti giriş modalı entegre edildi.
+* **Kazanım:** Son Tüketim Tarihi (STT) ve parti bazlı gıda güvenliği otomasyonu uçtan uca devreye alındı.
+
+---
+
+### ✅ CHECKPOINT 12: 5. Dikey Dilim — Saklama Koşulları ve Depo Raf Takibi
+* **Tarih:** 9 Kasım 2026
+* **Kapsam:**
+  - `catalog` şeması altında `StorageCondition` entity'si oluşturuldu (`Id`, `Name`, `MinTemperature`, `MaxTemperature`, `MaxHumidity`, `RequiresColdChain`, `DefaultShelfZone`, `Description`, `CreatedAtUtc`).
+  - `catalog.Products` tablosuna `StorageConditionId` (Guid?, nullable) ve `ShelfLocation` (string, varchar 100) alanları eklendi.
+  - Migration oluşturuldu ve uygulandı: `20261109110148_Add_Storage_Conditions_Table`.
+  - 4 temel saklama koşulu şablonu seed edildi:
+    1. Kuru Gıda & Bakliyat (15°C - 22°C, Nem: %60, Soğuk Zincir: Hayır, Raf: Kiler-A)
+    2. Soğuk Muhafaza (2°C - 4°C, Nem: %85, Soğuk Zincir: Evet, Raf: Soğuk Oda-1)
+    3. Dondurulmuş / Donuk (-22°C - -18°C, Nem: Belirtilmemiş, Soğuk Zincir: Evet, Raf: Derin Dondurucu-A)
+    4. Serin Mahzen & Taze Manav (10°C - 14°C, Nem: %75, Soğuk Zincir: Hayır, Raf: Mahzen-B)
+  - Minimal API uçları açıldı: `GET/POST /api/admin/storage-conditions`, `GET /api/admin/storage-conditions/products`, `PATCH /api/admin/products/{id}/storage` (`AuditLogs: ProductStorageUpdated`).
+  - Frontend: `storageService.ts` servisi yazıldı; `StorageConditionsPage` canlı veriye bağlandı, 4 interaktif kart ve ürün bazlı raf atama modalı bağlandı.
+* **Kazanım:** Ürün ve Menü Yönetimi menüsünün tüm 5 dikey dilimi başarıyla tamamlandı.
+
+---
+
+### ✅ CHECKPOINT 13: Mobil & Responsive Tasarım Optimizasyonu (Mobile Drawer)
+* **Tarih:** 9 Kasım 2026
+* **Kapsam:**
+  - Mobil ekranlarda sol menünün sabit 270px genişlikle içerik alanını ezmesi engellendi.
+  - `MainLayout`, `Sidebar` ve `Header` bileşenlerine çekmece (drawer) mimarisi eklendi:
+    - 1024px ve altında sidebar varsayılan olarak ekran dışına gizlenir.
+    - Header soluna mobil ekranlarda görünen hamburger menü butonu (`☰`) yerleştirildi.
+    - Menü açıldığında ekranı kaplayan yarı saydam karartma katmanı (`backdrop`) ve menüde kapatma (✕) butonu eklendi.
+    - Menüden bir sayfaya tıklandığında çekmecenin otomatik kapanması sağlandı.
+  - `FoodProductPages` genelindeki başlıklar, arama kutuları ve detay grid'leri esnek (`flex-wrap`, `minmax(min(100%, 310px), 1fr)`) hale getirildi.
+  - Tüm tablolara dokunmatik yatay kaydırma (`responsive-table-container`) eklendi.
+  - Global responsive stiller `frontend/src/styles/responsive.css` dosyasına toplandı.
+* **Kazanım:** Mobil ve dar ekranlarda %100 okunabilir ve erişilebilir yönetim deneyimi sağlandı.
+
+---
 ## 📋 3. Güncel To-Do Listesi (Aktif & Planlanan İşler)
 
 ### Faz 1: Çekirdek Kabuk ve Yönetici Altyapısı (TAMAMLANDI)
@@ -133,22 +219,22 @@ Aşağıdaki checkpoint'ler başarıyla tamamlanmış, derlenmiş ve canlı orta
 
 ---
 
-### Faz 3: Ürün Kataloğu & Kategori Yönetimi (Catalog Module) — (PLANLANDI)
-- [ ] Backend: `Modules/Catalog/` katmanlarının oluşturulması (Domain, Application, Infrastructure, Endpoints)
-- [ ] Veritabanı: `catalog` şeması altında `Products`, `Categories`, `Variants`, `ProductMedia` tabloları
-- [ ] Backend: Ürün ekleme, düzenleme, yayına alma ve kategori hiyerarşisi API'leri
-- [ ] Frontend: `modules/catalog/` altında `CatalogModule` paketlenmesi
-- [ ] Frontend: `ProductsPage.tsx` ve `CategoriesPage.tsx` ekranları
-- [ ] Entegrasyon: `App.tsx` içindeki `AdminShell`'e `catalogModule` eklenmesi
+### Faz 3: Doğal Gıda Ürün & Menü Yönetimi (5 Dikey Dilim) — (TAMAMLANDI)
+- [x] 1. Dikey Dilim: Gelişmiş Ürün Tanımlama (`catalog.Products`, Tartılı/Hacimsel/Paketli)
+- [x] 2. Dikey Dilim: Stok ve Envanter Yönetimi (`StockQuantity`, `GET /api/admin/inventory`, `PATCH /stock`, `AuditLogs`)
+- [x] 3. Dikey Dilim: İçerik, Alerjen ve 100g Besin Değerleri (`NutritionalValues` JSONB/DTO, `Add_Product_Allergens_And_Nutrition`)
+- [x] 4. Dikey Dilim: STT / TETT ve Parti (Lot) Takibi (`catalog.ProductLots`, `Add_Product_Lots_Table`, otomatik stok artışı)
+- [x] 5. Dikey Dilim: Saklama Koşulları ve Depo Raf Takibi (`catalog.StorageConditions`, 4 seed koşulu, `ShelfLocation`)
+- [x] Mobil & Responsive Optimizasyonu (Drawer menü, hamburger butonu, esnek layout)
 
 ---
 
-### Faz 4: Stok & Depo Çekirdeği (Inventory Module DB Entegrasyonu) — (PLANLANDI)
-- [ ] Backend: `Modules/Inventory/` katmanlarının oluşturulması
-- [ ] Veritabanı: `inventory` şeması altında `Warehouses`, `StockItems`, `StockMovements` tabloları
-- [ ] Backend: Giriş, çıkış, sayım farkı ve rezerve stok hareketleri API'leri
-- [ ] Frontend: Mevcut mock `InventoryPage.tsx` sayfasının gerçek `inventoryApi`'ye bağlanması
-- [ ] Entegrasyon: Kritik stok alarm bildirimleri
+### Faz 4: Stok, Depo ve Tedarikçi Geliştirmeleri — (DEVAM EDİYOR)
+- [x] `catalog.Products.StockQuantity` üzerinden canlı envanter takibi
+- [x] Hızlı +1 / -1 stok değişimi ve `admin.AuditLogs` entegrasyonu
+- [x] Parti (Lot) oluşturma sırasında genel ürün stoğunun otomatik artırılması
+- [ ] Çoklu depo (Merkez Depo, Soğuk Hava Deposu, Şube) transfer hareketleri
+- [ ] Tedarikçi sipariş oluşturma ve mal kabul akışları
 
 ---
 

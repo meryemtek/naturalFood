@@ -3,6 +3,7 @@ import { adminApi } from '../../api/adminApi';
 import { Modal } from '../../components/common/Modal';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import type { AdminUser, CreateAdminUserRequest } from '../../api/types';
+import { theme } from '../../theme/tokens';
 
 export const UsersPage: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -72,47 +73,46 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const getRoleBadgeStyle = (role: number | string) => {
-    const r = typeof role === 'number' ? role : role === 'SuperAdmin' ? 1 : role === 'Admin' ? 2 : 3;
-    switch (r) {
+  const getRoleBadgeStyle = (role: number) => {
+    switch (role) {
       case 1:
-        return { bg: '#fef2f2', color: '#b91c1c', border: '#fecaca', label: 'SuperAdmin' };
+        return { bg: theme.colors.primarySubtle, color: theme.colors.primary, border: '#D5E5D4', label: 'SuperAdmin' };
       case 2:
-        return { bg: '#eff6ff', color: '#1d4ed8', border: '#bfdbfe', label: 'Admin' };
+        return { bg: '#F5F2EF', color: theme.colors.cedar, border: theme.colors.border, label: 'Admin' };
       case 3:
+        return { bg: theme.colors.bgSurface, color: theme.colors.taupe, border: theme.colors.border, label: 'Moderator' };
       default:
-        return { bg: '#f0fdf4', color: '#15803d', border: '#bbf7d0', label: 'Moderator' };
+        return { bg: theme.colors.bgSurface, color: theme.colors.taupe, border: theme.colors.border, label: 'Bilinmiyor' };
     }
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '22px' }}>
       {/* Page Title & Actions */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px' }}>
-            Sistem Yöneticileri (Admin Users)
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, letterSpacing: '-0.3px', margin: 0 }}>
+            Rol Bazlı Yetkilendirme & Yöneticiler
           </h1>
-          <p style={{ fontSize: '14px', color: '#64748b', marginTop: '4px' }}>
-            PostgreSQL <code style={{ color: '#2563eb' }}>"admin"</code> şemasındaki yetkili kullanıcıların yönetimi
+          <p style={{ fontSize: '13.5px', color: theme.colors.taupe, marginTop: '4px', marginBottom: 0 }}>
+            PostgreSQL <code style={{ color: theme.colors.primary, fontWeight: 600 }}>"admin"</code> izole şemasındaki yetkili kullanıcıların yönetimi
           </p>
         </div>
 
         <button
           onClick={() => setIsModalOpen(true)}
           style={{
-            backgroundColor: '#2563eb',
-            color: '#fff',
+            backgroundColor: theme.colors.primary,
+            color: theme.colors.textInverse,
             border: 'none',
             padding: '10px 18px',
-            borderRadius: '8px',
+            borderRadius: theme.radii.md,
             fontSize: '13px',
             fontWeight: 600,
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
             gap: '6px',
-            boxShadow: '0 2px 4px rgba(37, 99, 235, 0.2)',
           }}
         >
           <span>+</span> Yeni Yönetici Ekle
@@ -124,10 +124,10 @@ export const UsersPage: React.FC = () => {
         <div
           style={{
             padding: '14px 18px',
-            backgroundColor: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: '8px',
-            color: '#b91c1c',
+            backgroundColor: theme.colors.statusDangerBg,
+            border: `1px solid ${theme.colors.statusDanger}`,
+            borderRadius: theme.radii.md,
+            color: theme.colors.statusDanger,
             fontSize: '14px',
             display: 'flex',
             justifyContent: 'space-between',
@@ -139,10 +139,10 @@ export const UsersPage: React.FC = () => {
             onClick={() => fetchUsers(page)}
             style={{
               background: 'none',
-              border: '1px solid #b91c1c',
-              color: '#b91c1c',
+              border: `1px solid ${theme.colors.statusDanger}`,
+              color: theme.colors.statusDanger,
               padding: '4px 10px',
-              borderRadius: '4px',
+              borderRadius: theme.radii.xs,
               cursor: 'pointer',
               fontSize: '12px',
             }}
@@ -155,27 +155,26 @@ export const UsersPage: React.FC = () => {
       {/* Table Container */}
       <div
         style={{
-          backgroundColor: '#ffffff',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          backgroundColor: theme.colors.bgCard,
+          borderRadius: theme.radii.md,
+          border: `1px solid ${theme.colors.border}`,
           overflow: 'hidden',
         }}
       >
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${theme.colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: '14px', fontWeight: 600, color: theme.colors.espresso }}>
             Toplam {totalCount} Yönetici Kayıtlı
           </span>
           <button
             onClick={() => fetchUsers(page)}
             style={{
               background: 'none',
-              border: '1px solid #cbd5e1',
+              border: `1px solid ${theme.colors.border}`,
               padding: '6px 12px',
-              borderRadius: '6px',
+              borderRadius: theme.radii.sm,
               fontSize: '12px',
               cursor: 'pointer',
-              color: '#475569',
+              color: theme.colors.cedar,
             }}
           >
             🔄 Yenile
@@ -184,7 +183,7 @@ export const UsersPage: React.FC = () => {
 
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
           <thead>
-            <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '12px', textTransform: 'uppercase' }}>
+            <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}`, color: theme.colors.taupe, fontSize: '11.5px', textTransform: 'uppercase' }}>
               <th style={{ padding: '14px 20px' }}>Yönetici / Kimlik</th>
               <th style={{ padding: '14px 20px' }}>E-Posta</th>
               <th style={{ padding: '14px 20px' }}>Rol</th>
@@ -196,13 +195,13 @@ export const UsersPage: React.FC = () => {
           <tbody>
             {isLoading ? (
               <tr>
-                <td colSpan={6} style={{ padding: '36px', textAlign: 'center', color: '#64748b' }}>
+                <td colSpan={6} style={{ padding: '36px', textAlign: 'center', color: theme.colors.taupe }}>
                   Yöneticiler getiriliyor...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                <td colSpan={6} style={{ padding: '36px', textAlign: 'center', color: theme.colors.stoneMuted }}>
                   Henüz kayıtlı kullanıcı bulunmuyor.
                 </td>
               </tr>
@@ -210,12 +209,12 @@ export const UsersPage: React.FC = () => {
               users.map((user) => {
                 const roleStyle = getRoleBadgeStyle(user.role);
                 return (
-                  <tr key={user.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <tr key={user.id} style={{ borderBottom: `1px solid ${theme.colors.borderSubtle}` }}>
                     <td style={{ padding: '14px 20px' }}>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{user.fullName}</div>
-                      <div style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace' }}>{user.id}</div>
+                      <div style={{ fontWeight: 600, color: theme.colors.espresso }}>{user.fullName}</div>
+                      <div style={{ fontSize: '11px', color: theme.colors.stoneMuted, fontFamily: 'monospace' }}>{user.id}</div>
                     </td>
-                    <td style={{ padding: '14px 20px', color: '#334155' }}>{user.email}</td>
+                    <td style={{ padding: '14px 20px', color: theme.colors.espresso }}>{user.email}</td>
                     <td style={{ padding: '14px 20px' }}>
                       <span
                         style={{
@@ -223,8 +222,8 @@ export const UsersPage: React.FC = () => {
                           color: roleStyle.color,
                           border: `1px solid ${roleStyle.border}`,
                           padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px',
+                          borderRadius: theme.radii.xs,
+                          fontSize: '11.5px',
                           fontWeight: 600,
                         }}
                       >
@@ -234,7 +233,7 @@ export const UsersPage: React.FC = () => {
                     <td style={{ padding: '14px 20px', textAlign: 'center' }}>
                       <StatusBadge isActive={user.isActive} />
                     </td>
-                    <td style={{ padding: '14px 20px', color: '#64748b' }}>
+                    <td style={{ padding: '14px 20px', color: theme.colors.taupe }}>
                       {user.createdAtUtc ? new Date(user.createdAtUtc).toLocaleDateString('tr-TR') : '-'}
                     </td>
                     <td style={{ padding: '14px 20px', textAlign: 'right' }}>
@@ -242,16 +241,16 @@ export const UsersPage: React.FC = () => {
                         onClick={() => handleToggleStatus(user)}
                         style={{
                           padding: '6px 12px',
-                          borderRadius: '6px',
+                          borderRadius: theme.radii.sm,
                           fontSize: '12px',
                           fontWeight: 500,
                           cursor: 'pointer',
-                          backgroundColor: user.isActive ? '#fff5f5' : '#f0fdf4',
-                          color: user.isActive ? '#dc2626' : '#16a34a',
-                          border: `1px solid ${user.isActive ? '#fca5a5' : '#86efac'}`,
+                          backgroundColor: user.isActive ? theme.colors.statusDangerBg : theme.colors.statusSuccessBg,
+                          color: user.isActive ? theme.colors.statusDanger : theme.colors.statusSuccess,
+                          border: `1px solid ${user.isActive ? '#F5D3CE' : '#D5E5D4'}`,
                         }}
                       >
-                        {user.isActive ? 'Pasife Al' : 'Aktif Et'}
+                        {user.isActive ? 'Pasife Al' : 'Aktifleştir'}
                       </button>
                     </td>
                   </tr>
@@ -261,103 +260,136 @@ export const UsersPage: React.FC = () => {
           </tbody>
         </table>
 
-        {/* Pagination Footer */}
+        {/* Pagination */}
         {totalPages > 1 && (
-          <div style={{ padding: '14px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
+          <div style={{ padding: '14px 20px', borderTop: `1px solid ${theme.colors.border}`, display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              style={{
+                padding: '6px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                color: theme.colors.espresso,
+                cursor: page <= 1 ? 'not-allowed' : 'pointer',
+                opacity: page <= 1 ? 0.5 : 1,
+              }}
+            >
+              Önceki
+            </button>
+            <span style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: '13px', color: theme.colors.taupe }}>
               Sayfa {page} / {totalPages}
             </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button
-                disabled={page <= 1}
-                onClick={() => fetchUsers(page - 1)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
-                  cursor: page <= 1 ? 'not-allowed' : 'pointer',
-                  opacity: page <= 1 ? 0.5 : 1,
-                  fontSize: '12px',
-                }}
-              >
-                ← Önceki
-              </button>
-              <button
-                disabled={page >= totalPages}
-                onClick={() => fetchUsers(page + 1)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  background: '#fff',
-                  cursor: page >= totalPages ? 'not-allowed' : 'pointer',
-                  opacity: page >= totalPages ? 0.5 : 1,
-                  fontSize: '12px',
-                }}
-              >
-                Sonraki →
-              </button>
-            </div>
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              style={{
+                padding: '6px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                color: theme.colors.espresso,
+                cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+                opacity: page >= totalPages ? 0.5 : 1,
+              }}
+            >
+              Sonraki
+            </button>
           </div>
         )}
       </div>
 
-      {/* Yeni Yönetici Modalı */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Yönetici Kullanıcısı Ekle">
+      {/* Modal: Yeni Yönetici Ekle */}
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Yeni Sistem Yöneticisi Tanımla">
         <form onSubmit={handleCreateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {formErrors && (
-            <div style={{ padding: '10px 14px', backgroundColor: '#fef2f2', color: '#dc2626', borderRadius: '6px', fontSize: '13px' }}>
+            <div style={{ padding: '10px 14px', backgroundColor: theme.colors.statusDangerBg, color: theme.colors.statusDanger, borderRadius: theme.radii.sm, fontSize: '13px' }}>
               {formErrors}
             </div>
           )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Ad Soyad *</label>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+              Ad Soyad
+            </label>
             <input
               type="text"
               required
-              placeholder="Örn: Mehmet Can"
               value={formData.fullName}
               onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-              style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+              placeholder="Örn: Merve Kaya"
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                fontSize: '13px',
+                outline: 'none',
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>E-Posta *</label>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+              E-Posta Adresi
+            </label>
             <input
               type="email"
               required
-              placeholder="admin@ecommerce.local"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+              placeholder="merve.kaya@naturalfood.local"
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                fontSize: '13px',
+                outline: 'none',
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Şifre *</label>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+              Şifre (Min 8 karakter, büyük-küçük harf, rakam)
+            </label>
             <input
               type="password"
               required
-              placeholder="En az 6 karakter"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+              placeholder="••••••••"
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                fontSize: '13px',
+                outline: 'none',
+              }}
             />
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>Rol *</label>
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+              Rol Seçimi
+            </label>
             <select
               value={formData.role}
               onChange={(e) => setFormData({ ...formData, role: Number(e.target.value) })}
-              style={{ padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', backgroundColor: '#fff', outline: 'none' }}
+              style={{
+                width: '100%',
+                padding: '9px 12px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                fontSize: '13px',
+                outline: 'none',
+              }}
             >
+              <option value={2}>Admin (Standart Yönetici)</option>
+              <option value={3}>Moderator (Kısıtlı Yönetici)</option>
               <option value={1}>SuperAdmin (Tam Yetkili)</option>
-              <option value={2}>Admin (Yönetici)</option>
-              <option value={3}>Moderator (Kısıtlı Yetkili)</option>
             </select>
           </div>
 
@@ -365,17 +397,35 @@ export const UsersPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              disabled={isSubmitting}
-              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', cursor: 'pointer', fontSize: '13px' }}
+              style={{
+                padding: '9px 16px',
+                borderRadius: theme.radii.sm,
+                border: `1px solid ${theme.colors.border}`,
+                backgroundColor: theme.colors.bgSurface,
+                color: theme.colors.espresso,
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
             >
               İptal
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}
+              style={{
+                padding: '9px 18px',
+                borderRadius: theme.radii.sm,
+                border: 'none',
+                backgroundColor: theme.colors.primary,
+                color: theme.colors.textInverse,
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                opacity: isSubmitting ? 0.7 : 1,
+              }}
             >
-              {isSubmitting ? 'Kaydediliyor...' : 'Kaydet'}
+              {isSubmitting ? 'Kaydediliyor...' : 'Yöneticiyi Oluştur'}
             </button>
           </div>
         </form>
@@ -383,4 +433,3 @@ export const UsersPage: React.FC = () => {
     </div>
   );
 };
-

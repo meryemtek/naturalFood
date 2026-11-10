@@ -1,7 +1,7 @@
 # MODÜLER E-TİCARET ALTYAPISI — Mühendis ve Ekip Devir Teslim Rehberi (Master Hub)
 
 > **Durum:** Yaşayan Ana Devir Belgesi  
-> **Son Güncelleme:** 5 Kasım 2026  
+> **Son Güncelleme:** 9 Kasım 2026  
 > **Sorumlu:** Mimari & Çekirdek Ekip  
 >
 > **Dokümantasyon Hiyerarşisi:**
@@ -21,11 +21,17 @@
 >
 > * **Mevcut Çalışan Kalıcı Dilimler (Production MVP):**
 >   - **Admin & Yetki Yönetimi:** `AdminUser` yaşam döngüsü, PBKDF2 SHA-256 şifre hash'leme, kullanıcı durumu güncelleme (`admin` PostgreSQL şeması).
->   - **Sistem Denetim İzi (Audit Log):** Kullanıcı oluşturma, pasife alma, oturum ve veri değişikliklerini IP ve detaylarıyla kaydeden kalıcı `AuditLog` motoru.
->   - **Pluggable Admin Shell:** React 19 tabanlı `packages/admin-core` dış kütüphanesi; dinamik `AdminShell`, menü ağacı ve dinamik rota üretimi.
->   - **Genişletilebilir Modül Sözleşmesi:** `AdminFeatureModule` sözleşmesi üzerinden sisteme 0 satır kabuk kodu değiştirilerek bağlanan modüller (`UserManagementModule`, `InventoryModule`).
->   - **Docker & PostgreSQL 18:** İzolasyonlu `admin` şeması ve modüle özel migration geçmiş tablosu (`__EFMigrationsHistory_Admin`).
->   - **E2E Entegrasyon & Vite Proxy:** React 19 Frontend (`apps/web-app`, Port 3000) ile .NET 10 Backend (`ApiHost`, Port 5000) arasındaki CORS'suz canlı ters proxy köprüsü.
+>   - **Sistem Denetim İzi (Audit Log):** Kullanıcı, ürün, stok, alerjen, parti ve saklama koşulu değişikliklerini IP ve detaylarıyla kaydeden kalıcı `AuditLog` motoru.
+>   - **Doğal Gıda Ürün ve Menü Yönetimi (5 Dikey Dilim):**
+>     1. Gelişmiş Ürün Tanımlama (Tartılı, hacimsel ve paketli doğal gıda ürünleri).
+>     2. Stok ve Envanter Yönetimi (`StockQuantity`, Minimal API `PATCH`, AuditLog, sıfır localStorage).
+>     3. İçerik, Alerjen ve 100g Besin Değerleri (`NutritionalValues` JSONB/DTO, gıda güvenliği etiketleri).
+>     4. STT / TETT ve Parti (Lot) Takibi (`ProductLots` tablosu, parti girişiyle otomatik genel stok artışı, fire düşümü).
+>     5. Saklama Koşulları ve Raf Takibi (`StorageConditions`, 4 temel saklama şablonu, `ShelfLocation` koordinatları).
+>   - **Müşteri (Public) Vitrini Entegrasyonu:** `/api/catalog/products` ile admin panelinden eklenen ürünlerin anında müşteri vitrinine düşmesi garantisi (Single Source of Truth).
+>   - **Mobil & Responsive Deneyim:** Çekmece menü (drawer), hamburger butonu (`☰`), arka plan karartması (`backdrop`) ve dokunmatik kaydırılabilir tablolar.
+>   - **Docker & PostgreSQL 18:** İzolasyonlu `admin` ve `catalog` şemaları; modüle özel migration tabloları (`__EFMigrationsHistory_Admin`, `__EFMigrationsHistory_Catalog`).
+>   - **E2E Entegrasyon & Vite Proxy:** React 19 Frontend (Port 3000) ile .NET 10 Backend (Port 5000) arasındaki CORS'suz canlı ters proxy köprüsü.
 >
 > * **Gerçek Canlı Müşteri / E-Ticaret Ortamı İçin Eksik & Planlananlar:**
 >   - Gerçek JWT / Refresh Token / Cookie Kimlik Doğrulama (Şu an açık geliştirme portu ve seed SuperAdmin hesabı aktiftir; Login sayfası ve JWT Bearer auth sıradadır).
@@ -56,14 +62,17 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 | **Pluggable Admin Shell** | Canlı Modüler Kabuk | Bağımsız (State-free) | Var (`AdminShell.tsx`) | N/A (Frontend Kabuğu) | Var (TypeScript strict derlendi) | Evet (`AdminFeatureModule` sözleşmesiyle dinamik) |
 | **Docker & DB Altyapısı** | Canlı Veritabanı | `admin` şeması, port 5433 | pgAdmin / psql | Var (EF Core 10 Npgsql) | Var (`docker compose` healthy) | Evet (PostgreSQL 18 container & volume) |
 | **Vite Dev Proxy & E2E Köprüsü** | Canlı Entegrasyon | N/A | Port 3000 -> 5000 | Port 5000 `ApiHost` | Var (CORS bypass doğrulandı) | Evet (Geliştirici ve test ortamı hazır) |
+| **Ürün Kataloğu & Doğal Gıda (5 Dikey Dilim)** | Canlı Kalıcı Çekirdek | `catalog` (`Products`, `Categories`, `ProductLots`, `StorageConditions`) | Var (`FoodProductPages.tsx`) | Var (`/api/admin/products`, `/details`, `/lots`, `/storage-conditions`) | Var (PostgreSQL E2E Test Edildi) | Evet (Yasal etiketler, STT/TETT, saklama ve raf takibi) |
+| **Stok & Envanter Yönetimi** | Canlı Kalıcı Çekirdek | `catalog` (`StockQuantity`), `admin` (`AuditLogs`) | Var (`InventoryPage.tsx`) | Var (`/api/admin/inventory`, `PATCH /stock`) | Var (Canlı veritabanı bağlandı) | Evet (Hızlı +1/-1, 0 altına düşmeme, kurumsal audit log) |
+| **Müşteri (Public) Katalog Uçları** | Canlı Kalıcı Çekirdek | `catalog` (`Products`, `Categories`) | Hazır API | Var (`/api/catalog/products`, `/categories`) | Var (Single Source of Truth) | Evet (Admin değişiklikleri anında vitrinde listelenir) |
+| **Mobil & Responsive Çekirdek** | Canlı UI İyileştirmesi | N/A | Var (`Sidebar.tsx`, `Header.tsx`, `MainLayout.tsx`) | N/A | Var (Vite build & Mobil test) | Evet (Çekmece menü, hamburger butonu, esnek layout) |
 
 ### B. Hedeflenen / Geliştirilecek Bileşenler (Gelecek Yol Haritası)
 
 | Planlanan Bileşen | Durum | PostgreSQL Şeması | Panel / Ekran | API (.NET 10) | Test | Üretime Hazır mı? |
 |---|---|---|---|---|---|---|
 | **Kimlik Doğrulama & JWT (Auth)** | Planlandı (Sırada) | `admin` veya `auth` | Planlandı (`LoginPage.tsx`) | Taslak (`IPasswordHasher` var, Token Endpoint sırada) | Kısmi | Hayır (JWT Bearer middleware ve Login formu henüz yok) |
-| **Stok & Envanter Çekirdeği** | Mock UI Mevcut; DB Planlandı | Yok (`inventory` sırada) | Kısmi (`InventoryPage.tsx` mock) | Yok (`InventoryService` sırada) | Yok | Hayır (Gerçek veritabanı ve rezerve stok bağlantısı yok) |
-| **Ürün Kataloğu & Kategoriler** | Planlandı | Yok (`catalog` sırada) | Planlandı (`ProductsPage.tsx`) | Planlandı (`CatalogService`) | Yok | Hayır (Varyant, fiyatlandırma ve görsel yönetimi yok) |
+| **Çok Depolu Lojistik & Transfer** | Planlandı (Sırada) | `inventory` (Warehouses, Transfers) | Planlandı | Planlandı | Yok | Hayır (Merkez ve soğuk hava depoları arası sevkiyat) |
 | **Sipariş & Sevkiyat (Orders)** | Planlandı | Yok (`sales`/`orders` sırada) | Planlandı (`OrdersPage.tsx`) | Planlandı (`OrderService`) | Yok | Hayır (Sipariş durum makinesi ve kargo entegrasyonu yok) |
 | **Kasa, Tahsilat & Sanal POS** | Planlandı | Yok (`payments` sırada) | Planlandı (`CashierPage.tsx`) | Planlandı (`PaymentService`) | Yok | Hayır (İyzico/PayTR sanal POS ve tahsilat entegrasyonu yok) |
 

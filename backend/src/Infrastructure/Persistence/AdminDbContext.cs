@@ -26,4 +26,3 @@ public class AdminDbContext : DbContext, IAdminDbContext
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AdminDbContext).Assembly, t => t.Namespace?.Contains("Admin") == true);
     }
 }
-

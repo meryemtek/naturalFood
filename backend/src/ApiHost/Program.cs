@@ -120,6 +120,11 @@ app.MapGet("/", () => Results.Ok(new
     Endpoints = new[]
     {
         "/scalar/v1 (İnteraktif API Test Arayüzü)",
+        "/openapi/v1.json",
+        "/api/admin/health",
+        "/api/admin/users",
+        "/api/admin/audit-logs",
+        "/api/admin/products",
         "/api/content/home (Ana Sayfa Vitrini)",
         "/api/catalog/categories/tree (Hiyerarşik Kategori Ağacı)",
         "/api/catalog/products (Filtreli Ürün Listesi)",
@@ -132,6 +137,8 @@ app.MapGet("/", () => Results.Ok(new
     }
 }));
 
-// Şema değişiklikleri ve örnek veriler açıkça yönetilir; API başlangıcında uygulanmaz.
+// Şema değişiklikleri ve tohum verileri başlat
+await app.Services.InitializeAdminModuleDatabaseAsync();
+await app.Services.InitializeCatalogModuleDatabaseAsync();
 
 app.Run();

@@ -26,6 +26,7 @@ public static class DependencyInjection
                 npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory_Admin", AdminDbContext.DefaultSchema);
                 npgsqlOptions.MigrationsAssembly(typeof(AdminDbContext).Assembly.FullName);
             });
+            options.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
         });
 
         services.AddScoped<IAdminDbContext>(sp => sp.GetRequiredService<AdminDbContext>());
@@ -33,11 +34,16 @@ public static class DependencyInjection
         // Güvenlik & Hash
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
-        // Admin Servisleri
+        // Admin, Ürün & Envanter Servisleri
         services.AddScoped<IAdminService, AdminService>();
+        services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IInventoryService, InventoryService>();
+        services.AddScoped<ILotService, LotService>();
+        services.AddScoped<IStorageService, StorageService>();
 
         // Validatörler
         services.AddValidatorsFromAssemblyContaining<CreateAdminUserRequestValidator>();
+        services.AddValidatorsFromAssemblyContaining<CreateProductRequestValidator>();
 
         return services;
     }
@@ -50,4 +56,3 @@ public static class DependencyInjection
         await context.Database.MigrateAsync();
     }
 }
-

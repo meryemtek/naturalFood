@@ -6,9 +6,10 @@ Bu proje, **Modüler Monolit (Modular Monolith)** mimari prensipleri doğrultusu
 
 ## 🛠️ Teknoloji Yığını
 
-- **Backend:** ASP.NET Core 10 / .NET 10, C# (Clean Architecture & Modular Design)
-- **Veritabanı:** PostgreSQL 18 (EF Core 10 + Npgsql, `"admin"` izole şeması)
-- **Frontend:** React 19 + TypeScript + Vite (Monorepo Workspace)
+- **Backend:** ASP.NET Core 10 / .NET 10, C# (Clean Architecture & Modüler Monolit)
+- **Veritabanı:** PostgreSQL 18 (EF Core 10 + Npgsql, `"admin"` ve `"catalog"` izole şemaları)
+- **Frontend:** React 19 + TypeScript + Vite (Monorepo Workspace, Earth & Botanical Design Tokens)
+- **Mobil & Responsive:** Drawer çekmece menü, dokunmatik yatay kaydırılabilir tablolar, esnek grid yapısı
 - **Dağıtım / Konteyner:** Docker Compose (PostgreSQL 18 + PgAdmin 4)
 
 ---
@@ -25,20 +26,21 @@ admin_paneli/
 │   ├── ModularAdmin.slnx                   # .NET 10 Solution (Klasik Onion Architecture)
 │   └── src/
 │       ├── Domain/                         # Çekirdek Domain Katmanı
-│       │   ├── Entities/Admin/             # Admin Domain Varlıkları (AdminUser, AuditLog)
+│       │   ├── Entities/Admin/             # Admin Varlıkları (AdminUser, AuditLog)
+│       │   ├── Entities/Catalog/           # Katalog Varlıkları (Product, Category, ProductLot, StorageCondition)
 │       │   └── Enums/Admin/                # Admin Enum'ları (AdminRole)
-│       ├── Application/                    # Uygulama Katmanı (Use Cases)
-│       │   ├── Common/                     # Ortak Arayüzler ve Güvenlik (IAdminDbContext, PasswordHasher)
-│       │   ├── DTOs/Admin/                 # Admin Veri Transfer Nesneleri
-│       │   ├── Services/Admin/             # Admin Servis Arayüzleri (IAdminService)
-│       │   └── Validators/Admin/           # Admin FluentValidation Kuralları
+│       ├── Application/                    # Uygulama Katmanı (Use Cases & DTOs)
+│       │   ├── DTOs/Admin/                 # Admin DTO'ları (Product, Lot, Storage, Details)
+│       │   ├── DTOs/Catalog/               # Müşteri Katalog DTO'ları
+│       │   └── Services/                   # Servis Arayüzleri (IAdminService, ILotService, IStorageService, ICatalogService)
 │       ├── Infrastructure/                 # Altyapı Katmanı
-│       │   ├── Persistence/AdminDbContext.cs
-│       │   ├── Persistence/Configurations/Admin/ # EF Core Varlık Konfigürasyonları
-│       │   ├── Persistence/Migrations/Admin/     # İzole Migration Geçmişi
-│       │   └── Services/Admin/             # Servis Implementasyonları (AdminService)
+│       │   ├── Persistence/AdminDbContext.cs     # "admin" şeması (AdminUsers, AuditLogs)
+│       │   ├── Persistence/CatalogDbContext.cs   # "catalog" şeması (Products, Categories, Lots, StorageConditions)
+│       │   ├── Persistence/Migrations/           # İzole migration geçmişleri (__EFMigrationsHistory_Admin, _Catalog)
+│       │   └── Services/                         # EF Core servis implementasyonları
 │       ├── Endpoints/                      # Sunum / Minimal API Katmanı
-│       │   └── Admin/                      # Admin Endpoint Haritalama (AdminModuleExtensions, AdminEndpointsHandler)
+│       │   ├── Admin/                      # Admin CRUD, Envanter, Detay, Lot ve Saklama uçları
+│       │   └── Catalog/                    # Müşteri (Public) Katalog uçları (/api/catalog/products)
 │       └── ApiHost/
 │           └── ApiHost.csproj              # Web API giriş noktası
 └── frontend/                               # React 19 + TypeScript + Vite Portalı
@@ -89,6 +91,38 @@ Her modül kendi adını taşıyan klasörlerde entity, sözleşme, servis, endp
 Yeni bir modülü uygulamaya bağlarken `ApiHost/Program.cs` dosyasına kayıt ve rota çağrıları eklenir. Bu dosya ve katman proje dosyaları ortak birleşme noktalarıdır; paralel branch'lerde bu dosyalarda çakışma hâlâ mümkündür. Mevcut yapı klasör düzeyinde ayrım sağlar, derleme düzeyinde modül izolasyonu sağlamaz. Migration'ları aynı modülde eşzamanlı değiştirirken birleştirme sonrası sıralamayı ve veritabanı güncellemesini ayrıca doğrulayın.
 
 ---
+
+
+---
+
+## 🌾 Doğal Gıda & Ürün Yönetimi Modülü (5 Dikey Dilim Tamamlandı)
+
+Projede doğal gıda e-ticaret operasyonuna özel 5 dikey dilim canlı PostgreSQL veritabanına bağlanmıştır:
+
+1. **Gelişmiş Ürün Tanımlama (`/products/definition`):**
+   - Tartılı (Kg, Gramaj), Hacimsel (Litre) ve Adet/Paket bazlı ürün tanımları.
+   - Doğrudan `catalog."Products"` tablosuna kayıt; müşteri vitrini (`/api/catalog/products`) ile **Single Source of Truth** uyumu.
+2. **Stok & Envanter Yönetimi (`/inventory`):**
+   - Hızlı `+1` ve `-1` stok güncelleme butonları (`PATCH /api/admin/inventory/{id}/stock`).
+   - Stoğun 0'ın altına düşmesini engelleyen koruma ve `admin."AuditLogs"` tablosuna `'StockUpdated'` denetim kaydı.
+   - Tarayıcı hafızasına (`localStorage`) bağımlılık tamamen kaldırılmıştır.
+3. **İçerik, Alerjen ve Besin Değerleri (`/products/allergens-nutrition`):**
+   - İçindekiler listesi (`Ingredients`), yasal alerjen uyarıları (`Allergens`), sertifikalar (`Certifications`).
+   - 100g referanslı Besin Öğeleri Değerleri (`NutritionalValues` JSONB).
+   - `PUT /api/admin/products/{id}/details` ve `'ProductDetailsUpdated'` audit logu.
+4. **STT / TETT ve Parti (Lot) Takibi (`/products/lot-expiry`):**
+   - `catalog."ProductLots"` tablosu ile son tüketim tarihi ve parti bazlı stok kontrolü.
+   - Yeni parti eklendiğinde bağlı ürünün genel stoğunu otomatik artırma (`POST /api/admin/lots`).
+   - Kalan gün hesaplaması, sakin renkli durum rozetleri ve fireye ayırma (`WrittenOff`).
+5. **Saklama Koşulları ve Depo Raf Takibi (`/products/storage-conditions`):**
+   - `catalog."StorageConditions"` tablosu ve 4 doğal gıda şablonu (Kuru Gıda, Soğuk Muhafaza, Donuk, Mahzen).
+   - Ürün bazında sıcaklık aralığı, bağıl nem, soğuk zincir zorunluluğu ve depo raf koordinatı (`ShelfLocation`).
+   - `PATCH /api/admin/products/{id}/storage` ve `'ProductStorageUpdated'` denetim kaydı.
+
+### 📱 Mobil & Responsive Tasarım
+- 1024px ve altı ekranlar için sol çekmece menü (Drawer) ve Header üzerinde Hamburger menü butonu (`☰`).
+- Yarı saydam ekran karartması (`backdrop`), menü içi kapatma butonu ve sayfa tıklandığında otomatik kapanma.
+- Tüm tablolarda dokunmatik yatay kaydırma (`responsive-table-container`) ve mobilde 2'li sütunlara kırılan KPI metrik kartları.
 
 ## 🚀 Başlatma ve Çalıştırma
 
