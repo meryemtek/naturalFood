@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Npgsql;
 using Application.Orders;
+using Application.Cart;
 using Infrastructure.Orders;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +16,23 @@ public static class OrdersModuleExtensions
     public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/orders").WithTags("Siparişler");
+        group.MapGet("/quote", async (HttpContext ctx, ICartService carts, IConfiguration config, CancellationToken ct) =>
+        {
+            var fee = config.GetValue<decimal?>("Checkout:ShippingFee");
+            var threshold = config.GetValue<decimal?>("Checkout:FreeShippingThreshold");
+            if (!config.GetValue<bool>("Checkout:Enabled") || fee is null or < 0 || threshold is null or < 0 || config.GetValue<int?>("Checkout:ReservationMinutes") is null or < 1)
+                return Results.Problem(statusCode: 409, title: "Sipariş kuralları henüz yapılandırılmadı.");
+            try
+            {
+                var cart = await carts.GetAsync(Customer(ctx), ctx.Request.Headers["X-Guest-Cart-Token"].FirstOrDefault(), ct);
+                if (cart.Items.Count == 0) return Results.Problem(statusCode: 409, title: "Sepet boş.");
+                if (!string.IsNullOrEmpty(cart.CouponError)) return Results.Problem(statusCode: 409, title: cart.CouponError);
+                var shipping = cart.Total >= threshold ? 0 : fee.Value;
+                return Results.Ok(new { cart.Subtotal, cart.Discount, shippingFee = shipping, total = cart.Total + shipping });
+            }
+            catch (UnauthorizedAccessException) { return Results.Unauthorized(); }
+            catch (InvalidOperationException ex) { return Results.Problem(statusCode: 409, title: ex.Message); }
+        }).WithSummary("Güncel sepet ve yapılandırılmış kargo ücretine göre sipariş toplamını hesaplar.");
         group.MapPost("/", async (HttpContext ctx, CreateOrderRequest request, IOrderService service, CancellationToken ct) =>
         {
             try

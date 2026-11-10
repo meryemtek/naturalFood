@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+<defs>
+<radialgradient cx="35%" cy="28%" id="red"><stop stop-color="#ff9880"></stop><stop offset=".45" stop-color="#e94c35"></stop><stop offset="1" stop-color="#ab251a"></stop></radialgradient>
+<radialgradient cx="28%" cy="22%" id="green"><stop stop-color="#a4cf6b"></stop><stop offset=".55" stop-color="#49853b"></stop><stop offset="1" stop-color="#24512f"></stop></radialgradient>
+<lineargradient id="carrot" x2="1" y2=".4"><stop stop-color="#fdb344"></stop><stop offset=".5" stop-color="#ea781a"></stop><stop offset="1" stop-color="#b94f12"></stop></lineargradient>
+<lineargradient id="aubergine" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#b183c5"></stop><stop offset=".37" stop-color="#623e81"></stop><stop offset="1" stop-color="#301e4f"></stop></lineargradient>
+<lineargradient id="pepper" x2="1" y2=".7"><stop stop-color="#ff7f59"></stop><stop offset=".55" stop-color="#d6291e"></stop><stop offset="1" stop-color="#952018"></stop></lineargradient>
+<lineargradient id="corn" x2=".7" y2="1"><stop stop-color="#ffe886"></stop><stop offset=".55" stop-color="#efb826"></stop><stop offset="1" stop-color="#d38b1b"></stop></lineargradient>
+<radialgradient cx="30%" cy="25%" id="onion"><stop stop-color="#fff1a8"></stop><stop offset=".5" stop-color="#dbaa56"></stop><stop offset="1" stop-color="#ae762e"></stop></radialgradient>
+<radialgradient cx="35%" cy="24%" id="radish"><stop stop-color="#fb8f92"></stop><stop offset=".5" stop-color="#db3855"></stop><stop offset="1" stop-color="#992540"></stop></radialgradient>
+</defs>
+<symbol id="tomato" viewbox="0 0 120 120">
+<path d="M19 66C13 40 28 24 55 23c28-3 49 15 49 42-1 28-21 46-45 45-25 1-40-18-40-44Z" fill="url(#red)"></path>
+<path d="M36 43C44 38 54 40 60 43" fill="none" opacity=".56" stroke="#ffd0ad" stroke-linecap="round" stroke-width="7"></path>
+<path d="m60 33-7-17 10 10 12-12-4 19 21 1-20 8 4 17-17-12-18 10 8-19-21-3Z" fill="#39713b"></path>
+<path d="M60 30c0-11 3-17 10-21" fill="none" stroke="#31613a" stroke-linecap="round" stroke-width="5"></path>
+</symbol>
+<symbol id="pepper-red" viewbox="0 0 120 120">
+<path d="M60 18c-21-6-35 6-38 28-4 29 4 64 24 66 10 0 13-10 16-10 5 0 11 10 19 6 19-9 23-54 17-70-5-17-20-24-38-20Z" fill="url(#pepper)"></path>
+<path d="M57 28c-18 15-13 48-5 70M69 28c18 15 17 48 10 72" fill="none" opacity=".5" stroke="#8f241a" stroke-width="5"></path>
+<path d="M45 34c-6 11-9 27-7 42" fill="none" opacity=".5" stroke="#ffad83" stroke-linecap="round" stroke-width="8"></path>
+<path d="M51 23c8 6 19 6 29 0M62 25C60 13 63 9 71 6" fill="none" stroke="#36733e" stroke-linecap="round" stroke-width="7"></path>
+</symbol>
+<symbol id="pepper-green" viewbox="0 0 120 120">
+<path d="M60 18c-21-6-35 6-38 28-4 29 4 64 24 66 10 0 13-10 16-10 5 0 11 10 19 6 19-9 23-54 17-70-5-17-20-24-38-20Z" fill="url(#green)"></path>
+<path d="M57 28c-18 15-13 48-5 70M69 28c18 15 17 48 10 72" fill="none" opacity=".5" stroke="#29582b" stroke-width="5"></path>
+<path d="M45 34c-6 11-9 27-7 42" fill="none" opacity=".54" stroke="#d1ec8f" stroke-linecap="round" stroke-width="8"></path>
+<path d="M51 23c8 6 19 6 29 0M62 25C60 13 63 9 71 6" fill="none" stroke="#2d6035" stroke-linecap="round" stroke-width="7"></path>
+</symbol>
+<symbol id="carrot-shape" viewbox="0 0 120 120">
+<path d="M52 38C40 43 36 58 42 74c7 16 9 26 14 38 7-13 12-27 22-48 9-21-6-32-26-26Z" fill="url(#carrot)"></path>
+<path d="m56 38-3-25M56 40c-14-7-18-16-14-29M57 39c12-8 20-13 24-26" fill="none" stroke="#38783b" stroke-linecap="round" stroke-width="8"></path>
+<path d="m45 65 15-4m-11 19 11-3m-7 17 7-3" stroke="#b85d17" stroke-linecap="round" stroke-width="3"></path>
+<path d="M50 48c-4 6-6 14-5 19" fill="none" opacity=".6" stroke="#ffd18b" stroke-linecap="round" stroke-width="5"></path>
+</symbol>
+<symbol id="eggplant" viewbox="0 0 120 120">
+<path d="M64 24C36 20 17 39 19 70c2 28 22 42 44 42 27 0 42-20 38-44-3-23-17-39-37-44Z" fill="url(#aubergine)"></path>
+<path d="M39 44c-11 16-12 37-3 49" fill="none" opacity=".58" stroke="#cfa6db" stroke-linecap="round" stroke-width="7"></path>
+<path d="M62 30 43 17l4 19-19 5 23 2 7 16 7-17 21-6-20-4 3-17Z" fill="#438546"></path>
+<path d="M64 27c1-10 4-15 11-19" fill="none" stroke="#356638" stroke-linecap="round" stroke-width="7"></path>
+</symbol>
+<symbol id="broccoli" viewbox="0 0 120 120">
+<path d="M52 71h24l7 40H44Z" fill="#8ab36e"></path>
+<circle cx="32" cy="52" fill="#397d43" r="22"></circle><circle cx="48" cy="31" fill="#4f9b50" r="24"></circle>
+<circle cx="73" cy="33" fill="#347c3c" r="25"></circle><circle cx="92" cy="54" fill="#2c7038" r="21"></circle>
+<circle cx="57" cy="60" fill="#3b8e45" r="29"></circle><circle cx="43" cy="40" fill="#80b76a" opacity=".7" r="12"></circle>
+<circle cx="80" cy="46" fill="#6ca858" opacity=".65" r="13"></circle><circle cx="46" cy="67" fill="#9acc78" opacity=".4" r="8"></circle>
+</symbol>
+<symbol id="corn-shape" viewbox="0 0 120 120">
+<path d="M37 43C39 20 79 15 85 42l-4 50c-4 24-36 23-41 1Z" fill="url(#corn)"></path>
+<path d="M37 44c-17 7-21 27-14 54 12-9 20-25 20-48M84 43c17 9 19 33 11 54-13-9-17-26-17-48" fill="#5f9952"></path>
+<path d="M46 33v65M58 28v77M70 30v74M81 40v57M40 51h43M40 65h43M41 80h41M45 94h33" fill="none" opacity=".68" stroke="#b57f17" stroke-width="2"></path>
+<path d="M45 39c9-8 21-10 30-4" fill="none" opacity=".6" stroke="#fff7bc" stroke-linecap="round" stroke-width="6"></path>
+</symbol>
+<symbol id="cucumber" viewbox="0 0 120 120">
+<g transform="rotate(-36 60 60)"><rect fill="url(#green)" height="109" rx="24" width="48" x="37" y="5"></rect>
+<path d="M49 21v76M61 18v82M73 21v75" opacity=".54" stroke="#9dca69" stroke-linecap="round" stroke-width="3"></path>
+<circle cx="50" cy="46" fill="#d2e794" r="2"></circle><circle cx="69" cy="64" fill="#d2e794" r="2"></circle><circle cx="57" cy="85" fill="#d2e794" r="2"></circle></g>
+</symbol>
+<symbol id="onion-shape" viewbox="0 0 120 120">
+<path d="M61 10c4 22 35 32 35 62 0 25-16 40-36 40S24 97 24 72c0-30 31-40 37-62Z" fill="url(#onion)"></path>
+<path d="M60 18c-7 20-18 34-18 56 0 18 6 30 16 35M65 18c7 20 18 34 18 56 0 18-6 30-16 35" fill="none" opacity=".38" stroke="#9a6029" stroke-width="2.5"></path>
+<path d="M41 68c-2 14-1 21 5 29" fill="none" opacity=".55" stroke="#fff3b6" stroke-linecap="round" stroke-width="7"></path>
+</symbol>
+<symbol id="radish-shape" viewbox="0 0 120 120">
+<path d="M55 34c-22-2-35 12-34 32 1 22 18 35 35 40 21-10 39-23 39-44 0-20-20-34-40-28Z" fill="url(#radish)"></path>
+<path d="m57 103 2 13" stroke="#f7dfc6" stroke-linecap="round" stroke-width="5"></path>
+<path d="M57 37C31 24 25 11 28 3c14 1 26 10 32 30M60 35C56 16 65 7 75 4c8 14 1 26-12 34M61 37C77 18 95 17 105 24c-8 15-22 20-44 18" fill="#448c4d"></path>
+<path d="M35 53c-6 8-7 15-5 21" fill="none" opacity=".6" stroke="#ffc1b4" stroke-linecap="round" stroke-width="7"></path>
+</symbol>
+<symbol id="lettuce" viewbox="0 0 120 120">
+<path d="M57 108C31 101 18 89 17 67 7 52 19 44 28 37 25 20 40 21 53 20c10-15 21-9 29 1 19-3 24 11 21 25 14 12 8 28-3 38-8 21-27 28-43 24Z" fill="#4b963f"></path>
+<path d="M58 102C24 86 27 61 42 50c3-19 19-25 31-14 18-3 29 15 20 33-5 18-19 29-35 33Z" fill="#8dc665"></path>
+<path d="M59 96c-18-16-24-29-18-44M59 96c16-22 21-34 14-58M59 96c-4-32-2-47 5-60" fill="none" opacity=".85" stroke="#e0ee9b" stroke-linecap="round" stroke-width="4"></path>
+</symbol>
+<symbol id="pumpkin" viewbox="0 0 120 120">
+<path d="M61 24c-30-12-53 11-53 44 0 28 18 45 50 45 36 0 54-18 54-46 0-31-22-53-51-43Z" fill="#c65e20"></path>
+<ellipse cx="60" cy="68" fill="#e57a27" rx="36" ry="45"></ellipse><ellipse cx="60" cy="68" fill="#f09331" rx="21" ry="45"></ellipse>
+<path d="M58 30c-3-10-1-17 8-23" fill="none" stroke="#467c37" stroke-linecap="round" stroke-width="8"></path>
+<path d="M60 25c-10-10-17-8-25-3M61 25c12-9 21-8 29-1" fill="none" stroke="#4c873e" stroke-linecap="round" stroke-width="5"></path>
+</symbol>
+</svg>

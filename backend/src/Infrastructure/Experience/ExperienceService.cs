@@ -18,6 +18,18 @@ public class ExperienceService(ExperienceDbContext db, CatalogDbContext catalog,
             .OrderByDescending(x => x.CreatedAtUtc).ThenBy(x => x.Id).Skip((page - 1) * 20).Take(20)
             .Select(x => new ReviewView(x.Id, x.Rating, x.Text, x.CreatedAtUtc)).ToListAsync(ct);
     }
+    public async Task<IReadOnlyList<CustomerReviewView>> CustomerReviewsAsync(Guid customerId, CancellationToken ct)
+    {
+        var reviews = await db.Reviews.AsNoTracking().Where(x => x.CustomerId == customerId)
+            .OrderByDescending(x => x.CreatedAtUtc).Take(100).ToListAsync(ct);
+        var ids = reviews.Select(x => x.ProductId).Distinct().ToArray();
+        var products = await catalog.Products.AsNoTracking().Where(x => ids.Contains(x.Id))
+            .Select(x => new { x.Id, x.Name, x.Slug }).ToDictionaryAsync(x => x.Id, ct);
+        return reviews.Select(x => {
+            products.TryGetValue(x.ProductId, out var product);
+            return new CustomerReviewView(x.Id, x.ProductId, product?.Name, product?.Slug, x.Rating, x.Text, x.Status, x.CreatedAtUtc);
+        }).ToList();
+    }
     public async Task AddReviewAsync(Guid productId, Guid customerId, CreateReviewRequest request, CancellationToken ct)
     {
         if (request.Rating is < 1 or > 5 || string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 2000) throw new ArgumentException("Yorum veya puan geçersiz.");

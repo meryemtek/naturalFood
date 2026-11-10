@@ -1,7 +1,7 @@
 namespace Application.Cart;
 
 public record SetCartItemRequest(Guid ProductId, Guid? VariantId, int Quantity);
-public record CartLine(Guid Id, Guid ProductId, Guid? VariantId, Guid CategoryId, string Name, string Sku, int Quantity, decimal UnitPrice, int AvailableStock, decimal LineTotal);
+public record CartLine(Guid Id, Guid ProductId, Guid? VariantId, Guid CategoryId, string Name, string Sku, int Quantity, decimal UnitPrice, int AvailableStock, decimal LineTotal, string ProductSlug, string? ImageUrl, string? VariantName, string UnitInfo);
 public record CartView(Guid Id, IReadOnlyList<CartLine> Items, decimal Subtotal, string? CouponCode = null, decimal Discount = 0, decimal Total = 0, string? CouponError = null);
 public record ApplyCouponRequest(string Code);
 public record GuestCartCreated(string Token, CartView Cart);

@@ -2,9 +2,11 @@ using System.Security.Claims;
 using Application.Customer.DTOs;
 using Application.Customer.Services;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Npgsql;
 
 namespace Endpoints.Customer;
 
@@ -38,6 +40,14 @@ public static class CustomerEndpointsHandler
             catch (InvalidOperationException ex)
             {
                 return Results.BadRequest(new { message = ex.Message });
+            }
+            catch (DbUpdateException ex) when (ex.GetBaseException() is PostgresException
+            {
+                SqlState: PostgresErrorCodes.UniqueViolation,
+                ConstraintName: "IX_Customers_Email"
+            })
+            {
+                return Results.Conflict(new { message = "Bu e-posta adresi ile hesap oluşturulamıyor." });
             }
         })
         .WithName("Register")

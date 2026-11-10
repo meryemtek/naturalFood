@@ -12,6 +12,11 @@ public static class ExperienceEndpoints
     public static IEndpointRouteBuilder MapExperienceEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/api/products/{productId:guid}/reviews", async (Guid productId, int? page, IExperienceService service, CancellationToken ct) => Results.Ok(await service.ReviewsAsync(productId, page ?? 1, ct))).WithTags("Ürün Yorumları");
+        app.MapGet("/api/customer/reviews", async (HttpContext context, IExperienceService service, CancellationToken ct) =>
+        {
+            if (!context.User.IsInRole("Customer") || !Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var customerId)) return Results.Unauthorized();
+            return Results.Ok(await service.CustomerReviewsAsync(customerId, ct));
+        }).RequireAuthorization().WithTags("Ürün Yorumları");
         app.MapPost("/api/products/{productId:guid}/reviews", async (Guid productId, CreateReviewRequest request, HttpContext context, IExperienceService service, CancellationToken ct) =>
         {
             if (!context.User.IsInRole("Customer") || !Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var customerId)) return Results.Unauthorized();

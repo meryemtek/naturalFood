@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><defs>
+      <radialGradient id="red" cx="35%" cy="28%"><stop stop-color="#ff9880" /><stop offset=".45" stop-color="#e94c35" /><stop offset="1" stop-color="#ab251a" /></radialGradient>
+      <radialGradient id="green" cx="28%" cy="22%"><stop stop-color="#a4cf6b" /><stop offset=".55" stop-color="#49853b" /><stop offset="1" stop-color="#24512f" /></radialGradient>
+      <linearGradient id="carrot" x2="1" y2=".4"><stop stop-color="#fdb344" /><stop offset=".5" stop-color="#ea781a" /><stop offset="1" stop-color="#b94f12" /></linearGradient>
+      <linearGradient id="aubergine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b183c5" /><stop offset=".37" stop-color="#623e81" /><stop offset="1" stop-color="#301e4f" /></linearGradient>
+      <linearGradient id="pepper" x2="1" y2=".7"><stop stop-color="#ff7f59" /><stop offset=".55" stop-color="#d6291e" /><stop offset="1" stop-color="#952018" /></linearGradient>
+      <linearGradient id="corn" x2=".7" y2="1"><stop stop-color="#ffe886" /><stop offset=".55" stop-color="#efb826" /><stop offset="1" stop-color="#d38b1b" /></linearGradient>
+      <radialGradient id="onion" cx="30%" cy="25%"><stop stop-color="#fff1a8" /><stop offset=".5" stop-color="#dbaa56" /><stop offset="1" stop-color="#ae762e" /></radialGradient>
+      <radialGradient id="radish" cx="35%" cy="24%"><stop stop-color="#fb8f92" /><stop offset=".5" stop-color="#db3855" /><stop offset="1" stop-color="#992540" /></radialGradient>
+    </defs>
+    <path d="M57 108C31 101 18 89 17 67 7 52 19 44 28 37 25 20 40 21 53 20c10-15 21-9 29 1 19-3 24 11 21 25 14 12 8 28-3 38-8 21-27 28-43 24Z" fill="#4b963f" />
+      <path d="M58 102C24 86 27 61 42 50c3-19 19-25 31-14 18-3 29 15 20 33-5 18-19 29-35 33Z" fill="#8dc665" />
+      <path d="M59 96c-18-16-24-29-18-44M59 96c16-22 21-34 14-58M59 96c-4-32-2-47 5-60" stroke="#e0ee9b" stroke-width="4" opacity=".85" fill="none" stroke-linecap="round" />
+    </svg>

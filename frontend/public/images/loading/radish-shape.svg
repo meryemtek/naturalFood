@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120"><defs>
+      <radialGradient id="red" cx="35%" cy="28%"><stop stop-color="#ff9880" /><stop offset=".45" stop-color="#e94c35" /><stop offset="1" stop-color="#ab251a" /></radialGradient>
+      <radialGradient id="green" cx="28%" cy="22%"><stop stop-color="#a4cf6b" /><stop offset=".55" stop-color="#49853b" /><stop offset="1" stop-color="#24512f" /></radialGradient>
+      <linearGradient id="carrot" x2="1" y2=".4"><stop stop-color="#fdb344" /><stop offset=".5" stop-color="#ea781a" /><stop offset="1" stop-color="#b94f12" /></linearGradient>
+      <linearGradient id="aubergine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b183c5" /><stop offset=".37" stop-color="#623e81" /><stop offset="1" stop-color="#301e4f" /></linearGradient>
+      <linearGradient id="pepper" x2="1" y2=".7"><stop stop-color="#ff7f59" /><stop offset=".55" stop-color="#d6291e" /><stop offset="1" stop-color="#952018" /></linearGradient>
+      <linearGradient id="corn" x2=".7" y2="1"><stop stop-color="#ffe886" /><stop offset=".55" stop-color="#efb826" /><stop offset="1" stop-color="#d38b1b" /></linearGradient>
+      <radialGradient id="onion" cx="30%" cy="25%"><stop stop-color="#fff1a8" /><stop offset=".5" stop-color="#dbaa56" /><stop offset="1" stop-color="#ae762e" /></radialGradient>
+      <radialGradient id="radish" cx="35%" cy="24%"><stop stop-color="#fb8f92" /><stop offset=".5" stop-color="#db3855" /><stop offset="1" stop-color="#992540" /></radialGradient>
+    </defs>
+    <path d="M55 34c-22-2-35 12-34 32 1 22 18 35 35 40 21-10 39-23 39-44 0-20-20-34-40-28Z" fill="url(#radish)" />
+      <path d="m57 103 2 13" stroke="#f7dfc6" stroke-width="5" stroke-linecap="round" />
+      <path d="M57 37C31 24 25 11 28 3c14 1 26 10 32 30M60 35C56 16 65 7 75 4c8 14 1 26-12 34M61 37C77 18 95 17 105 24c-8 15-22 20-44 18" fill="#448c4d" />
+      <path d="M35 53c-6 8-7 15-5 21" stroke="#ffc1b4" stroke-width="7" stroke-linecap="round" opacity=".6" fill="none" />
+    </svg>

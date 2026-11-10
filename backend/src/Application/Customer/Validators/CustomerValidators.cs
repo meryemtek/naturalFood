@@ -9,6 +9,7 @@ public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
     {
         RuleFor(x => x.Email)
             .NotEmpty().WithMessage("E-posta adresi zorunludur.")
+            .MaximumLength(256).WithMessage("E-posta adresi en fazla 256 karakter olabilir.")
             .EmailAddress().WithMessage("Geçerli bir e-posta adresi giriniz.");
 
         RuleFor(x => x.Password)

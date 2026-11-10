@@ -40,7 +40,7 @@ public class CartService(CartDbContext carts, CatalogDbContext catalog, ICouponC
 
     private async Task<CartLine> PriceAsync(CartItem item, bool checkStock, CancellationToken ct)
     {
-        var product = await catalog.Products.AsNoTracking().Include(x => x.Variants)
+        var product = await catalog.Products.AsNoTracking().Include(x => x.Variants).Include(x => x.Images).AsSplitQuery()
             .SingleOrDefaultAsync(x => x.Id == item.ProductId && x.IsActive, ct)
             ?? throw new InvalidOperationException("Ürün satışta değil.");
         var variant = item.VariantId.HasValue ? product.Variants.SingleOrDefault(x => x.Id == item.VariantId && x.IsActive) : null;
@@ -49,7 +49,8 @@ public class CartService(CartDbContext carts, CatalogDbContext catalog, ICouponC
         var stock = variant?.StockQuantity ?? product.StockQuantity;
         if (checkStock && stock < item.Quantity) throw new InvalidOperationException("Yetersiz stok.");
         var price = variant != null ? variant.DiscountPrice ?? variant.Price : product.DiscountPrice ?? product.BasePrice;
-        return new CartLine(item.Id, product.Id, variant?.Id, product.CategoryId, product.Name, variant?.Sku ?? product.Sku, item.Quantity, price, stock, price * item.Quantity);
+        var image = product.Images.OrderByDescending(x => x.IsMain).ThenBy(x => x.DisplayOrder).FirstOrDefault();
+        return new CartLine(item.Id, product.Id, variant?.Id, product.CategoryId, product.Name, variant?.Sku ?? product.Sku, item.Quantity, price, stock, price * item.Quantity, product.Slug, image?.ImageUrl, variant?.Name, variant?.UnitInfo ?? product.UnitInfo);
     }
     private async Task<CartView> ViewAsync(ShoppingCart cart, CancellationToken ct)
     {
