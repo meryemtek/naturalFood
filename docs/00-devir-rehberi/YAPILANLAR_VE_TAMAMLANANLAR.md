@@ -101,6 +101,22 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
 
 ---
 
+---
+
+## ⭐ AŞAMA 5: CRM Müşteri Değerlendirmeleri ve Dashboard Entegrasyonu (11 Kasım 2026)
+
+### ✅ CHECKPOINT 14: Düşük Puanlı Müşteri Yorumları (Dashboard Takibi) & Tüm Yorumlar (/crm/reviews)
+* **Veritabanı & Migration:** `experience."Reviews"` tablosuna `AdminResponse` ve `RespondedAtUtc` kolonları eklendi (`20261111132129_Add_AdminResponse_To_Reviews`), `customer` ve `experience` şemaları PostgreSQL 5433'e uygulandı.
+* **Backend Uçları ([`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs), [`AdminReviewService.cs`](../../backend/src/Infrastructure/Services/Admin/AdminReviewService.cs)):**
+  - `GET /api/admin/reviews/dashboard-attention`: Genel mağaza ortalama puanını (`averageStoreRating`), incelenmemiş düşük puanlı sayısını (`unresolvedNegativeCount`) ve sadece `Rating <= 3` olan son 5 müdahale bekleyen yorumu döner.
+  - `POST /api/admin/reviews/{id}/quick-response`: Satıcı yanıtı ekler ve/veya yorumu `'Reviewed'` (İncelendi) durumuna geçirir; `admin."AuditLogs"` tablosuna `'ReviewResponded'` / `'ReviewMarkedAsReviewed'` yazar.
+  - `GET /api/admin/reviews` & `PATCH /api/admin/reviews/{id}/status`: `/crm/reviews` detay sayfası için 1–5 yıldız tüm yorumların filtrelenebilir listesi.
+* **Frontend Ekranları:**
+  - **Dashboard (`DashboardPage.tsx`):** Üstte "Müşteri Memnuniyeti" KPI kartı (⭐ Ortalama Puan + soft amber uyarı rozeti) ve "Dikkat Gerektiren Müşteri Geri Bildirimleri (1-3 Yıldız)" müdahale widget'ı, hızlı yanıt modalı ve `/crm/reviews` yönlendirme butonları bağlandı.
+  - **Müşteri Değerlendirmeleri (`CustomerReviewsPage.tsx`):** `/crm/reviews` rotasına bağlı tam özellikli 1–5 yıldız yorum listesi, arama/puan/durum filtreleri ve yanıt yönetimi.
+
+---
+
 ## 📚 AŞAMA 4: Dokümantasyon Güncellemesi (9–11 Kasım 2026)
 * Tüm teknik şartnameler, kök `README.md`, `docs/README.md` ve devir rehberi belgeleri yapılan dikey dilimlerle senkronize edildi.
 * **Yapılanlar** ([`YAPILANLAR_VE_TAMAMLANANLAR.md`](YAPILANLAR_VE_TAMAMLANANLAR.md)) ve **Yapılacaklar / Faz Haritası** ([`YAPILACAKLAR_VE_FAZ_HARITASI.md`](YAPILACAKLAR_VE_FAZ_HARITASI.md)) ayrı sayfalara bölündü.

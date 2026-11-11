@@ -13,7 +13,7 @@ Aşağıdaki tablo, sol menüdeki tüm ekranların bugünkü gerçek bağlanma d
 
 | Menü Grubu | Alt Menü & Rota | Mevcut Frontend Durumu | Backend / DB Durumu | Hedef Faz |
 |---|---|---|---|---|
-| **Dashboard** | `/dashboard` (Anasayfa) | ⚠️ Statik / Mock UI (`DashboardPage.tsx`) | Canlı API'ye bağlanmayı bekliyor | **Faz 3** |
+| **Dashboard** | `/dashboard` (Anasayfa) | 🚧 Kısmi (Müşteri Memnuniyeti & 1-3★ Yorumlar ✅ Canlı; Sipariş/Sensör kartları Mock) | `/api/admin/reviews/dashboard-attention` ✅ Canlı | **Faz 3** |
 | **Ürün & Menü** | `/products/*` (4 Ekranın Tümü) | ✅ Canlı UI (`FoodProductPages.tsx`) | ✅ `catalog` şeması tam bağlı | *(Tamamlandı)* |
 | **Stok & Depo** | `/inventory` (Stok Durumu) | ✅ Canlı UI (`InventoryPage.tsx`) | ✅ `catalog.Products` + `AuditLogs` | *(Tamamlandı)* |
 | **Stok & Depo** | `/inventory/suppliers-procurement` | ⚠️ Statik / Mock UI (`SupplierProcurementPage.tsx`) | ❌ DB & API henüz yazılmadı | **Faz 2** |
@@ -21,7 +21,8 @@ Aşağıdaki tablo, sol menüdeki tüm ekranların bugünkü gerçek bağlanma d
 | **Stok & Depo** | `/inventory/transactions` (Stok Hareketleri) | 🚧 `ModulePlaceholderPage` | ❌ `inventory` şeması bekleniyor | **Faz 2** |
 | **Stok & Depo** | `/inventory/alerts` (Kritik Stok Uyarıları) | 🚧 `ModulePlaceholderPage` | ⚠️ Kısmen `/inventory` içinde var | **Faz 2** |
 | **Sipariş & Sevkiyat** | `/orders/*` & `/shipping/*` (7 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Orders`, `Shipment` backend hazır | **Faz 4** |
-| **CRM & Destek** | `/crm/*` (4 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Customer`, `Experience` backend hazır | **Faz 5** |
+| **CRM & Destek** | `/crm/reviews` (Müşteri Değerlendirmeleri) | ✅ Canlı UI (`CustomerReviewsPage.tsx`) | ✅ `experience.Reviews` + `customer.Customers` tam bağlı | *(Tamamlandı)* |
+| **CRM & Destek** | `/crm/customers`, `/segments`, `/tickets` | 🚧 `ModulePlaceholderPage` | ✅ `Customer` backend hazır | **Faz 5** |
 | **Pazarlama** | `/marketing/*` (5 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Promotions`, `Content` backend hazır | **Faz 5** |
 | **Raporlama** | `/analytics/*` (4 Ekran) | 🚧 `ModulePlaceholderPage` | ❌ Rapor sorguları bekleniyor | **Faz 5** |
 | **Yönetim & Güvenlik** | `/admin/users`, `/admin/audit-logs` | ✅ Canlı UI | ✅ `admin` şeması tam bağlı | *(Tamamlandı)* |
@@ -89,7 +90,7 @@ Stok ve Depo Yönetimi bölümünün `/inventory` dışındaki kalan 4 ekranın�
 #### 5.1. Müşteri İlişkileri ve Destek (`/crm/*`)
 - [ ] Backend'de hazır olan `CustomerDbContext` ve `ExperienceDbContext` üzerinden Admin ekranlarının açılması:
   - Müşteri Listesi (`/crm/customers`), Müşteri Segmentleri (`/crm/segments`).
-  - Destek Biletleri (`/crm/tickets`), Ürün Değerlendirmeleri ve Yorum Onaylama (`/crm/reviews`).
+  - Destek Biletleri (`/crm/tickets`) *(Not: `/crm/reviews` tamamlandı ✅)*.
 
 #### 5.2. Pazarlama ve Kampanya Yönetimi (`/marketing/*`)
 - [ ] Backend'deki `PromotionsDbContext` ve `ContentDbContext` verilerinin Admin arayüzüne bağlanması:
