@@ -13,6 +13,7 @@ import { UsersPage } from './pages/admin/UsersPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
 import { InventoryPage } from './pages/inventory/InventoryPage';
 import { SupplierProcurementPage } from './pages/inventory/SupplierProcurementPage';
+import { CustomerReviewsPage } from './pages/crm/CustomerReviewsPage';
 import { ModulePlaceholderPage } from './pages/common/ModulePlaceholderPage';
 import {
   ProductDefinitionPage,
@@ -81,7 +82,7 @@ export default function App() {
           <Route path="crm/customers" element={<ModulePlaceholderPage />} />
           <Route path="crm/segments" element={<ModulePlaceholderPage />} />
           <Route path="crm/tickets" element={<ModulePlaceholderPage />} />
-          <Route path="crm/reviews" element={<ModulePlaceholderPage />} />
+          <Route path="crm/reviews" element={<CustomerReviewsPage />} />
 
           {/* 5. Pazarlama ve Kampanya Yönetimi */}
           <Route path="marketing/coupons" element={<ModulePlaceholderPage />} />

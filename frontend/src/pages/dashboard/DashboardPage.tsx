@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { theme } from '../../theme/tokens';
 import { Modal } from '../../components/common/Modal';
+import {
+  reviewService,
+  DashboardReviewsAttentionResponse,
+  DashboardAttentionReviewDto,
+} from '../../services/reviewService';
 
 // --- Types ---
 interface ShelfLifeItem {
@@ -41,6 +46,83 @@ export const DashboardPage: React.FC = () => {
     setTimeout(() => {
       setToastMessage((curr) => (curr === msg ? null : curr));
     }, 4000);
+  };
+
+  // --- Müşteri Değerlendirmeleri (Canlı CRM Risk Takibi) State ---
+  const [reviewAttention, setReviewAttention] = useState<DashboardReviewsAttentionResponse | null>(null);
+  const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [selectedReviewForReply, setSelectedReviewForReply] = useState<DashboardAttentionReviewDto | null>(null);
+  const [quickReplyText, setQuickReplyText] = useState<string>('');
+  const [markAsReviewed, setMarkAsReviewed] = useState<boolean>(true);
+  const [isSendingReply, setIsSendingReply] = useState<boolean>(false);
+
+  const loadReviewAttention = useCallback(async () => {
+    try {
+      setIsLoadingReviews(true);
+      setReviewError(null);
+      const data = await reviewService.getDashboardAttention();
+      setReviewAttention(data);
+    } catch (err: any) {
+      setReviewError(err?.message || 'Müşteri geri bildirimleri yüklenemedi.');
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadReviewAttention();
+  }, [loadReviewAttention]);
+
+  const handleOpenQuickReplyModal = (review: DashboardAttentionReviewDto) => {
+    setSelectedReviewForReply(review);
+    setQuickReplyText(review.adminResponse || '');
+    setMarkAsReviewed(true);
+  };
+
+  const handleSubmitQuickReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReviewForReply) return;
+
+    try {
+      setIsSendingReply(true);
+      await reviewService.quickRespond(selectedReviewForReply.id, {
+        responseText: quickReplyText.trim() || null,
+        markAsReviewed,
+      });
+      setSelectedReviewForReply(null);
+      showToast('✓ Müşteri değerlendirmesi yanıtlandı ve incelendi olarak güncellendi.');
+      await loadReviewAttention();
+    } catch (err: any) {
+      alert(err?.message || 'Yanıt kaydedilirken hata oluştu.');
+    } finally {
+      setIsSendingReply(false);
+    }
+  };
+
+  const handleQuickMarkReviewedOnly = async (review: DashboardAttentionReviewDto) => {
+    try {
+      await reviewService.quickRespond(review.id, {
+        responseText: review.adminResponse || null,
+        markAsReviewed: true,
+      });
+      showToast(`✓ ${review.customerName} yorumu "İncelendi" olarak işaretlendi.`);
+      await loadReviewAttention();
+    } catch (err: any) {
+      alert(err?.message || 'İşlem sırasında hata oluştu.');
+    }
+  };
+
+  const renderAttentionStars = (rating: number) => {
+    const filled = '★'.repeat(rating);
+    const empty = '☆'.repeat(Math.max(0, 5 - rating));
+    const color = rating <= 2 ? theme.colors.statusDanger : theme.colors.statusWarning;
+    return (
+      <span style={{ color, fontSize: '15px', letterSpacing: '1px', fontWeight: 700, whiteSpace: 'nowrap' }}>
+        {filled}
+        <span style={{ color: theme.colors.stoneMuted, opacity: 0.45 }}>{empty}</span>
+      </span>
+    );
   };
 
   // --- Modals State ---
@@ -376,7 +458,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
       {/* Toast Alert Notification */}
       {toastMessage && (
         <div
@@ -429,10 +511,10 @@ export const DashboardPage: React.FC = () => {
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <h1
               style={{
-                fontSize: '23px',
+                fontSize: 'clamp(18px, 4.5vw, 23px)',
                 fontWeight: 700,
                 color: theme.colors.espresso,
                 letterSpacing: '-0.4px',
@@ -599,7 +681,7 @@ export const DashboardPage: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
           gap: '16px',
         }}
       >
@@ -830,6 +912,402 @@ export const DashboardPage: React.FC = () => {
             <strong style={{ color: theme.colors.statusWarning }}>3 ürün</strong> kritik eşik altı
           </div>
         </div>
+
+        {/* KPI Kartı 5: Müşteri Memnuniyeti (Canlı CRM Verisi) */}
+        <div
+          style={{
+            backgroundColor: theme.colors.bgCard,
+            borderRadius: theme.radii.md,
+            border: `1px solid ${theme.colors.border}`,
+            padding: '20px 22px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px' }}>
+            <span
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                letterSpacing: '0.6px',
+                color: theme.colors.taupe,
+                textTransform: 'uppercase',
+              }}
+            >
+              MÜŞTERİ MEMNUNİYETİ
+            </span>
+            <span
+              style={{
+                fontSize: '10px',
+                fontWeight: 600,
+                padding: '2px 7px',
+                borderRadius: theme.radii.xs,
+                backgroundColor: theme.colors.primarySubtle,
+                color: theme.colors.primary,
+              }}
+            >
+              Canlı CRM
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+            <span
+              style={{
+                fontSize: '28px',
+                fontWeight: 700,
+                color: theme.colors.espresso,
+                letterSpacing: '-0.5px',
+                lineHeight: 1.1,
+              }}
+            >
+              ⭐ {reviewAttention ? reviewAttention.averageStoreRating.toFixed(1) : '—'}
+            </span>
+            <span style={{ fontSize: '13px', color: theme.colors.taupe, fontWeight: 500 }}>
+              / 5.0
+            </span>
+            {reviewAttention && reviewAttention.unresolvedNegativeCount > 0 ? (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: theme.colors.statusWarning,
+                  backgroundColor: theme.colors.statusWarningBg,
+                  border: '1px solid #F1D4B8',
+                  padding: '2px 8px',
+                  borderRadius: theme.radii.xs,
+                  marginLeft: 'auto',
+                }}
+              >
+                {reviewAttention.unresolvedNegativeCount} Adet İnceleme Bekleyen Olumsuz Yorum
+              </span>
+            ) : (
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  color: theme.colors.statusSuccess,
+                  backgroundColor: theme.colors.statusSuccessBg,
+                  border: '1px solid #C9E2CB',
+                  padding: '2px 8px',
+                  borderRadius: theme.radii.xs,
+                  marginLeft: 'auto',
+                }}
+              >
+                Olumsuzlar İncelendi ✓
+              </span>
+            )}
+          </div>
+
+          <div style={{ fontSize: '12.5px', color: theme.colors.taupe, marginTop: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>
+              Toplam <strong style={{ color: theme.colors.espresso }}>{reviewAttention?.totalReviewCount ?? 0}</strong> mağaza yorumu
+            </span>
+            <Link to="/crm/reviews" style={{ color: theme.colors.primary, fontWeight: 600, textDecoration: 'none' }}>
+              Tümünü Gör →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          BÖLÜM 2.5: MÜDAHALE BEKLEYEN MÜŞTERİ DEĞERLENDİRMELERİ (CRM Widget - 1-3 Yıldız)
+          ========================================================================= */}
+      <div
+        style={{
+          backgroundColor: theme.colors.bgCard,
+          borderRadius: theme.radii.md,
+          border: `1px solid ${theme.colors.border}`,
+          padding: '20px 18px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        }}
+      >
+        {/* Widget Header */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '12px',
+          }}
+        >
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <h2
+                style={{
+                  fontSize: '16.5px',
+                  fontWeight: 700,
+                  color: theme.colors.espresso,
+                  margin: 0,
+                  letterSpacing: '-0.2px',
+                }}
+              >
+                Dikkat Gerektiren Müşteri Geri Bildirimleri (1-3 Yıldız)
+              </h2>
+              {reviewAttention && reviewAttention.unresolvedNegativeCount > 0 && (
+                <span
+                  style={{
+                    fontSize: '11.5px',
+                    fontWeight: 600,
+                    padding: '2px 9px',
+                    borderRadius: theme.radii.full,
+                    backgroundColor: theme.colors.statusWarningBg,
+                    color: theme.colors.statusWarning,
+                    border: '1px solid #F1D4B8',
+                  }}
+                >
+                  {reviewAttention.unresolvedNegativeCount} Acil İlgi Bekliyor
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: '12.5px', color: theme.colors.taupe, margin: '4px 0 0 0' }}>
+              Yalnızca düşük puanlı (1, 2 ve 3 yıldız) müşteri yorumları listelenir; memnuniyet takibi için hızlı yanıt verin.
+            </p>
+          </div>
+
+          <Link
+            to="/crm/reviews"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '7px 14px',
+              borderRadius: theme.radii.sm,
+              backgroundColor: theme.colors.bgSurface,
+              color: theme.colors.primary,
+              border: `1px solid ${theme.colors.border}`,
+              fontSize: '12.5px',
+              fontWeight: 600,
+              textDecoration: 'none',
+              whiteSpace: 'normal',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+              lineHeight: 1.35,
+            }}
+          >
+            Tüm Değerlendirmeleri Gör (Müşteri İlişkileri) →
+          </Link>
+        </div>
+
+        {/* Review Items List */}
+        {isLoadingReviews ? (
+          <div style={{ padding: '24px', textAlign: 'center', color: theme.colors.taupe, fontSize: '13px' }}>
+            Olumsuz geri bildirimler kontrol ediliyor...
+          </div>
+        ) : reviewError ? (
+          <div
+            style={{
+              padding: '14px',
+              borderRadius: theme.radii.sm,
+              backgroundColor: theme.colors.statusWarningBg,
+              border: '1px solid #F1D4B8',
+              color: theme.colors.statusWarning,
+              fontSize: '13px',
+            }}
+          >
+            {reviewError}
+          </div>
+        ) : !reviewAttention || reviewAttention.criticalReviews.length === 0 ? (
+          <div
+            style={{
+              padding: '24px',
+              borderRadius: theme.radii.sm,
+              backgroundColor: theme.colors.statusSuccessBg,
+              border: '1px solid #C9E2CB',
+              color: theme.colors.statusSuccess,
+              textAlign: 'center',
+              fontSize: '13.5px',
+              fontWeight: 600,
+            }}
+          >
+            ✓ Şu anda düşük puanlı (1-3 yıldız) müşteri geri bildirimi bulunmuyor.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {reviewAttention.criticalReviews.map((rev) => (
+              <div
+                key={rev.id}
+                style={{
+                  backgroundColor: rev.hasResponse ? theme.colors.bgSurface : '#FFFDF9',
+                  border: rev.hasResponse ? `1px solid ${theme.colors.border}` : '1px solid #EBD3B8',
+                  borderLeft: rev.hasResponse
+                    ? `3px solid ${theme.colors.primary}`
+                    : `3px solid ${rev.rating <= 2 ? theme.colors.statusDanger : theme.colors.statusWarning}`,
+                  borderRadius: theme.radii.sm,
+                  padding: '14px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <div style={{ flex: '1 1 240px', minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                    {renderAttentionStars(rev.rating)}
+                    <strong style={{ fontSize: '13.5px', color: theme.colors.espresso }}>
+                      {rev.customerName}
+                    </strong>
+                    <span
+                      style={{
+                        fontSize: '11.5px',
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: theme.radii.xs,
+                        backgroundColor: theme.colors.bgCard,
+                        border: `1px solid ${theme.colors.border}`,
+                        color: theme.colors.cedar,
+                        maxWidth: '100%',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      🌿 {rev.productName}
+                    </span>
+                    <span style={{ fontSize: '11.5px', color: theme.colors.stoneMuted }}>
+                      {new Date(rev.createdAtUtc).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+
+                  <p style={{ margin: 0, fontSize: '13px', color: theme.colors.espresso, lineHeight: 1.5 }}>
+                    "{rev.commentText}"
+                  </p>
+
+                  {rev.hasResponse && rev.adminResponse && (
+                    <div style={{ fontSize: '12px', color: theme.colors.statusSuccess, marginTop: '2px' }}>
+                      <strong>💬 Yanıtınız:</strong> {rev.adminResponse}
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+                  {rev.hasResponse ? (
+                    <>
+                      <span
+                        style={{
+                          fontSize: '11.5px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          borderRadius: theme.radii.full,
+                          backgroundColor: theme.colors.statusSuccessBg,
+                          color: theme.colors.statusSuccess,
+                          border: '1px solid #C9E2CB',
+                        }}
+                      >
+                        ✓ İncelendi & Yanıtlandı
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenQuickReplyModal(rev)}
+                        style={{
+                          padding: '6px 11px',
+                          borderRadius: theme.radii.sm,
+                          backgroundColor: theme.colors.bgCard,
+                          border: `1px solid ${theme.colors.border}`,
+                          color: theme.colors.taupe,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Yanıtı Düzenle
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => handleQuickMarkReviewedOnly(rev)}
+                        style={{
+                          padding: '7px 12px',
+                          borderRadius: theme.radii.sm,
+                          backgroundColor: theme.colors.bgCard,
+                          border: `1px solid ${theme.colors.border}`,
+                          color: theme.colors.cedar,
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ✓ İncelendi Yap
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenQuickReplyModal(rev)}
+                        style={{
+                          padding: '7px 14px',
+                          borderRadius: theme.radii.sm,
+                          backgroundColor: theme.colors.primary,
+                          border: 'none',
+                          color: '#FFFFFF',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          maxWidth: '100%',
+                          whiteSpace: 'normal',
+                          textAlign: 'center',
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        💬 Müşteriyi Yanıtla / İletişime Geç
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Prominent Bottom Action Bar */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: '10px',
+            paddingTop: '12px',
+            borderTop: `1px solid ${theme.colors.borderSubtle}`,
+          }}
+        >
+          <span style={{ fontSize: '12px', color: theme.colors.taupe }}>
+            4 ve 5 yıldızlı olumlu geri bildirimler de dahil tüm mağaza yorumlarını incelemek için detay sayfasına geçin.
+          </span>
+          <Link
+            to="/crm/reviews"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              borderRadius: theme.radii.sm,
+              backgroundColor: theme.colors.primarySubtle,
+              color: theme.colors.primary,
+              border: '1px solid #D5E5D4',
+              fontSize: '13px',
+              fontWeight: 700,
+              textDecoration: 'none',
+              whiteSpace: 'normal',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+              lineHeight: 1.35,
+            }}
+          >
+            Tüm Değerlendirmeleri Gör (Müşteri İlişkileri) →
+          </Link>
+        </div>
       </div>
 
       {/* =========================================================================
@@ -840,10 +1318,13 @@ export const DashboardPage: React.FC = () => {
           backgroundColor: theme.colors.bgCard,
           borderRadius: theme.radii.md,
           border: `1px solid ${theme.colors.border}`,
-          padding: '22px 24px',
+          padding: '20px 18px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header of Section */}
@@ -857,7 +1338,7 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '18px' }}>🌱</span>
               <h2
                 style={{
@@ -953,7 +1434,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               onClick={() => setIsSensorHistoryModalOpen(true)}
               style={{
@@ -992,10 +1473,11 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* 2. Raf Ömrü Yaklaşanlar Tablosu */}
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', width: '100%', maxWidth: '100%' }}>
           <table
             style={{
               width: '100%',
+              minWidth: '640px',
               borderCollapse: 'collapse',
               fontSize: '13px',
               textAlign: 'left',
@@ -1220,7 +1702,7 @@ export const DashboardPage: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '20px',
         }}
       >
@@ -1551,7 +2033,7 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {/* Kategori Açıklama Listesi */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', minWidth: '190px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', flex: '1 1 160px', minWidth: 0, maxWidth: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#2D5A27' }} />
@@ -1596,10 +2078,13 @@ export const DashboardPage: React.FC = () => {
           backgroundColor: theme.colors.bgCard,
           borderRadius: theme.radii.md,
           border: `1px solid ${theme.colors.border}`,
-          padding: '22px 24px',
+          padding: '20px 18px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header of Orders Table */}
@@ -1613,7 +2098,7 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '18px' }}>📦</span>
               <h2
                 style={{
@@ -1680,10 +2165,11 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Siparişler Tablosu */}
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', width: '100%', maxWidth: '100%' }}>
           <table
             style={{
               width: '100%',
+              minWidth: '680px',
               borderCollapse: 'collapse',
               fontSize: '13px',
               textAlign: 'left',
@@ -1725,7 +2211,7 @@ export const DashboardPage: React.FC = () => {
                   >
                     {/* Sipariş Kodu & Müşteri */}
                     <td style={{ padding: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span
                           style={{
                             fontFamily: 'monospace',
@@ -1883,7 +2369,7 @@ export const DashboardPage: React.FC = () => {
                 borderRadius: theme.radii.sm,
                 border: `1px solid ${theme.colors.border}`,
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
                 gap: '12px',
                 fontSize: '13px',
               }}
@@ -2280,7 +2766,7 @@ export const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
                   Teslimat Türü
@@ -2355,7 +2841,7 @@ export const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
                   Ürün Seçimi
@@ -2556,7 +3042,7 @@ export const DashboardPage: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',
                 gap: '8px',
                 textAlign: 'center',
               }}
@@ -2627,6 +3113,110 @@ export const DashboardPage: React.FC = () => {
               </button>
             </div>
           </div>
+        </Modal>
+      )}
+
+      {/* Quick Reply Modal for Negative Customer Reviews */}
+      {selectedReviewForReply && (
+        <Modal
+          isOpen={!!selectedReviewForReply}
+          onClose={() => setSelectedReviewForReply(null)}
+          title="Müşteri Değerlendirmesini Hızlı Yanıtla"
+        >
+          <form onSubmit={handleSubmitQuickReply} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div
+              style={{
+                backgroundColor: theme.colors.bgSurface,
+                borderRadius: theme.radii.sm,
+                padding: '12px 14px',
+                border: `1px solid ${theme.colors.border}`,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong style={{ fontSize: '13.5px', color: theme.colors.espresso }}>
+                  {selectedReviewForReply.customerName}
+                </strong>
+                {renderAttentionStars(selectedReviewForReply.rating)}
+              </div>
+              <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.primary, marginBottom: '6px' }}>
+                🌿 {selectedReviewForReply.productName}
+              </div>
+              <p style={{ margin: 0, fontSize: '13px', color: theme.colors.taupe, lineHeight: 1.45, fontStyle: 'italic' }}>
+                "{selectedReviewForReply.commentText}"
+              </p>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
+                Satıcı Yanıtınız / Çözüm Notu
+              </label>
+              <textarea
+                rows={4}
+                placeholder="Müşterimize yaşanılan aksaklık için nazik bir açıklama ve çözüm sunun (örn: Yeniden gönderim veya hediye kuponu)..."
+                value={quickReplyText}
+                onChange={(e) => setQuickReplyText(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: theme.colors.bgSurface,
+                  fontSize: '13px',
+                  color: theme.colors.espresso,
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                  resize: 'vertical',
+                  fontFamily: 'inherit',
+                }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <input
+                type="checkbox"
+                id="dashMarkReviewed"
+                checked={markAsReviewed}
+                onChange={(e) => setMarkAsReviewed(e.target.checked)}
+              />
+              <label htmlFor="dashMarkReviewed" style={{ fontSize: '12.5px', color: theme.colors.espresso, cursor: 'pointer' }}>
+                Kaydettikten sonra durumu <strong>'İncelendi' (Çözümlendi)</strong> olarak işaretle
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setSelectedReviewForReply(null)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: theme.radii.sm,
+                  border: `1px solid ${theme.colors.border}`,
+                  backgroundColor: 'transparent',
+                  color: theme.colors.espresso,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Vazgeç
+              </button>
+              <button
+                type="submit"
+                disabled={isSendingReply}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: theme.radii.sm,
+                  border: 'none',
+                  backgroundColor: theme.colors.primary,
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: isSendingReply ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isSendingReply ? 'Gönderiliyor...' : 'Yanıtı Kaydet ve Kapat'}
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>

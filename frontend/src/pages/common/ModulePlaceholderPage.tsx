@@ -326,7 +326,7 @@ export const ModulePlaceholderPage: React.FC = () => {
       </div>
 
       {/* Feature & KPI Highlights */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '16px' }}>
         {config.features.map((feature, idx) => (
           <div
             key={idx}
@@ -370,7 +370,7 @@ export const ModulePlaceholderPage: React.FC = () => {
           <h3 style={{ fontSize: '16px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '16px' }}>
             💳 Bağlı Ödeme Ağ Geçitleri & E-Fatura Entegratörleri
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
             {[
               { name: 'PayTR Sanal POS', status: 'Bağlı (Canlı Mod)', type: 'Kredi / Banka Kartı', color: theme.colors.primary, bg: theme.colors.primarySubtle },
               { name: 'Iyzico Checkout', status: 'Bağlı (Canlı Mod)', type: 'Kredi Kartı + Taksit', color: theme.colors.primary, bg: theme.colors.primarySubtle },

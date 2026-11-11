@@ -181,7 +181,7 @@ export const UsersPage: React.FC = () => {
           </button>
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        <div style={{ overflowX: 'auto', width: '100%' }}><table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
           <thead>
             <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}`, color: theme.colors.taupe, fontSize: '11.5px', textTransform: 'uppercase' }}>
               <th style={{ padding: '14px 20px' }}>Yönetici / Kimlik</th>
@@ -258,7 +258,7 @@ export const UsersPage: React.FC = () => {
               })
             )}
           </tbody>
-        </table>
+        </table></div>
 
         {/* Pagination */}
         {totalPages > 1 && (

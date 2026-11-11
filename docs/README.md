@@ -1,12 +1,13 @@
 # MODÜLER E-TİCARET ALTYAPISI — Mühendis ve Ekip Devir Teslim Rehberi (Master Hub)
 
 > **Durum:** Yaşayan Ana Devir Belgesi  
-> **Son Güncelleme:** 9 Kasım 2026  
+> **Son Güncelleme:** 11 Kasım 2026  
 > **Sorumlu:** Mimari & Çekirdek Ekip  
 >
 > **Dokümantasyon Hiyerarşisi:**
 > * **Mimari & Altyapı:** [docs/01-mimari-ve-altyapi/BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md](01-mimari-ve-altyapi/BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md) · [docs/01-mimari-ve-altyapi/PLUGGABLE_SHELL_VE_FRONTEND_MIMARISI.md](01-mimari-ve-altyapi/PLUGGABLE_SHELL_VE_FRONTEND_MIMARISI.md)
-> * **Güncel Teslim ve Yol Haritası (Checkpoint & To-Do):** [docs/00-devir-rehberi/DURUM_VE_YOL_HARITASI.md](00-devir-rehberi/DURUM_VE_YOL_HARITASI.md)
+> * **Tamamlanan İşler & Geliştirme Günlüğü (YAPILANLAR):** [docs/00-devir-rehberi/YAPILANLAR_VE_TAMAMLANANLAR.md](00-devir-rehberi/YAPILANLAR_VE_TAMAMLANANLAR.md)
+> * **Faz Haritası & Yapılacak İşler (YAPILACAKLAR):** [docs/00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md)
 > * **Hızlı Başlangıç & Devir (Onboarding):** [docs/00-devir-rehberi/DEVIR_REHBERI.md](00-devir-rehberi/DEVIR_REHBERI.md)
 > * **Operasyon & Kasa Şartnamesi:** [docs/02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md)
 > * **İş Alanları & Modül Şartnameleri:** [docs/03-is-alanlari-ve-yonetim/](03-is-alanlari-ve-yonetim/)
@@ -33,13 +34,12 @@
 >   - **Docker & PostgreSQL 18:** İzolasyonlu `admin` ve `catalog` şemaları; modüle özel migration tabloları (`__EFMigrationsHistory_Admin`, `__EFMigrationsHistory_Catalog`).
 >   - **E2E Entegrasyon & Vite Proxy:** React 19 Frontend (Port 3000) ile .NET 10 Backend (Port 5000) arasındaki CORS'suz canlı ters proxy köprüsü.
 >
-> * **Gerçek Canlı Müşteri / E-Ticaret Ortamı İçin Eksik & Planlananlar:**
->   - Gerçek JWT / Refresh Token / Cookie Kimlik Doğrulama (Şu an açık geliştirme portu ve seed SuperAdmin hesabı aktiftir; Login sayfası ve JWT Bearer auth sıradadır).
->   - Ürün Kataloğu ve Kategori Yönetimi (`catalog` şeması, varyantlar, SKU, görsel yükleme).
->   - Sipariş ve Sepet Yönetimi (`orders` şeması, sipariş yaşam döngüsü, kargo entegrasyonu).
->   - Kasa, Sanal POS ve Parçalı Ödeme (`payments` şeması, İyzico/PayTR sağlayıcıları).
->   - Gerçek Stok Veritabanı ve Rezerve Stok (`inventory` şeması; şu an UI'da `InventoryModule` mock olarak çalışmaktadır).
->   - Çoklu Dil (i18n) ve Çoklu Para Birimi Desteği.
+> * **Gerçek Canlı Müşteri / E-Ticaret Ortamı İçin Eksik & Sıradaki Fazlar:**
+>   - **Stok & Depo Yönetimi — Kalan 4 Alt Ekran (Faz 2):** `/inventory` canlıdır; ancak Tedarikçi & Alım (`SupplierProcurementPage` şu an mock UI), Depo Tanımları, Stok Hareketleri ve Kritik Uyarılar ekranlarının veritabanı bağlantıları sıradadır.
+>   - **Dashboard Canlı Verileri & Admin JWT Koruması (Faz 3):** `DashboardPage` metrikleri henüz mock'tur; admin paneline `LoginPage` ve JWT Bearer token kilidi bağlanacaktır.
+>   - **Sipariş & Sevkiyat Yönetimi Admin Ekranları (Faz 4):** Backend'de `Orders`, `Shipment` ve `SimulatedPayment` altyapısı mevcuttur; Admin operasyon ekranları bağlanacaktır.
+>   - **CRM, Pazarlama & Analitik Ekranları (Faz 5):** Backend `Customer`, `Promotions` ve `Experience` modülleri hazırdır; Admin ekranları ve raporlama geliştirilecektir.
+>   - **Müşteri Web Vitrini Frontend (Faz 6):** Public API uçları hazırdır; müşteri e-ticaret arayüzü bağlanacaktır.
 
 ---
 
@@ -67,14 +67,15 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 | **Müşteri (Public) Katalog Uçları** | Canlı Kalıcı Çekirdek | `catalog` (`Products`, `Categories`) | Hazır API | Var (`/api/catalog/products`, `/categories`) | Var (Single Source of Truth) | Evet (Admin değişiklikleri anında vitrinde listelenir) |
 | **Mobil & Responsive Çekirdek** | Canlı UI İyileştirmesi | N/A | Var (`Sidebar.tsx`, `Header.tsx`, `MainLayout.tsx`) | N/A | Var (Vite build & Mobil test) | Evet (Çekmece menü, hamburger butonu, esnek layout) |
 
-### B. Hedeflenen / Geliştirilecek Bileşenler (Gelecek Yol Haritası)
+### B. Kalan Fazlar & Geliştirilecek Modüller ([YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md))
 
-| Planlanan Bileşen | Durum | PostgreSQL Şeması | Panel / Ekran | API (.NET 10) | Test | Üretime Hazır mı? |
-|---|---|---|---|---|---|---|
-| **Kimlik Doğrulama & JWT (Auth)** | Planlandı (Sırada) | `admin` veya `auth` | Planlandı (`LoginPage.tsx`) | Taslak (`IPasswordHasher` var, Token Endpoint sırada) | Kısmi | Hayır (JWT Bearer middleware ve Login formu henüz yok) |
-| **Çok Depolu Lojistik & Transfer** | Planlandı (Sırada) | `inventory` (Warehouses, Transfers) | Planlandı | Planlandı | Yok | Hayır (Merkez ve soğuk hava depoları arası sevkiyat) |
-| **Sipariş & Sevkiyat (Orders)** | Planlandı | Yok (`sales`/`orders` sırada) | Planlandı (`OrdersPage.tsx`) | Planlandı (`OrderService`) | Yok | Hayır (Sipariş durum makinesi ve kargo entegrasyonu yok) |
-| **Kasa, Tahsilat & Sanal POS** | Planlandı | Yok (`payments` sırada) | Planlandı (`CashierPage.tsx`) | Planlandı (`PaymentService`) | Yok | Hayır (İyzico/PayTR sanal POS ve tahsilat entegrasyonu yok) |
+| Planlanan Bileşen | Mevcut Durum | Backend / Şema Durumu | Panel / Ekran | Hedef Faz | Üretime Hazır mı? |
+|---|---|---|---|---|---|
+| **Tedarikçi, Depo, Hareket & Alarmlar** | 1/5 Canlı (`/inventory` ok) | `inventory` şeması sırada | Kısmi (`SupplierProcurementPage` mock, diğer 3'ü placeholder) | **Faz 2 (Aktif Odak)** | Kısmi (`/inventory` hazır, 4 alt modül sırada) |
+| **Dashboard Canlı Veri & Admin JWT** | Mock UI & Açık Port | `AdminUsers` hazır, Auth token admin uçlarına bağlanacak | `DashboardPage` (mock), `LoginPage` (planlandı) | **Faz 3** | Hayır |
+| **Sipariş & Sevkiyat Admin Ekranları** | Placeholder UI | `orders`, `payments` şemaları & public uçları hazır | `ModulePlaceholderPage` | **Faz 4** | Hayır (Admin UI & uçları bekliyor) |
+| **CRM, Pazarlama & Analitik** | Placeholder UI | `customer`, `promotions`, `experience`, `content` hazır | `ModulePlaceholderPage` | **Faz 5** | Hayır (Admin UI & raporlama bekliyor) |
+| **Müşteri Vitrini (Storefront UI)** | Backend API Hazır | `/api/catalog/*`, `/api/cart/*`, `/api/auth/*` hazır | Harici vitrin bağlanacak | **Faz 6** | Backend hazır, vitrin arayüzü bekliyor |
 
 ---
 
@@ -86,11 +87,11 @@ Projeye başlayan geliştiricilere ve yapay zeka ajanlarına rehberlik eden mod�
 |---|---|---|---|---|
 | **[Modül 1]** | **Yönetici & Kullanıcı Yönetimi** | Admin kullanıcıları, roller (SuperAdmin, Admin, Moderator), durum yönetimi. | 👉 [YONETICI_VE_AUDIT_LOG_MODULU.md](03-is-alanlari-ve-yonetim/YONETICI_VE_AUDIT_LOG_MODULU.md) | Checkpoint 1–6 (Tamamlandı, Yaşayan Çekirdek) |
 | **[Modül 2]** | **Sistem Güvenlik & Audit Log** | Admin işlemlerinin IP, zaman, aktör ve değişiklik detaylarıyla izlenmesi. | 👉 [YONETICI_VE_AUDIT_LOG_MODULU.md](03-is-alanlari-ve-yonetim/YONETICI_VE_AUDIT_LOG_MODULU.md) | Checkpoint 1–6 (Tamamlandı, Yaşayan Çekirdek) |
-| **[Modül 3]** | **Stok & Depo Yönetimi** | Depo tanımları, SKU bazlı stok, kritik stok uyarıları, sayım ve düzeltmeler. | 👉 [STOK_VE_ENVANTER_MODULU.md](03-is-alanlari-ve-yonetim/STOK_VE_ENVANTER_MODULU.md) | Faz 2 (UI Vitrini hazır; DB & Backend sırada) |
-| **[Modül 4]** | **Ürün Kataloğu & Kategori** | Kategori ağacı, varyantlar (renk/beden), ürün resimleri, fiyatlandırma. | 👉 [URUN_KATALOGU_VE_KATEGORI_MODULU.md](03-is-alanlari-ve-yonetim/URUN_KATALOGU_VE_KATEGORI_MODULU.md) | Faz 3 (Planlandı) |
-| **[Modül 5]** | **Kasa, Tahsilat & Sanal POS** | Sanal POS entegrasyonu, iade/iptal süreçleri, parçalı tahsilat, ciro raporu. | 👉 [KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md) | Faz 5 (Planlandı) |
-| **[Modül 6]** | **Sipariş & Sevkiyat Yönetimi** | Sipariş akışı (Yeni, Hazırlanıyor, Kargoda, Teslim Edildi), kargo fişi. | 👉 [KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md) | Faz 4 (Planlandı) |
-| **[Modül 7]** | **Kimlik Doğrulama & JWT (Auth)** | Güvenli JWT/Cookie tabanlı oturum, yetki kontrolleri (Guard), RBAC. | 👉 [BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md](01-mimari-ve-altyapi/BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md) | Faz 2 (Sırada Bekleyen İlk Öncelik) |
+| **[Modül 3]** | **Stok & Depo Yönetimi** | Envanter, tedarikçi/alım, çoklu depo, stok hareket fişleri ve kritik uyarılar. | 👉 [STOK_VE_ENVANTER_MODULU.md](03-is-alanlari-ve-yonetim/STOK_VE_ENVANTER_MODULU.md) | `/inventory` ✅ Canlı; Kalan 4 alt modül **Faz 2**'de |
+| **[Modül 4]** | **Ürün Kataloğu & Doğal Gıda** | Tartılı/paketli ürün, alerjen/besin değerleri, STT/Lot, saklama ve raf takibi. | 👉 [URUN_KATALOGU_VE_KATEGORI_MODULU.md](03-is-alanlari-ve-yonetim/URUN_KATALOGU_VE_KATEGORI_MODULU.md) | Checkpoint 8–12 (**5/5 Dikey Dilim Tamamlandı ✅**) |
+| **[Modül 5]** | **Kasa, Tahsilat & Sanal POS** | Sanal POS entegrasyonu, iade/iptal süreçleri, parçalı tahsilat, ciro raporu. | 👉 [KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md) | **Faz 4 & Faz 5** |
+| **[Modül 6]** | **Sipariş & Sevkiyat Yönetimi** | Sipariş akışı (Yeni, Hazırlanıyor, Kargoda, Teslim Edildi), soğuk kurye. | 👉 [KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md) | Backend hazır; Admin UI **Faz 4** |
+| **[Modül 7]** | **Kimlik Doğrulama & JWT (Auth)** | Güvenli JWT tabanlı Admin giriş ekranı, token interceptor ve RBAC kilidi. | 👉 [BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md](01-mimari-ve-altyapi/BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md) | Müşteri JWT hazır; Admin Login **Faz 3** |
 
 ---
 
@@ -150,38 +151,31 @@ Platformda gerçekleşen tüm kritik işlemlerin (kim yaptı, ne zaman yaptı, h
 
 ### [Modül 3] Stok & Envanter Yönetimi Modülü (Inventory & Stock)
 
-Depolardaki ürün miktarlarının, rezerve stokların, kritik eşiklerin ve fiziksel sayım mutabakatlarının yönetildiği alandır.
+Depolardaki ürün miktarlarının, hızlı stok artış/azalışlarının, tedarikçi/alım süreçlerinin ve çoklu depo hareketlerinin yönetildiği alandır.
 
-#### A. Projedeki Rolü ve İş Değeri
-* Stokta olmayan ürünün satılmasını (over-selling) engeller.
-* Tedarik planlaması ve depo transferleri bu modül üzerinden yürütülür.
+#### A. ✅ Bugün Kodda Çalışanlar (2. Dikey Dilim Tamamlandı)
+* **Canlı Envanter Ekranı ([InventoryPage.tsx](../../frontend/src/pages/inventory/InventoryPage.tsx)):**
+  - `inventoryService.ts` aracılığıyla `GET /api/admin/inventory` ve `PATCH /api/admin/inventory/{id}/stock` uçlarına bağlıdır.
+  - Hızlı `+1 / -1` butonları doğrudan PostgreSQL `catalog."Products"."StockQuantity"` değerini günceller, 0'ın altına düşürmez ve `admin."AuditLogs"` tablosuna `'StockUpdated'` yazar.
+  - Eski `localStorage` deposu tamamen kaldırılmıştır.
 
-#### B. ✅ Bugün Kodda Çalışanlar (Mevcut Durum)
-* **Stok Vitrini ([InventoryPage.tsx](../../packages/admin-core/src/pages/InventoryPage.tsx)):**
-  - `InventoryModule` sözleşmesiyle `AdminShell`'e dinamik olarak eklenmiştir.
-  - Stok Kodu (SKU), Ürün Adı, Kategori, Depo Konumu, Mevcut Miktar, Kritik Eşik ve Durum badge'leri içeren vitrin tablosu aktiftir.
-  - Sistem mimarisinin modülerliğini kanıtlayan canlı örnektir.
-
-#### C. 🚧 Henüz Yapılmayanlar & Hedef Ekran Davranışları (Geliştirilecek Backlog)
-1. **PostgreSQL `inventory` Şeması:** `inventory.Warehouses`, `inventory.StockItems`, `inventory.StockMovements` tablolarının oluşturulması.
-2. **Kritik Stok Alarmları:** Belirlenen eşiğin altına düşen ürünlerde admin üst barında kırmızı bildirim rozeti.
-3. **Fiziksel Sayım & Düzeltme Modalı:** Depo sayımı sonucunda oluşan farkların yönetici onayıyla stok hareketi olarak işlenmesi.
+#### B. 🚧 Henüz Yapılmayanlar (Faz 2 Kapsamı)
+1. **Tedarikçi ve Alım Yönetimi (`/inventory/suppliers-procurement`):** Mevcut mock ekranın (`SupplierProcurementPage.tsx`) PostgreSQL'e bağlanması.
+2. **Depo Tanımları & Transferler (`/inventory/warehouses`):** Merkez depo, soğuk hava deposu ve şube tanımları.
+3. **Stok Hareket Fişleri & Alarmlar (`/inventory/transactions`, `/inventory/alerts`):** Hareket defteri ve kapsamlı alarm merkezi.
 
 ---
 
-### [Modül 4] Ürün Kataloğu & Kategori Yönetimi Modülü (Catalog & Products)
+### [Modül 4] Ürün Kataloğu ve Doğal Gıda Yönetimi Modülü (5/5 Dikey Dilim Tamamlandı ✅)
 
-Mağazada satılan tüm fiziksel ve dijital ürünlerin tanımlandığı, kategorize edildiği ve fiyatlandırıldığı kalptir.
+Doğal gıda ürünlerinin tanımlandığı, yasal etiket/alerjen bilgilerinin, STT/Parti takiplerinin ve soğuk zincir/saklama koşullarının yönetildiği alandır.
 
-#### A. Projedeki Rolü ve İş Değeri
-* Ürünlerin SEO başlıkları, açıklamaları, resimleri, barkodları ve varyant ağaçları (Örn: Siyah/XL) burada kurgulanır.
-* Kampanyalar ve dönemsel indirimli fiyat sürümleri burada tanımlanır.
-
-#### B. 🚧 Geliştirilecek Backlog & Hedef Ekran Davranışları
-1. **Hiyerarşik Kategori Ağacı Ekranı:** Sürükle-bırak destekli alt kategori/üst kategori yönetimi.
-2. **Varyant Matrisi Editörü:** Bir ürün seçildiğinde Beden x Renk x Kumaş kombinasyonlarına göre dinamik SKU ve barkod üreten arayüz.
-3. **Medya Yöneticisi:** Ürün görsellerini yükleme, sıralama ve CDN/S3 optimizasyonu.
-4. **Backend `catalog` Şeması:** `catalog.Products`, `catalog.Categories`, `catalog.Variants`, `catalog.Media`.
+#### A. ✅ Bugün Kodda Çalışanlar
+1. **Gelişmiş Ürün Tanımlama (`/products/definition`):** Tartılı/hacimsel/paketli ürün girişi ve düzenleme (`catalog."Products"`).
+2. **İçerik, Alerjen ve 100g Besin Değerleri (`/products/allergens-nutrition`):** `Ingredients`, `Allergens[]`, `Certifications[]` ve `NutritionalValues` (JSONB) canlı yönetimi.
+3. **STT / TETT ve Parti Takibi (`/products/lot-expiry`):** `catalog."ProductLots"` tablosu, kalan gün rozetleri, parti girişiyle otomatik stok artırma ve fire düşümü.
+4. **Saklama Koşulları & Depo Rafı (`/products/storage-conditions`):** `catalog."StorageConditions"` (4 temel şablon) ve ürün bazlı `ShelfLocation` koordinat atamaları.
+5. **Müşteri Vitrini Senkronizasyonu:** Public `/api/catalog/products` uçlarıyla ortak `catalog."Products"` tablosunu kullanır (Single Source of Truth).
 
 ---
 
@@ -259,18 +253,19 @@ Sisteme güvenli giriş ve oturum sürekliliğini sağlayan güvenlik altyapıs�
 
 ---
 
-## 🚀 6. Güncel Yol Haritası ve Fazlar
+## 🚀 6. Tamamlananlar ve Faz Haritaları (Ayrı Sayfalar)
 
-Tüm geliştirme adımları ve geçmiş checkpoint kayıtları için canonical belge:  
-👉 **[DURUM_VE_YOL_HARITASI.md](00-devir-rehberi/DURUM_VE_YOL_HARITASI.md)**
+Proje dokümantasyonu netlik açısından iki ayrı sayfada tutulmaktadır:
+* **Tamamlanan İşler & Checkpoint Günlüğü (YAPILANLAR):** 👉 **[YAPILANLAR_VE_TAMAMLANANLAR.md](00-devir-rehberi/YAPILANLAR_VE_TAMAMLANANLAR.md)**
+* **Faz Haritaları & Gelecek İşler (YAPILACAKLAR):** 👉 **[YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md)**
 
-Özet Aşamalar:
-* **FAZ 1 (Tamamlandı):** Çekirdek Altyapı, Docker, PostgreSQL 18, Admin & Audit Log Modülü, React 19 Pluggable Admin Shell, E2E Entegrasyon.
-* **FAZ 2 (Aktif / Sırada):** Gerçek Kimlik Doğrulama (JWT Bearer Auth & Login UI), İzin Matrisi.
-* **FAZ 3 (Planlandı):** Ürün Kataloğu ve Kategori Modülü (Backend + Frontend).
-* **FAZ 4 (Planlandı):** Stok & Envanter Modülü (Gerçek DB Entegrasyonu).
-* **FAZ 5 (Planlandı):** Sipariş ve Sevkiyat Yönetimi.
-* **FAZ 6 (Planlandı):** Sanal POS & Kasa Modülü, Üretime Dağıtım (CI/CD).
+Özet Faz Haritası:
+* **FAZ 1 (✅ Tamamlandı):** Çekirdek Altyapı, Admin & Audit Log, Müşteri Backend Birleşimi, Doğal Gıda Ürün Yönetimi (5/5 Dikey Dilim), `/inventory` Canlı Envanter ve Mobil/Responsive Shell.
+* **FAZ 2 (🚧 Aktif Odak):** Stok ve Depo Yönetiminin kalan 4 alt modülü (Tedarikçi & Alım, Depo Tanımları, Stok Hareket Fişleri, Kritik Uyarılar).
+* **FAZ 3 (📋 Planlandı):** Dashboard (`DashboardPage`) Canlı Veri Entegrasyonu & Admin JWT Login Koruması.
+* **FAZ 4 (📋 Planlandı):** Sipariş ve Sevkiyat Yönetimi Admin Ekranları (`/orders/*`, `/shipping/*`).
+* **FAZ 5 (📋 Planlandı):** CRM, Pazarlama & Kampanya, Analitik Raporlar ve Sistem Ayarları.
+* **FAZ 6 (📋 Planlandı):** Müşteri Web Vitrini Frontend Bağlantısı & Production CI/CD.
 
 ---
 

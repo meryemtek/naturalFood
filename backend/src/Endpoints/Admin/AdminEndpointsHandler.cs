@@ -482,6 +482,93 @@ internal static class AdminEndpointsHandler
         .Produces<ProductStorageItemDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
+        // =========================================================================
+        // 8. Müşteri Değerlendirmeleri & Dashboard Risk Takibi (CRM Reviews)
+        // =========================================================================
+        var reviews = group.MapGroup("/reviews").WithTags("Admin Customer Reviews");
+
+        // GET /api/admin/reviews/dashboard-attention
+        reviews.MapGet("/dashboard-attention", async (
+            IAdminReviewService reviewService,
+            CancellationToken ct) =>
+        {
+            var result = await reviewService.GetDashboardAttentionReviewsAsync(ct);
+            return Results.Ok(result);
+        })
+        .WithName("GetDashboardAttentionReviews")
+        .Produces<DashboardReviewsAttentionResponse>(StatusCodes.Status200OK);
+
+        // GET /api/admin/reviews (Müşteri Değerlendirmeleri Detay Sayfası için tüm yorumlar)
+        reviews.MapGet("/", async (
+            [FromQuery] int? rating,
+            [FromQuery] string? status,
+            [FromQuery] bool? onlyNegative,
+            [FromQuery] string? search,
+            [FromQuery] int? page,
+            [FromQuery] int? pageSize,
+            IAdminReviewService reviewService,
+            CancellationToken ct) =>
+        {
+            var p = page ?? 1;
+            var ps = pageSize ?? 20;
+            var result = await reviewService.GetAllReviewsAsync(rating, status, onlyNegative, search, p, ps, ct);
+            return Results.Ok(result);
+        })
+        .WithName("GetAllAdminReviews")
+        .Produces<PaginatedAdminReviewsResponse>(StatusCodes.Status200OK);
+
+        // POST /api/admin/reviews/{id}/quick-response
+        reviews.MapPost("/{id:guid}/quick-response", async (
+            Guid id,
+            QuickReviewResponseRequest req,
+            IAdminReviewService reviewService,
+            CancellationToken ct) =>
+        {
+            var updated = await reviewService.QuickRespondAsync(id, req, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Yorum Bulunamadı",
+                    Detail = $"Yanıtlanacak '{id}' Id numaralı müşteri değerlendirmesi bulunamadı."
+                });
+        })
+        .WithName("QuickRespondAdminReview")
+        .Produces<AdminReviewItemDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // PATCH /api/admin/reviews/{id}/status
+        reviews.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            UpdateReviewStatusRequest req,
+            IAdminReviewService reviewService,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(req.Status))
+            {
+                return Results.BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Geçersiz Durum",
+                    Detail = "Durum bilgisi zorunludur."
+                });
+            }
+
+            var updated = await reviewService.UpdateReviewStatusAsync(id, req.Status, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Yorum Bulunamadı",
+                    Detail = $"Durumu güncellenecek '{id}' Id numaralı müşteri değerlendirmesi bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminReviewStatus")
+        .Produces<AdminReviewItemDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
         return group;
     }
 }

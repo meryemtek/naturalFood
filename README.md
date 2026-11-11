@@ -128,7 +128,7 @@ Projede doğal gıda e-ticaret operasyonuna özel 5 dikey dilim canlı PostgreSQ
 
 ### ⚡ Hızlı Başlatma (Windows - Çift Tıklama)
 Tüm servisleri (PostgreSQL + Backend + Frontend + Tarayıcı) tek adımda çalıştırmak veya durdurmak için kök dizindeki scriptleri çift tıklayabilirsiniz:
-- **aslat.bat**: PostgreSQL (Docker), .NET 10 API ve React Vite sunucularını başlatır, otomatik olarak tarayıcıda http://localhost:3000 sayfasını açar.
+- **baslat.bat**: PostgreSQL (Docker), .NET 10 API ve React Vite sunucularını başlatır, otomatik olarak tarayıcıda http://localhost:3000 sayfasını açar.
 - **durdur.bat**: Backend, Frontend ve Docker konteynerlerini tek tıkla güvenle kapatır.
 - **kontrol-paneli.bat**: Başlatma, durdurma, yeniden başlatma ve servis durumlarını görüntüleme seçenekleri sunan interaktif yönetim konsolunu açar.
 
@@ -170,3 +170,11 @@ npm run build
 ```
 - Web Portalı: `http://localhost:3000`
 
+---
+
+## 📚 Proje Dokümantasyonu ve Faz Haritaları
+
+* **Ana Dokümantasyon Merkezi:** [docs/README.md](docs/README.md)
+* **Tamamlanan İşler & Checkpoint Günlüğü (YAPILANLAR):** [docs/00-devir-rehberi/YAPILANLAR_VE_TAMAMLANANLAR.md](docs/00-devir-rehberi/YAPILANLAR_VE_TAMAMLANANLAR.md)
+* **Faz Haritaları & Gelecek Planı (YAPILACAKLAR):** [docs/00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md](docs/00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md)
+* **Hızlı Geliştirici Devir Rehberi:** [docs/00-devir-rehberi/DEVIR_REHBERI.md](docs/00-devir-rehberi/DEVIR_REHBERI.md)
