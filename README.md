@@ -151,7 +151,7 @@ dotnet build backend/ModularAdmin.slnx
 # API Host'u çalıştır
 dotnet run --project backend/src/ApiHost/ApiHost.csproj
 ```
-- API Host: `http://localhost:5000` (veya `https://localhost:5001`)
+- API Host: `http://localhost:5000` (veya `https://localhost:7090`)
 - OpenAPI / Dokümantasyon: `http://localhost:5000/openapi/v1.json`
 - Admin Sağlık Kontrolü: `http://localhost:5000/api/admin/health`
 

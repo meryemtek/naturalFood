@@ -32,6 +32,7 @@ public class AuthService : IAuthService
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken ct = default)
     {
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        await using var transaction = await _db.Database.BeginTransactionAsync(ct);
 
         // Misafir kaydı, e-posta sahipliği kanıtlanmadan devralınamaz.
         if (await _db.Customers.AnyAsync(c => c.Email == normalizedEmail, ct))
@@ -39,13 +40,12 @@ public class AuthService : IAuthService
 
         var customer = Domain.Entities.Customer.Customer.CreateRegistered(
             normalizedEmail, HashPassword(request.Password), request.FirstName, request.LastName, request.Phone);
+        customer.RecordLogin();
         _db.Customers.Add(customer);
 
-        await _db.SaveChangesAsync(ct);
-        customer.RecordLogin();
-        await _db.SaveChangesAsync(ct);
-
-        return await GenerateAuthResponseAsync(customer, ct);
+        var response = await GenerateAuthResponseAsync(customer, ct);
+        await transaction.CommitAsync(ct);
+        return response;
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken ct = default)
