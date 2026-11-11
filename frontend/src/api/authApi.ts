@@ -9,6 +9,7 @@ export interface CustomerProfile {
   lastName: string;
   phone: string | null;
   isGuest: boolean;
+  role?: string;
   createdAtUtc: string;
   lastLoginAtUtc: string | null;
 }
@@ -41,6 +42,10 @@ const STORAGE_KEYS = {
   GUEST_TOKEN: 'kk_guest_token',
 };
 
+export function isAdminRole(role?: string | null): boolean {
+  return role === 'Admin' || role === 'SuperAdmin' || role === 'Moderator';
+}
+
 // ============================================================================
 // Token & Oturum Yardımcıları (Local / Session Storage)
 // ============================================================================
@@ -56,6 +61,10 @@ export const authStorage = {
     } catch {
       return null;
     }
+  },
+  isAdmin: (): boolean => {
+    const customer = authStorage.getCustomer();
+    return isAdminRole(customer?.role);
   },
   getGuestToken: (): string | null =>
     localStorage.getItem(STORAGE_KEYS.GUEST_TOKEN) || localStorage.getItem('naturalfood.guestCartToken'),

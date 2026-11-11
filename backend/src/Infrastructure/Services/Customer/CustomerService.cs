@@ -275,7 +275,8 @@ public class CustomerService : ICustomerService
             Phone: customer.Phone,
             IsGuest: customer.IsGuest,
             CreatedAtUtc: customer.CreatedAtUtc,
-            LastLoginAtUtc: customer.LastLoginAtUtc);
+            LastLoginAtUtc: customer.LastLoginAtUtc,
+            Role: string.IsNullOrWhiteSpace(customer.Role) ? "Customer" : customer.Role);
     }
 
     private static AddressDto MapToAddressDto(Domain.Entities.Customer.CustomerAddress address)

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { authStorage } from '../../api/authApi';
 import { theme } from '../../theme/tokens';
 
 interface SubMenuItem {
@@ -27,6 +28,12 @@ export interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const customer = authStorage.getCustomer();
+  const fullName = customer ? `${customer.firstName} ${customer.lastName}`.trim() : 'Sistem Yöneticisi';
+  const email = customer?.email || 'admin@koykokusu.com.tr';
+  const initials = customer
+    ? `${customer.firstName?.[0] || ''}${customer.lastName?.[0] || ''}`.toUpperCase() || 'AD'
+    : 'AD';
 
   useEffect(() => {
     onClose?.();
@@ -619,7 +626,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             border: `1px solid #D5E5D4`,
           }}
         >
-          SA
+          {initials}
         </div>
         <div style={{ overflow: 'hidden', flex: 1 }}>
           <div
@@ -632,7 +639,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               textOverflow: 'ellipsis',
             }}
           >
-            Super Administrator
+            {fullName}
           </div>
           <div
             style={{
@@ -643,7 +650,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               textOverflow: 'ellipsis',
             }}
           >
-            superadmin@naturalfood.local
+            {email}
           </div>
         </div>
       </div>

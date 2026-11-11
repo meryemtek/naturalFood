@@ -1,7 +1,7 @@
 namespace Domain.Entities.Customer;
 
 /// <summary>
-/// Müşteri varlığı. Kayıtlı kullanıcıları ve misafir alışverişçileri temsil eder.
+/// Müşteri varlığı. Kayıtlı kullanıcıları, yöneticileri ve misafir alışverişçileri temsil eder.
 /// </summary>
 public class Customer
 {
@@ -11,6 +11,7 @@ public class Customer
     public string FirstName { get; private set; } = default!;
     public string LastName { get; private set; } = default!;
     public string? Phone { get; private set; }
+    public string Role { get; private set; } = "Customer";
     public bool IsGuest { get; private set; }
     public bool IsActive { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -24,7 +25,7 @@ public class Customer
     private Customer() { }
 
     /// <summary>
-    /// Kayıtlı müşteri oluşturur.
+    /// Kayıtlı müşteri veya yönetici oluşturur.
     /// </summary>
     public static Customer CreateRegistered(
         string email,
@@ -32,7 +33,8 @@ public class Customer
         string firstName,
         string lastName,
         string? phone = null,
-        Guid? id = null)
+        Guid? id = null,
+        string role = "Customer")
     {
         return new Customer
         {
@@ -42,6 +44,7 @@ public class Customer
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Phone = phone?.Trim(),
+            Role = string.IsNullOrWhiteSpace(role) ? "Customer" : role.Trim(),
             IsGuest = false,
             IsActive = true,
             CreatedAtUtc = DateTime.UtcNow
@@ -61,6 +64,7 @@ public class Customer
             FirstName = firstName.Trim(),
             LastName = lastName.Trim(),
             Phone = phone?.Trim(),
+            Role = "Customer",
             IsGuest = true,
             IsActive = true,
             CreatedAtUtc = DateTime.UtcNow
@@ -84,6 +88,11 @@ public class Customer
         FirstName = firstName.Trim();
         LastName = lastName.Trim();
         Phone = phone?.Trim();
+    }
+
+    public void SetRole(string role)
+    {
+        Role = string.IsNullOrWhiteSpace(role) ? "Customer" : role.Trim();
     }
 
     public void ChangePassword(string newPasswordHash)

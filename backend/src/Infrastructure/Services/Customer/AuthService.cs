@@ -16,15 +16,18 @@ namespace Infrastructure.Services.Customer;
 public class AuthService : IAuthService
 {
     private readonly CustomerDbContext _db;
+    private readonly AdminDbContext _adminDb;
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         CustomerDbContext db,
+        AdminDbContext adminDb,
         IOptions<JwtSettings> jwtSettings,
         ILogger<AuthService> logger)
     {
         _db = db;
+        _adminDb = adminDb;
         _jwtSettings = jwtSettings.Value;
         _logger = logger;
     }
@@ -39,7 +42,7 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Bu e-posta adresi ile kayıt oluşturulamıyor.");
 
         var customer = Domain.Entities.Customer.Customer.CreateRegistered(
-            normalizedEmail, HashPassword(request.Password), request.FirstName, request.LastName, request.Phone);
+            normalizedEmail, HashPassword(request.Password), request.FirstName, request.LastName, request.Phone, role: "Customer");
         customer.RecordLogin();
         _db.Customers.Add(customer);
 
@@ -54,6 +57,37 @@ public class AuthService : IAuthService
 
         var customer = await _db.Customers
             .FirstOrDefaultAsync(c => c.Email == normalizedEmail && !c.IsGuest, ct);
+
+        // Eğer müşteri tablosunda yoksa ancak AdminUsers tablosunda tanımlı bir yönetici ise senkronize et
+        if (customer == null)
+        {
+            var adminUser = await _adminDb.AdminUsers
+                .FirstOrDefaultAsync(a => a.Email.ToLower() == normalizedEmail, ct);
+
+            if (adminUser != null)
+            {
+                if (!adminUser.IsActive)
+                    throw new UnauthorizedAccessException("Yönetici hesabınız devre dışı bırakılmıştır.");
+
+                if (!VerifyPassword(request.Password, adminUser.PasswordHash))
+                    throw new UnauthorizedAccessException("E-posta veya şifre hatalı.");
+
+                var nameParts = adminUser.FullName.Trim().Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+                var firstName = nameParts.Length > 0 ? nameParts[0] : "Admin";
+                var lastName = nameParts.Length > 1 ? nameParts[1] : "User";
+
+                customer = Domain.Entities.Customer.Customer.CreateRegistered(
+                    email: normalizedEmail,
+                    passwordHash: HashPassword(request.Password),
+                    firstName: firstName,
+                    lastName: lastName,
+                    role: "Admin");
+
+                _db.Customers.Add(customer);
+                adminUser.RecordLogin();
+                await _adminDb.SaveChangesAsync(ct);
+            }
+        }
 
         if (customer == null || customer.PasswordHash == null)
             throw new UnauthorizedAccessException("E-posta veya şifre hatalı.");
@@ -175,6 +209,7 @@ public class AuthService : IAuthService
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var role = string.IsNullOrWhiteSpace(customer.Role) ? "Customer" : customer.Role;
 
         var claims = new List<Claim>
         {
@@ -183,7 +218,7 @@ public class AuthService : IAuthService
             new(ClaimTypes.GivenName, customer.FirstName),
             new(ClaimTypes.Surname, customer.LastName),
             new("is_guest", customer.IsGuest.ToString().ToLowerInvariant()),
-            new(ClaimTypes.Role, "Customer")
+            new(ClaimTypes.Role, role)
         };
 
         var token = new JwtSecurityToken(
@@ -204,7 +239,7 @@ public class AuthService : IAuthService
         return Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
     }
 
-    private static string HashPassword(string password)
+    public static string HashPassword(string password)
     {
         // PBKDF2 ile güvenli şifre hashleme
         var salt = RandomNumberGenerator.GetBytes(16);
@@ -222,20 +257,38 @@ public class AuthService : IAuthService
     private static bool VerifyPassword(string password, string storedHash)
     {
         var parts = storedHash.Split('.');
-        if (parts.Length != 3) return false;
+        if (parts.Length == 3)
+        {
+            var iterations = int.Parse(parts[0]);
+            var salt = Convert.FromBase64String(parts[1]);
+            var expectedHash = Convert.FromBase64String(parts[2]);
 
-        var iterations = int.Parse(parts[0]);
-        var salt = Convert.FromBase64String(parts[1]);
-        var expectedHash = Convert.FromBase64String(parts[2]);
+            var actualHash = Rfc2898DeriveBytes.Pbkdf2(
+                Encoding.UTF8.GetBytes(password),
+                salt,
+                iterations: iterations,
+                HashAlgorithmName.SHA256,
+                outputLength: expectedHash.Length);
 
-        var actualHash = Rfc2898DeriveBytes.Pbkdf2(
-            Encoding.UTF8.GetBytes(password),
-            salt,
-            iterations: iterations,
-            HashAlgorithmName.SHA256,
-            outputLength: expectedHash.Length);
+            return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+        }
 
-        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+        if (parts.Length == 2)
+        {
+            var salt = Convert.FromBase64String(parts[0]);
+            var expectedHash = Convert.FromBase64String(parts[1]);
+
+            var actualHash = Rfc2898DeriveBytes.Pbkdf2(
+                Encoding.UTF8.GetBytes(password),
+                salt,
+                iterations: 100_000,
+                HashAlgorithmName.SHA256,
+                outputLength: expectedHash.Length);
+
+            return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
+        }
+
+        return false;
     }
 
     private static CustomerProfileDto MapToProfile(Domain.Entities.Customer.Customer customer)
@@ -248,6 +301,7 @@ public class AuthService : IAuthService
             Phone: customer.Phone,
             IsGuest: customer.IsGuest,
             CreatedAtUtc: customer.CreatedAtUtc,
-            LastLoginAtUtc: customer.LastLoginAtUtc);
+            LastLoginAtUtc: customer.LastLoginAtUtc,
+            Role: string.IsNullOrWhiteSpace(customer.Role) ? "Customer" : customer.Role);
     }
 }

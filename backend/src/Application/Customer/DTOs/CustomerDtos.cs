@@ -59,7 +59,8 @@ public record CustomerProfileDto(
     string? Phone,
     bool IsGuest,
     DateTime CreatedAtUtc,
-    DateTime? LastLoginAtUtc);
+    DateTime? LastLoginAtUtc,
+    string Role = "Customer");
 
 /// <summary>Profil güncelleme isteği.</summary>
 public record UpdateProfileRequest(

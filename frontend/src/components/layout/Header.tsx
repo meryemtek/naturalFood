@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { adminApi } from '../../api/adminApi';
+import { authApi, authStorage } from '../../api/authApi';
 import { theme } from '../../theme/tokens';
 
 export interface HeaderProps {
@@ -8,7 +10,9 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }) => {
+  const navigate = useNavigate();
   const [isBackendHealthy, setIsBackendHealthy] = useState<boolean | null>(null);
+  const [customer, setCustomer] = useState(() => authStorage.getCustomer());
 
   useEffect(() => {
     adminApi
@@ -16,6 +20,27 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
       .then(() => setIsBackendHealthy(true))
       .catch(() => setIsBackendHealthy(false));
   }, []);
+
+  useEffect(() => {
+    const syncAuth = () => setCustomer(authStorage.getCustomer());
+    window.addEventListener('storage', syncAuth);
+    window.addEventListener('naturalfood:auth-changed', syncAuth);
+    return () => {
+      window.removeEventListener('storage', syncAuth);
+      window.removeEventListener('naturalfood:auth-changed', syncAuth);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await authApi.logout();
+    navigate('/giris', { replace: true });
+  };
+
+  const fullName = customer ? `${customer.firstName} ${customer.lastName}`.trim() : 'Sistem Yöneticisi';
+  const initials = customer
+    ? `${customer.firstName?.[0] || ''}${customer.lastName?.[0] || ''}`.toUpperCase() || 'AD'
+    : 'AD';
+  const roleLabel = customer?.role || 'Admin';
 
   return (
     <header
@@ -99,8 +124,29 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
         </div>
       </div>
 
-      {/* Right: API Health & User Info */}
+      {/* Right: API Health, Storefront Link, User Info & Logout */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        {/* Mağazaya Dön Linki */}
+        <Link
+          to="/"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '5px 10px',
+            borderRadius: theme.radii.md,
+            fontSize: '12px',
+            fontWeight: 600,
+            textDecoration: 'none',
+            backgroundColor: theme.colors.bgCard,
+            color: theme.colors.espresso,
+            border: `1px solid ${theme.colors.border}`,
+          }}
+        >
+          <span>🏪</span>
+          <span className="desktop-only">Mağaza Vitrini</span>
+        </Link>
+
         {/* API Health Pill */}
         <div
           className="admin-header-pill"
@@ -185,13 +231,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
               fontSize: '10px',
             }}
           >
-            SA
+            {initials}
           </div>
           <span
             className="desktop-only"
             style={{ fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso }}
           >
-            Super Administrator
+            {fullName}
           </span>
           <span
             style={{
@@ -203,9 +249,32 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
               color: theme.colors.primary,
             }}
           >
-            Root
+            {roleLabel}
           </span>
         </div>
+
+        {/* Çıkış Yap Butonu */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="Yönetim Panelinden Çıkış Yap"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '5px',
+            padding: '5px 10px',
+            borderRadius: theme.radii.md,
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: 'pointer',
+            backgroundColor: theme.colors.statusDangerBg,
+            color: theme.colors.statusDanger,
+            border: '1px solid #F5D3CE',
+          }}
+        >
+          <span className="desktop-only">Çıkış Yap</span>
+          <span className="mobile-only">✕</span>
+        </button>
       </div>
     </header>
   );
