@@ -166,3 +166,17 @@ html, body {
     grid-template-columns: 1fr !important;
   }
 }
+
+
+/* Global Overflow Guard for Page Containers */
+.admin-main-content > div {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  .admin-main-content {
+    padding: 12px 10px !important;
+  }
+}

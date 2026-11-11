@@ -212,7 +212,7 @@ export const SupplierProcurementPage: React.FC = () => {
       </div>
 
       {/* KPI Cards: Earth & Botanical Tones */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '16px' }}>
         {[
           { label: 'Anlaşmalı Tedarikçi & Çiftlik', val: '28 Kooperatif', sub: 'Tamamı Organik Sertifikalı', color: theme.colors.primary, bg: theme.colors.primarySubtle },
           { label: 'Açık Satın Alma Siparişi', val: '4 Sipariş', sub: '₺256,900 Beklenen Hacim', color: theme.colors.cedar, bg: '#F5F2EF' },
@@ -283,7 +283,7 @@ export const SupplierProcurementPage: React.FC = () => {
               backgroundColor: theme.colors.bgSurface,
               color: theme.colors.espresso,
               fontSize: '13px',
-              minWidth: '280px',
+              flex: '1 1 200px', maxWidth: '100%', boxSizing: 'border-box',
               outline: 'none',
             }}
           />
@@ -301,7 +301,7 @@ export const SupplierProcurementPage: React.FC = () => {
               Toplam {filteredOrders.length} sipariş
             </span>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
+          <div style={{ overflowX: 'auto', width: '100%' }}><table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
             <thead>
               <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}`, color: theme.colors.taupe, fontSize: '11.5px', textTransform: 'uppercase' }}>
                 <th style={{ padding: '14px 20px' }}>Sipariş No (PO)</th>
@@ -370,7 +370,7 @@ export const SupplierProcurementPage: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
@@ -385,7 +385,7 @@ export const SupplierProcurementPage: React.FC = () => {
               Son {filteredReceipts.length} mal kabul işlemi
             </span>
           </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <div style={{ overflowX: 'auto', width: '100%' }}><table style={{ width: '100%', minWidth: '780px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}`, color: theme.colors.taupe, fontSize: '11.5px', textTransform: 'uppercase' }}>
                 <th style={{ padding: '14px 18px' }}>Mal Kabul No</th>
@@ -461,7 +461,7 @@ export const SupplierProcurementPage: React.FC = () => {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

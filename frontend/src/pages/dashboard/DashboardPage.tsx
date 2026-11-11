@@ -458,7 +458,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', width: '100%', maxWidth: '100%', minWidth: 0, boxSizing: 'border-box' }}>
       {/* Toast Alert Notification */}
       {toastMessage && (
         <div
@@ -511,10 +511,10 @@ export const DashboardPage: React.FC = () => {
         }}
       >
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <h1
               style={{
-                fontSize: '23px',
+                fontSize: 'clamp(18px, 4.5vw, 23px)',
                 fontWeight: 700,
                 color: theme.colors.espresso,
                 letterSpacing: '-0.4px',
@@ -1018,10 +1018,13 @@ export const DashboardPage: React.FC = () => {
           backgroundColor: theme.colors.bgCard,
           borderRadius: theme.radii.md,
           border: `1px solid ${theme.colors.border}`,
-          padding: '22px 24px',
+          padding: '20px 18px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Widget Header */}
@@ -1082,7 +1085,11 @@ export const DashboardPage: React.FC = () => {
               fontSize: '12.5px',
               fontWeight: 600,
               textDecoration: 'none',
-              whiteSpace: 'nowrap',
+              whiteSpace: 'normal',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+              lineHeight: 1.35,
             }}
           >
             Tüm Değerlendirmeleri Gör (Müşteri İlişkileri) →
@@ -1134,15 +1141,18 @@ export const DashboardPage: React.FC = () => {
                     ? `3px solid ${theme.colors.primary}`
                     : `3px solid ${rev.rating <= 2 ? theme.colors.statusDanger : theme.colors.statusWarning}`,
                   borderRadius: theme.radii.sm,
-                  padding: '14px 16px',
+                  padding: '14px',
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   flexWrap: 'wrap',
-                  gap: '14px',
+                  gap: '12px',
+                  minWidth: 0,
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
                 }}
               >
-                <div style={{ flex: '1 1 420px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ flex: '1 1 240px', minWidth: 0, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                     {renderAttentionStars(rev.rating)}
                     <strong style={{ fontSize: '13.5px', color: theme.colors.espresso }}>
@@ -1157,6 +1167,8 @@ export const DashboardPage: React.FC = () => {
                         backgroundColor: theme.colors.bgCard,
                         border: `1px solid ${theme.colors.border}`,
                         color: theme.colors.cedar,
+                        maxWidth: '100%',
+                        wordBreak: 'break-word',
                       }}
                     >
                       🌿 {rev.productName}
@@ -1178,7 +1190,7 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '0 1 auto', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
                   {rev.hasResponse ? (
                     <>
                       <span
@@ -1241,6 +1253,10 @@ export const DashboardPage: React.FC = () => {
                           fontSize: '12.5px',
                           fontWeight: 600,
                           cursor: 'pointer',
+                          maxWidth: '100%',
+                          whiteSpace: 'normal',
+                          textAlign: 'center',
+                          lineHeight: 1.3,
                         }}
                       >
                         💬 Müşteriyi Yanıtla / İletişime Geç
@@ -1282,6 +1298,11 @@ export const DashboardPage: React.FC = () => {
               fontSize: '13px',
               fontWeight: 700,
               textDecoration: 'none',
+              whiteSpace: 'normal',
+              maxWidth: '100%',
+              boxSizing: 'border-box',
+              textAlign: 'center',
+              lineHeight: 1.35,
             }}
           >
             Tüm Değerlendirmeleri Gör (Müşteri İlişkileri) →
@@ -1297,10 +1318,13 @@ export const DashboardPage: React.FC = () => {
           backgroundColor: theme.colors.bgCard,
           borderRadius: theme.radii.md,
           border: `1px solid ${theme.colors.border}`,
-          padding: '22px 24px',
+          padding: '20px 18px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header of Section */}
@@ -1314,7 +1338,7 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '18px' }}>🌱</span>
               <h2
                 style={{
@@ -1410,7 +1434,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <button
               onClick={() => setIsSensorHistoryModalOpen(true)}
               style={{
@@ -1449,10 +1473,11 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* 2. Raf Ömrü Yaklaşanlar Tablosu */}
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', width: '100%', maxWidth: '100%' }}>
           <table
             style={{
               width: '100%',
+              minWidth: '640px',
               borderCollapse: 'collapse',
               fontSize: '13px',
               textAlign: 'left',
@@ -1677,7 +1702,7 @@ export const DashboardPage: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
           gap: '20px',
         }}
       >
@@ -2008,7 +2033,7 @@ export const DashboardPage: React.FC = () => {
             </div>
 
             {/* Kategori Açıklama Listesi */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', minWidth: '190px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px', flex: '1 1 160px', minWidth: 0, maxWidth: '100%' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '2px', backgroundColor: '#2D5A27' }} />
@@ -2053,10 +2078,13 @@ export const DashboardPage: React.FC = () => {
           backgroundColor: theme.colors.bgCard,
           borderRadius: theme.radii.md,
           border: `1px solid ${theme.colors.border}`,
-          padding: '22px 24px',
+          padding: '20px 18px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
+          minWidth: 0,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* Header of Orders Table */}
@@ -2070,7 +2098,7 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '18px' }}>📦</span>
               <h2
                 style={{
@@ -2137,10 +2165,11 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Siparişler Tablosu */}
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', width: '100%', maxWidth: '100%' }}>
           <table
             style={{
               width: '100%',
+              minWidth: '680px',
               borderCollapse: 'collapse',
               fontSize: '13px',
               textAlign: 'left',
@@ -2182,7 +2211,7 @@ export const DashboardPage: React.FC = () => {
                   >
                     {/* Sipariş Kodu & Müşteri */}
                     <td style={{ padding: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                         <span
                           style={{
                             fontFamily: 'monospace',
@@ -2340,7 +2369,7 @@ export const DashboardPage: React.FC = () => {
                 borderRadius: theme.radii.sm,
                 border: `1px solid ${theme.colors.border}`,
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))',
                 gap: '12px',
                 fontSize: '13px',
               }}
@@ -2737,7 +2766,7 @@ export const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
                   Teslimat Türü
@@ -2812,7 +2841,7 @@ export const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '10px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
                   Ürün Seçimi
@@ -3013,7 +3042,7 @@ export const DashboardPage: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 150px), 1fr))',
                 gap: '8px',
                 textAlign: 'center',
               }}
@@ -3142,7 +3171,7 @@ export const DashboardPage: React.FC = () => {
               />
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <input
                 type="checkbox"
                 id="dashMarkReviewed"

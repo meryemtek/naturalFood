@@ -264,7 +264,7 @@ export const InventoryPage: React.FC = () => {
                 borderRadius: theme.radii.xs,
                 border: `1px solid ${theme.colors.border}`,
                 fontSize: '12.5px',
-                minWidth: '240px',
+                flex: '1 1 200px', maxWidth: '100%', boxSizing: 'border-box',
                 backgroundColor: theme.colors.bgSurface,
                 color: theme.colors.espresso,
                 outline: 'none',

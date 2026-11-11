@@ -110,7 +110,7 @@ export const AuditLogsPage: React.FC = () => {
           Toplam {totalCount} Olay Kaydedildi
         </div>
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+        <div style={{ overflowX: 'auto', width: '100%' }}><table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
           <thead>
             <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}`, color: theme.colors.taupe, fontSize: '11.5px', textTransform: 'uppercase' }}>
               <th style={{ padding: '14px 20px' }}>Tarih / Saat (UTC)</th>
@@ -181,7 +181,7 @@ export const AuditLogsPage: React.FC = () => {
               ))
             )}
           </tbody>
-        </table>
+        </table></div>
 
         {/* Pagination Footer */}
         {totalPages > 1 && (
@@ -236,7 +236,7 @@ export const AuditLogsPage: React.FC = () => {
               <div style={{ fontFamily: 'monospace', color: theme.colors.espresso, marginTop: '2px' }}>{selectedLog.id}</div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px' }}>
               <div>
                 <strong style={{ color: theme.colors.taupe }}>Eylem:</strong>
                 <div style={{ marginTop: '2px' }}>{getActionBadge(selectedLog.action)}</div>
