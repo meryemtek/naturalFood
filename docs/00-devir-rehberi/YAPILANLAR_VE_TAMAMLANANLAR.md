@@ -15,7 +15,7 @@
 | **Yönetici & Audit Log (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `AuditLogs`) | `/admin/users`, `/admin/audit-logs` (Canlı CRUD) |
 | **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilimin tamamı canlı PostgreSQL'e bağlı |
 | **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı (Diğer 4 alt sekme Faz 2'de) |
-| **Müşteri (Public) API Katmanı** | ✅ Backend Hazır | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience` | API uçları `ApiHost` içinde ayağa kalkmış durumda |
+| **Müşteri Vitrini & Storefront** | ✅ %100 MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | 10+ Ekran (Vitrin, Ürünler, Detay, Sepet, Ödeme, Profil, Auth) |
 | **Mobil & Responsive Çekirdek** | ✅ %100 Tamamlandı | — | Çekmece (Drawer) Menü, Hamburger Butonu, Responsive Tablolar |
 
 ---
@@ -117,6 +117,30 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
 
 ---
 
-## 📚 AŞAMA 4: Dokümantasyon Güncellemesi (9–11 Kasım 2026)
-* Tüm teknik şartnameler, kök `README.md`, `docs/README.md` ve devir rehberi belgeleri yapılan dikey dilimlerle senkronize edildi.
-* **Yapılanlar** ([`YAPILANLAR_VE_TAMAMLANANLAR.md`](YAPILANLAR_VE_TAMAMLANANLAR.md)) ve **Yapılacaklar / Faz Haritası** ([`YAPILACAKLAR_VE_FAZ_HARITASI.md`](YAPILACAKLAR_VE_FAZ_HARITASI.md)) ayrı sayfalara bölündü.
+## 🛒 AŞAMA 6: Müşteri Deneyimi, E-Ticaret Mağazası ve Storefront MVP (10–11 Kasım 2026)
+
+👉 **Ayrıntılı Müşteri Şartnamesi:** [docs/03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md](../03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md) · [docs/MUSTERI_MODULU.md](../MUSTERI_MODULU.md)
+
+### ✅ CHECKPOINT 15: Müşteri Backend Altyapısı (.NET 10, 8 Modül & PostgreSQL)
+* **Commit:** `8f5511e` (`musteri backend oluşturuldu`)
+* **Modüller & Şemalar:** `catalog`, `cart`, `customer`, `orders`, `promotions`, `content`, `experience`, `payments` şemaları kuruldu.
+* **Minimal API Sözleşmeleri:** `/api/catalog/*` (ürünler & kategoriler), `/api/cart/*` (sepet & misafir sepeti), `/api/auth/*` ve `/api/customer/*` (JWT Auth, profil, adresler, favoriler), `/api/orders/*` (sipariş oluşturma), `/api/payments/*` (ödeme simülasyonu), `/api/experience/*` (yorumlar ve bülten).
+* **Arka Plan Servisi:** `ReservationExpiryWorker` ile sepette kalan ürünlerin stok rezervasyonlarının 30 dakika sonra otomatik düşürülüp iade edilmesi sağlandı.
+* **Katalog Birleşimi:** `d1fc598` ile Admin ürün yönetiminin doğrudan müşteri vitriniyle aynı `catalog."Products"` tablosunu yönetmesi sağlandı (Single Source of Truth).
+
+### ✅ CHECKPOINT 16: Müşteri Mağazası Frontend Arayüzü (React 19 + TypeScript + Tailwind)
+* **Commit:** `5a6f0fc` (`müsteri frontend tamamlandi`)
+* **Ekranlar & Rotalar:**
+  - Ana Sayfa Vitrini (`/` - `StorefrontPage.tsx`): Bento köy sofrası vitrini, güven bantları, kategori kartları, çok satanlar, üretici spotu, mevsim lezzetleri.
+  - Ürün Kataloğu (`/products` - `ProductsPage.tsx`): Yöre, kategori, fiyat filtreleri, anlık metin arama, sıralama ve sayfalama.
+  - Ürün Detay (`/products/:slug` - `ProductDetailPage.tsx`): Fotoğraf galerisi, gramaj/ambalaj seçicisi, yasal 100g besin değerleri, alerjen rozetleri, kullanıcı değerlendirmeleri.
+  - Sepet Ekranı (`/cart` - `CartPage.tsx`): Dinamik ücretsiz kargo barı (750 TL eşiği), kupon kodu alanı, miktar yönetimi.
+  - Ödeme / Kasa (`/odeme` - `CheckoutPage.tsx`): Teslimat adresi seçimi, kart bilgileri simülasyonu, sipariş tamamlama.
+  - Bizim Hikâyemiz (`/hikayemiz` - `OurStoryPage.tsx`): Yerel kooperatifler ve geleneksel üretim felsefesi.
+  - Giriş & Kayıt (`/giris`, `/uye-ol` - `AuthPage.tsx`): Müşteri JWT kimlik doğrulama, form validasyonu.
+  - Hesabım Portali (`/hesabim/*` - `AccountPage.tsx`): Profilim, Siparişlerim, Adreslerim, Favorilerim ve Değerlendirmelerim.
+  - Gezinme & Çekirdek: Kategori mega menülü `StorefrontHeader.tsx`, SVG sebze animasyonlu `HomeLoadingOverlay.tsx` açılış ekranı.
+
+### ✅ CHECKPOINT 17: Kusursuz Otantik Doğal Gıda Görselleri
+* Eski mockup arayüzlerinden ekran görüntüsü alınarak kırpılmış ve piksellerine *"18 Ürün"*, *"12 Ürün"*, tarayıcı üst bantları gömülmüş görseller tamamen temizlendi.
+* Yapay zeka destekli profesyonel stüdyo ve köy sofrası fotoğrafçılığı ile 6 kategori görseli (`cat-kahvaltilik`, `cat-zeytinyagi`, `cat-salca`, `cat-bal-recel`, `cat-bakliyat`, `cat-kuruyemis`), 6 ürün görseli (`product-zeytinyagi`, `product-salca`, `product-kasar`, `product-cam-bali`, `product-tereyagi`, `product-eriste`) ve hikâye görseli (`mehmet-ali-dayi`) sıfırdan yüksek çözünürlükte üretilerek sisteme entegre edildi.

@@ -10,7 +10,7 @@
 > * **Faz Haritası & Yapılacak İşler (YAPILACAKLAR):** [docs/00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md)
 > * **Hızlı Başlangıç & Devir (Onboarding):** [docs/00-devir-rehberi/DEVIR_REHBERI.md](00-devir-rehberi/DEVIR_REHBERI.md)
 > * **Operasyon & Kasa Şartnamesi:** [docs/02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md)
-> * **İş Alanları & Modül Şartnameleri:** [docs/03-is-alanlari-ve-yonetim/](03-is-alanlari-ve-yonetim/)
+> * **İş Alanları & Modül Şartnameleri:** [docs/03-is-alanlari-ve-yonetim/](03-is-alanlari-ve-yonetim/) (Ürün, Stok, Yönetici, [Müşteri & Storefront](03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md))
 > * **Test & Doğrulama Rehberleri:** [docs/04-test-ve-rehberler/E2E_TEST_VE_DOGRULAMA_REHBERI.md](04-test-ve-rehberler/E2E_TEST_VE_DOGRULAMA_REHBERI.md)
 > * **Tarihsel Kararlar & Arşiv:** [docs/05-gecmis-ve-arsiv/GECMIS_KARARLAR_VE_MIGRATION_NOTLARI.md](05-gecmis-ve-arsiv/GECMIS_KARARLAR_VE_MIGRATION_NOTLARI.md)
 
@@ -66,6 +66,7 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 | **Stok & Envanter Yönetimi** | Canlı Kalıcı Çekirdek | `catalog` (`StockQuantity`), `admin` (`AuditLogs`) | Var (`InventoryPage.tsx`) | Var (`/api/admin/inventory`, `PATCH /stock`) | Var (Canlı veritabanı bağlandı) | Evet (Hızlı +1/-1, 0 altına düşmeme, kurumsal audit log) |
 | **Müşteri (Public) Katalog Uçları** | Canlı Kalıcı Çekirdek | `catalog` (`Products`, `Categories`) | Hazır API | Var (`/api/catalog/products`, `/categories`) | Var (Single Source of Truth) | Evet (Admin değişiklikleri anında vitrinde listelenir) |
 | **Mobil & Responsive Çekirdek** | Canlı UI İyileştirmesi | N/A | Var (`Sidebar.tsx`, `Header.tsx`, `MainLayout.tsx`) | N/A | Var (Vite build & Mobil test) | Evet (Çekmece menü, hamburger butonu, esnek layout) |
+| **Müşteri Mağazası & Storefront** | Canlı MVP Çekirdek | `catalog`, `cart`, `customer`, `orders`, `promotions`, `content`, `experience`, `payments` | Var (`StorefrontPage`, `ProductsPage`, `ProductDetailPage`, `CartPage`, `CheckoutPage`, `AccountPage`, `AuthPage`) | Var (`/api/catalog/*`, `/api/cart/*`, `/api/auth/*`, `/api/orders/*`) | Var (React 19, TypeScript E2E derlendi) | Evet (B2C Vitrin, Sepet, Ödeme, Temizlenmiş Yüksek Çözünürlüklü Otantik Görseller) |
 
 ### B. Kalan Fazlar & Geliştirilecek Modüller ([YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md))
 
@@ -75,7 +76,7 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 | **Dashboard Canlı Veri & Admin JWT** | Mock UI & Açık Port | `AdminUsers` hazır, Auth token admin uçlarına bağlanacak | `DashboardPage` (mock), `LoginPage` (planlandı) | **Faz 3** | Hayır |
 | **Sipariş & Sevkiyat Admin Ekranları** | Placeholder UI | `orders`, `payments` şemaları & public uçları hazır | `ModulePlaceholderPage` | **Faz 4** | Hayır (Admin UI & uçları bekliyor) |
 | **CRM, Pazarlama & Analitik** | Placeholder UI | `customer`, `promotions`, `experience`, `content` hazır | `ModulePlaceholderPage` | **Faz 5** | Hayır (Admin UI & raporlama bekliyor) |
-| **Müşteri Vitrini (Storefront UI)** | Backend API Hazır | `/api/catalog/*`, `/api/cart/*`, `/api/auth/*` hazır | Harici vitrin bağlanacak | **Faz 6** | Backend hazır, vitrin arayüzü bekliyor |
+| **Müşteri Canlı POS & Kargo Fazları** | Frontend & Backend MVP ✅ | Public API uçları ve React ekranları hazır | Canlı Mağaza Arayüzü Hazır | **Müşteri Fazları (1-5)** | MVP Hazır; Sanal POS, Canlı Kargo ve API kilidi sırada 👉 [MUSTERI_MODULU.md](03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md) |
 
 ---
 
@@ -92,6 +93,7 @@ Projeye başlayan geliştiricilere ve yapay zeka ajanlarına rehberlik eden mod�
 | **[Modül 5]** | **Kasa, Tahsilat & Sanal POS** | Sanal POS entegrasyonu, iade/iptal süreçleri, parçalı tahsilat, ciro raporu. | 👉 [KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md) | **Faz 4 & Faz 5** |
 | **[Modül 6]** | **Sipariş & Sevkiyat Yönetimi** | Sipariş akışı (Yeni, Hazırlanıyor, Kargoda, Teslim Edildi), soğuk kurye. | 👉 [KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md](02-kasa-ve-operasyon/KASA_VE_SIPARIS_OPERASYON_SOZLESMESI.md) | Backend hazır; Admin UI **Faz 4** |
 | **[Modül 7]** | **Kimlik Doğrulama & JWT (Auth)** | Güvenli JWT tabanlı Admin giriş ekranı, token interceptor ve RBAC kilidi. | 👉 [BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md](01-mimari-ve-altyapi/BACKEND_MIMARISI_VE_MODUL_BAGIMLILIKLARI.md) | Müşteri JWT hazır; Admin Login **Faz 3** |
+| **[Modül 8]** | **Müşteri Deneyimi & Storefront** | B2C vitrini, ürün kataloğu, sepet, ödeme, hikayemiz, hesap portali ve otantik görseller. | 👉 [MUSTERI_MODULU.md](03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md) | Canlı MVP ✅ (Kalan Fazlar: Canlı API kilidi, Sanal POS, Kargo) |
 
 ---
 

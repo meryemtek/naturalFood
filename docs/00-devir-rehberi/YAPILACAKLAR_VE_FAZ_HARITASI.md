@@ -104,9 +104,37 @@ Stok ve Depo Yönetimi bölümünün `/inventory` dışındaki kalan 4 ekranın�
 
 ---
 
-### 🌐 FAZ 6: Müşteri Web Vitrini (Storefront) & Üretim Dağıtımı (CI/CD)
+### 🛒 FAZ 6: Müşteri E-Ticaret Mağazası (Storefront) Canlıya Çıkış Fazları & Production Dağıtımı
 
-- [ ] **Müşteri Vitrini Bağlantısı:** E-ticaret web arayüzünün mevcut `ApiHost` uçlarına (`/api/catalog/*`, `/api/content/home`, `/api/cart/*`, `/api/orders/*`, `/api/auth/*`) bağlanması.
+*(Not: Müşteri arayüzü MVP olarak `StorefrontPage`, `ProductsPage`, `ProductDetailPage`, `CartPage`, `CheckoutPage`, `AccountPage` ve `AuthPage` ekranlarıyla React 19 üzerinde tamamlanmıştır. Ayrıntılı şartname: 👉 [MUSTERI_MODULU.md](../03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md) · [docs/MUSTERI_MODULU.md](../MUSTERI_MODULU.md))*.
+
+#### 6.1. Uçtan Uca Canlı Veri Kilidi (Mock Verilerden %100 Arınma - Müşteri Faz 1)
+- [ ] [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx) ve [`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx) içindeki mock dizilerin tamamen kaldırılarak `storefrontApi` üzerinden canlı `/api/catalog/products` verisine bağlanması.
+- [ ] Sepet ve misafir sepetinin (`X-Guest-Cart-Token`) doğrudan PostgreSQL `cart` şemasıyla canlı eşleşmesi ve üye girişi sonrasında `POST /api/cart/merge` çağrısının otomatik tetiklenmesi.
+- [ ] Kupon indirimlerinin doğrudan backend `promotions` motoru üzerinden canlı hesaplanması.
+
+#### 6.2. Gerçek Finans ve Ödeme Entegrasyonu (Sanal POS & 3D Secure - Müşteri Faz 2)
+- [ ] `SimulatedPayment` yerine BDDK lisanslı Sanal POS (Iyzico / PayTR / Param) entegrasyonu.
+- [ ] Banka SMS doğrulaması için 3D Secure callback akışları ve hata yönetimi.
+- [ ] Başarılı ödeme sonrası yasal e-Fatura / e-Arşiv taslağının oluşturulması (Paraşüt / Foriba entegrasyonu).
+
+#### 6.3. Lojistik, Kargo & Çok Kanallı Müşteri Bildirimleri (Müşteri Faz 3)
+- [ ] Kargo firması API entegrasyonu (Yurtiçi / MNG / Kolay Gelsin) ile sipariş anında otomatik gönderi takip numarası ve barkod üretimi.
+- [ ] Soğuk zincir gerektiren ürünler (peynir, tereyağı, kaymak) için otomatik buz akülü koruma seçimi ve kurye teslimat saat dilimleri.
+- [ ] Netgsm / Twilio ile SMS ve SendGrid ile kurumsal e-posta bildirimleri (Sipariş Alındı, Kargoya Verildi).
+
+#### 6.4. Arama Motoru Optimizasyonu (SEO), Sosyal Paylaşım ve PWA (Müşteri Faz 4)
+- [ ] `react-helmet-async` ile dinamik meta etiketleri, OpenGraph kartları ve Schema.org `Product` JSON-LD zengin snippet'ları.
+- [ ] Google Merchant Center için otomatik güncellenen XML ürün akışı (`/api/catalog/google-feed.xml`).
+- [ ] Progressive Web App (PWA) desteği (mobil tarayıcılarda ana ekrana ekleme ve çevrimdışı önbellekleme).
+
+#### 6.5. Müşteri Sadakati, CRM ve Dönüşüm Artırma (Growth & Retention - Müşteri Faz 5)
+- [ ] Teslim edilmiş siparişler için fotoğraflı müşteri değerlendirme ve puanlama arayüzü (`POST /api/experience/reviews`).
+- [ ] Terk edilmiş sepet (Abandoned Cart) kurtarma için otomatik hatırlatma e-postaları.
+- [ ] Alışverişlerden %3–%5 "Köy Puanı" kazanımı ve sonraki siparişlerde harcanabilmesi.
+- [ ] Akıllı çapraz satış öneri modülü (*"Zeytinyağı ile iyi gider: Halhalı Zeytin"*).
+
+#### 6.6. Production Containerization & CI/CD Dağıtımı
 - [ ] **Production Containerization:** Backend (.NET 10) ve Frontend (Nginx + React) için multi-stage `Dockerfile` hazırlığı.
 - [ ] **Operasyonel Güvence:** Otomatik PostgreSQL yedekleme script'leri, Rate Limiting sıkılaştırması, HealthCheck & Prometheus/Grafana metrik entegrasyonu.
 
