@@ -35,7 +35,8 @@ public record CreateAdminUserRequest(
     string Email,
     string FullName,
     string Password,
-    AdminRole Role
+    AdminRole Role,
+    string? CustomRoleName = null
 );
 
 public record UpdateAdminUserRequest(

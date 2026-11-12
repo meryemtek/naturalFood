@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from '../../api/adminApi';
+import { useNavigate } from 'react-router-dom';
 import { theme } from '../../theme/tokens';
+import { usePermissions, getRoleDisplayLabel } from '../../context/PermissionContext';
 
 export interface HeaderProps {
   onToggleSidebar?: () => void;
@@ -8,6 +10,12 @@ export interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }) => {
+  const navigate = useNavigate();
+  const { adminSession, activeRole, activeRoleDisplay, roles, isSuperAdmin, canSwitchPreviewRole, switchRole, logout } = usePermissions();
+  const selectableRoles = roles.length > 0
+    ? roles.map((r) => r.name)
+    : ['SuperAdmin', 'BranchManager', 'WarehouseStaff'];
+  const roleInitials = isSuperAdmin ? 'SA' : activeRole.slice(0, 2).toUpperCase();
   const [isBackendHealthy, setIsBackendHealthy] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -158,17 +166,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
           </span>
         </div>
 
-        {/* User Pill */}
+        {/* Authenticated User & Role Pill */}
         <div
           className="admin-header-pill"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '4px 8px',
+            padding: '4px 10px',
             borderRadius: theme.radii.md,
             backgroundColor: theme.colors.bgCard,
             border: `1px solid ${theme.colors.border}`,
+            maxWidth: '280px',
           }}
         >
           <div
@@ -176,8 +185,9 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
               width: '22px',
               height: '22px',
               borderRadius: '50%',
-              backgroundColor: theme.colors.primarySubtle,
-              color: theme.colors.primary,
+              flexShrink: 0,
+              backgroundColor: isSuperAdmin ? theme.colors.primarySubtle : theme.colors.statusWarningBg,
+              color: isSuperAdmin ? theme.colors.primary : theme.colors.statusWarning,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -185,26 +195,67 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
               fontSize: '10px',
             }}
           >
-            SA
+            {roleInitials}
           </div>
-          <span
-            className="desktop-only"
-            style={{ fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso }}
-          >
-            Super Administrator
-          </span>
-          <span
+          {canSwitchPreviewRole ? (
+            <select
+              aria-label="Aktif rol önizlemesi"
+              value={activeRole}
+              onChange={(e) => switchRole(e.target.value)}
+              style={{
+                border: 'none',
+                background: 'transparent',
+                color: theme.colors.espresso,
+                fontSize: '12.5px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                outline: 'none',
+                maxWidth: '175px',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {selectableRoles.map((r) => (
+                <option key={r} value={r}>
+                  {getRoleDisplayLabel(r)}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span
+              style={{
+                fontSize: '12px',
+                fontWeight: 600,
+                color: theme.colors.espresso,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+              title={adminSession?.user?.email}
+            >
+              {activeRoleDisplay}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate('/admin/login', { replace: true });
+            }}
+            title="Yönetici oturumunu kapat"
             style={{
-              fontSize: '10.5px',
-              fontWeight: 700,
-              padding: '1px 6px',
+              border: 'none',
+              backgroundColor: theme.colors.bgSurface,
+              color: theme.colors.taupe,
               borderRadius: theme.radii.xs,
-              backgroundColor: theme.colors.primarySubtle,
-              color: theme.colors.primary,
+              padding: '2px 7px',
+              fontSize: '11px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
-            Root
-          </span>
+            Çıkış
+          </button>
         </div>
       </div>
     </header>

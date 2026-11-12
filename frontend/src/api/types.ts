@@ -14,6 +14,7 @@ export interface CreateAdminUserRequest {
   fullName: string;
   password: string;
   role: number;
+  customRoleName?: string | null;
 }
 
 export interface AuditLog {

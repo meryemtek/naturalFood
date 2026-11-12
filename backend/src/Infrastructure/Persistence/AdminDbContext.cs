@@ -14,6 +14,9 @@ public class AdminDbContext : DbContext, IAdminDbContext
 
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<ModulePermission> ModulePermissions => Set<ModulePermission>();
+    public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

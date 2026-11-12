@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { theme } from '../../theme/tokens';
 import { Modal } from '../../components/common/Modal';
+import { usePermissions } from '../../context/PermissionContext';
 import {
   reviewService,
   DashboardReviewsAttentionResponse,
@@ -48,6 +49,9 @@ export const DashboardPage: React.FC = () => {
     }, 4000);
   };
 
+  const { hasPermission, isLoadingPermissions } = usePermissions();
+  const canViewReviews = hasPermission('crm.reviews');
+
   // --- Müşteri Değerlendirmeleri (Canlı CRM Risk Takibi) State ---
   const [reviewAttention, setReviewAttention] = useState<DashboardReviewsAttentionResponse | null>(null);
   const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
@@ -58,6 +62,11 @@ export const DashboardPage: React.FC = () => {
   const [isSendingReply, setIsSendingReply] = useState<boolean>(false);
 
   const loadReviewAttention = useCallback(async () => {
+    if (!canViewReviews) {
+      setIsLoadingReviews(false);
+      setReviewAttention(null);
+      return;
+    }
     try {
       setIsLoadingReviews(true);
       setReviewError(null);
@@ -68,11 +77,13 @@ export const DashboardPage: React.FC = () => {
     } finally {
       setIsLoadingReviews(false);
     }
-  }, []);
+  }, [canViewReviews]);
 
   useEffect(() => {
-    loadReviewAttention();
-  }, [loadReviewAttention]);
+    if (!isLoadingPermissions) {
+      loadReviewAttention();
+    }
+  }, [isLoadingPermissions, loadReviewAttention]);
 
   const handleOpenQuickReplyModal = (review: DashboardAttentionReviewDto) => {
     setSelectedReviewForReply(review);
@@ -563,6 +574,7 @@ export const DashboardPage: React.FC = () => {
         {/* Hızlı İşlem Kısayolları Butonları */}
         <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '9px' }}>
           {/* 1. Yeni Ürün Ekle */}
+          {hasPermission('products.view') && (
           <Link
             to="/products/definition"
             style={{
@@ -585,8 +597,10 @@ export const DashboardPage: React.FC = () => {
           >
             <span style={{ fontSize: '15px', lineHeight: 1 }}>+</span> Yeni Ürün Ekle
           </Link>
+          )}
 
           {/* 2. Manuel Sipariş Oluştur */}
+          {hasPermission('orders.view') && (
           <button
             onClick={() => setIsManualOrderModalOpen(true)}
             style={{
@@ -614,8 +628,10 @@ export const DashboardPage: React.FC = () => {
           >
             <span>🛒</span> Manuel Sipariş Oluştur
           </button>
+          )}
 
           {/* 3. Stok Sayımı Başlat */}
+          {hasPermission('inventory.view') && (
           <button
             onClick={() => setIsStockCountModalOpen(true)}
             style={{
@@ -643,8 +659,10 @@ export const DashboardPage: React.FC = () => {
           >
             <span>📋</span> Stok Sayımı Başlat
           </button>
+          )}
 
           {/* 4. Günlük Sevkiyat Listesini İndir (PDF/Excel) */}
+          {hasPermission('orders.view') && (
           <button
             onClick={handleDownloadDispatchList}
             style={{
@@ -672,6 +690,7 @@ export const DashboardPage: React.FC = () => {
           >
             <span>📥</span> Sevkiyat Listesi İndir (Excel/PDF)
           </button>
+          )}
         </div>
       </div>
 
@@ -686,6 +705,7 @@ export const DashboardPage: React.FC = () => {
         }}
       >
         {/* KPI Kartı 1: Günlük Sipariş Hacmi */}
+        {hasPermission('orders.view') && (
         <div
           style={{
             backgroundColor: theme.colors.bgCard,
@@ -743,7 +763,10 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        )}
+
         {/* KPI Kartı 2: Bugünkü Net Ciro */}
+        {hasPermission('finance.reports') && (
         <div
           style={{
             backgroundColor: theme.colors.bgCard,
@@ -798,7 +821,10 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        )}
+
         {/* KPI Kartı 3: Bekleyen / Hazırlanan Siparişler */}
+        {hasPermission('orders.view') && (
         <div
           style={{
             backgroundColor: theme.colors.bgCard,
@@ -855,7 +881,10 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        )}
+
         {/* KPI Kartı 4: Kritik Raf Ömrü & Stok Alarmı */}
+        {hasPermission('inventory.view') && (
         <div
           style={{
             backgroundColor: theme.colors.bgCard,
@@ -913,7 +942,10 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        )}
+
         {/* KPI Kartı 5: Müşteri Memnuniyeti (Canlı CRM Verisi) */}
+        {canViewReviews && (
         <div
           style={{
             backgroundColor: theme.colors.bgCard,
@@ -1008,11 +1040,39 @@ export const DashboardPage: React.FC = () => {
             </Link>
           </div>
         </div>
+        )}
+
+        {!hasPermission('orders.view') &&
+          !hasPermission('finance.reports') &&
+          !hasPermission('inventory.view') &&
+          !canViewReviews && (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                backgroundColor: theme.colors.bgCard,
+                borderRadius: theme.radii.md,
+                border: `1px solid ${theme.colors.border}`,
+                padding: '22px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+              }}
+            >
+              <div style={{ fontSize: '15px', fontWeight: 700, color: theme.colors.espresso }}>
+                Yetkilendirilmiş Modül Alanı
+              </div>
+              <div style={{ fontSize: '13.5px', color: theme.colors.taupe, lineHeight: 1.55 }}>
+                Rolünüz için yalnızca sol menüde görüntülenen yetkili modüller aktiftir. İşlemlerinize
+                sol kenar çubuğundaki modüller üzerinden devam edebilirsiniz.
+              </div>
+            </div>
+          )}
       </div>
 
       {/* =========================================================================
           BÖLÜM 2.5: MÜDAHALE BEKLEYEN MÜŞTERİ DEĞERLENDİRMELERİ (CRM Widget - 1-3 Yıldız)
           ========================================================================= */}
+      {canViewReviews && (
       <div
         style={{
           backgroundColor: theme.colors.bgCard,
@@ -1309,10 +1369,12 @@ export const DashboardPage: React.FC = () => {
           </Link>
         </div>
       </div>
+      )}
 
       {/* =========================================================================
           BÖLÜM 3: TAZELİK, SKT VE FİRE UYARI TABLOSU (Gıdaya Özel Blok)
           ========================================================================= */}
+      {hasPermission('inventory.view') && (
       <div
         style={{
           backgroundColor: theme.colors.bgCard,
@@ -1696,9 +1758,12 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      )}
+
       {/* =========================================================================
           BÖLÜM 4: SATIŞ VE TALEP TRENDLERİ (Minimalist Grafikler)
           ========================================================================= */}
+      {hasPermission('finance.reports') && (
       <div
         style={{
           display: 'grid',
@@ -2070,9 +2135,12 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
+      )}
+
       {/* =========================================================================
           BÖLÜM 5: SON SİPARİŞLER TABLOSU (Canlı Akış)
           ========================================================================= */}
+      {hasPermission('orders.view') && (
       <div
         style={{
           backgroundColor: theme.colors.bgCard,
@@ -2349,6 +2417,8 @@ export const DashboardPage: React.FC = () => {
           </table>
         </div>
       </div>
+
+      )}
 
       {/* =========================================================================
           MODAL 1: SİPARİŞ DETAYI MODALI

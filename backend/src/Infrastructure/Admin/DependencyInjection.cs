@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Common.Interfaces;
 using Application.Common.Security;
 using Application.Services.Admin;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<IAdminDbContext>(sp => sp.GetRequiredService<AdminDbContext>());
 
         // Güvenlik & Hash
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         // Admin, Ürün & Envanter Servisleri
@@ -41,6 +43,7 @@ public static class DependencyInjection
         services.AddScoped<ILotService, LotService>();
         services.AddScoped<IStorageService, StorageService>();
         services.AddScoped<IAdminReviewService, AdminReviewService>();
+        services.AddScoped<IAdminRbacService, AdminRbacService>();
 
         // Validatörler
         services.AddValidatorsFromAssemblyContaining<CreateAdminUserRequestValidator>();

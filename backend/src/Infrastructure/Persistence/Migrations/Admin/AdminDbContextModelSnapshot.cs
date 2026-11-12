@@ -32,6 +32,10 @@ namespace Infrastructure.Persistence.Migrations.Admin
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CustomRoleName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -77,6 +81,36 @@ namespace Infrastructure.Persistence.Migrations.Admin
                             IsActive = true,
                             PasswordHash = "dGVzdHNhbHQxMjM0NTY3OA==.2YVj2w+Y1924k87hF06gKjZJ8N9c1kL4A7VzE1s5D8Q=",
                             Role = "SuperAdmin"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111112"),
+                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "superadmin@naturalfood.local",
+                            FullName = "Süper Yönetici",
+                            IsActive = true,
+                            PasswordHash = "TmF0dXJhbEZvb2RTYWx0MQ==.+uX/EkfMITMSbJleGGUXLsXLb3dNarW44H5g4Xks7I0=",
+                            Role = "SuperAdmin"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111113"),
+                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "sube.muduru@naturalfood.local",
+                            FullName = "Ayşe Kaya (Şube Müdürü)",
+                            IsActive = true,
+                            PasswordHash = "TmF0dXJhbEZvb2RTYWx0Mg==./aqDXCzLl7Y+D5ZPqpiCsM1Cc67ItgkQwU5oPR0hOzs=",
+                            Role = "BranchManager"
+                        },
+                        new
+                        {
+                            Id = new Guid("11111111-1111-1111-1111-111111111114"),
+                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "depo@naturalfood.local",
+                            FullName = "Mehmet Yılmaz (Depo Personeli)",
+                            IsActive = true,
+                            PasswordHash = "TmF0dXJhbEZvb2RTYWx0Mw==.K1NnRkI8m5l7MWfy8PiGbvkcKDmyuQIjoofEMCcrEPU=",
+                            Role = "WarehouseStaff"
                         });
                 });
 
@@ -131,165 +165,265 @@ namespace Infrastructure.Persistence.Migrations.Admin
                         });
                 });
 
-            modelBuilder.Entity("Domain.Entities.Admin.Product", b =>
+            modelBuilder.Entity("Domain.Entities.Admin.ModulePermission", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Barcode")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<decimal>("BasePrice")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0m);
-
                     b.Property<string>("Category")
                         .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("character varying(150)");
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ImageUrl")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("Name")
+                    b.Property<string>("Key")
                         .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
 
-                    b.Property<string>("SKU")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("SaleUnit")
+                    b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("SellingPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasDefaultValue("Active");
-
-                    b.Property<decimal>("StockQuantity")
-                        .ValueGeneratedOnAdd()
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)")
-                        .HasDefaultValue(0m);
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Barcode")
-                        .IsUnique()
-                        .HasFilter("\"Barcode\" IS NOT NULL");
+                    b.HasIndex("Key")
+                        .IsUnique();
 
-                    b.HasIndex("SKU")
-                        .IsUnique()
-                        .HasFilter("\"SKU\" IS NOT NULL");
-
-                    b.ToTable("Products", "admin");
+                    b.ToTable("ModulePermissions", "admin");
 
                     b.HasData(
                         new
                         {
-                            Id = new Guid("a1111111-1111-1111-1111-111111111111"),
-                            Barcode = "8690123456012",
-                            BasePrice = 320.00m,
-                            Category = "Zeytinyağı & Şarküteri",
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Organik Soğuk Sıkım Sızma Zeytinyağı",
-                            SKU = "SKU-ORG-OIL-500",
-                            SaleUnit = "Litre",
-                            SellingPrice = 385.00m,
-                            Status = "Active",
-                            StockQuantity = 142.00m
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"),
+                            Category = "Katalog & Ürün",
+                            Key = "products.view",
+                            Title = "Ürün ve Menü Yönetimi"
                         },
                         new
                         {
-                            Id = new Guid("a2222222-2222-2222-2222-222222222222"),
-                            Barcode = "8690123456029",
-                            BasePrice = 65.00m,
-                            Category = "Un & Tahıl Grubu",
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Taş Değirmen Organik Siyez Unu",
-                            SKU = "SKU-ORG-FLR-1000",
-                            SaleUnit = "Kg",
-                            SellingPrice = 84.50m,
-                            Status = "Active",
-                            StockQuantity = 320.00m
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb2"),
+                            Category = "Stok & Depo",
+                            Key = "inventory.view",
+                            Title = "Stok ve Envanter Yönetimi"
                         },
                         new
                         {
-                            Id = new Guid("a3333333-3333-3333-3333-333333333333"),
-                            Barcode = "8690123456036",
-                            BasePrice = 175.00m,
-                            Category = "Süt & Şarküteri",
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Şirden Mayalı Trakya Eski Kaşar Peyniri",
-                            SKU = "SKU-CHZ-KAS-350",
-                            SaleUnit = "Gramaj",
-                            SellingPrice = 215.00m,
-                            Status = "LowStock",
-                            StockQuantity = 4.00m
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb3"),
+                            Category = "Stok & Depo",
+                            Key = "storage.view",
+                            Title = "Depo ve Saklama Koşulları"
                         },
                         new
                         {
-                            Id = new Guid("a4444444-4444-4444-4444-444444444444"),
-                            Barcode = "8690123456043",
-                            BasePrice = 85.00m,
-                            Category = "Kahvaltılık",
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Gezen Tavuk Organik Köy Yumurtası (10'lu)",
-                            SKU = "SKU-EGG-VIL-10",
-                            SaleUnit = "Adet",
-                            SellingPrice = 110.00m,
-                            Status = "LowStock",
-                            StockQuantity = 2.00m
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb4"),
+                            Category = "Müşteri İlişkileri",
+                            Key = "crm.reviews",
+                            Title = "Müşteri Değerlendirmeleri (CRM)"
                         },
                         new
                         {
-                            Id = new Guid("a5555555-5555-5555-5555-555555555555"),
-                            Barcode = "8690123456050",
-                            BasePrice = 130.00m,
-                            Category = "Kuru Yemiş",
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Ham Çiğ Fıstık & Badem Karışımı",
-                            SKU = "SKU-NUT-MIX-250",
-                            SaleUnit = "Gramaj",
-                            SellingPrice = 165.00m,
-                            Status = "OutOfStock",
-                            StockQuantity = 0.00m
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb5"),
+                            Category = "Analitik & Finans",
+                            Key = "finance.reports",
+                            Title = "Finans / Ciro ve Satış Raporları"
                         },
                         new
                         {
-                            Id = new Guid("a6666666-6666-6666-6666-666666666666"),
-                            Barcode = "8690123456067",
-                            BasePrice = 240.00m,
-                            Category = "Süt & Şarküteri",
-                            CreatedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            Name = "Doğal Yayık Köy Tereyağı",
-                            SKU = "SKU-BTR-YAY-500",
-                            SaleUnit = "Kg",
-                            SellingPrice = 290.00m,
-                            Status = "Active",
-                            StockQuantity = 42.00m
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb6"),
+                            Category = "Sipariş & Lojistik",
+                            Key = "orders.view",
+                            Title = "Sipariş ve Sevkiyat İşlemleri"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb7"),
+                            Category = "Sistem & Güvenlik",
+                            Key = "users.manage",
+                            Title = "Kullanıcı, Rol ve Sistem Ayarları"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb8"),
+                            Category = "Müşteri İlişkileri",
+                            Key = "crm.manage",
+                            Title = "Müşteri Listesi, Segmentler ve Destek Biletleri"
+                        },
+                        new
+                        {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb9"),
+                            Category = "Pazarlama & Kampanya",
+                            Key = "marketing.view",
+                            Title = "Pazarlama, Kampanya ve Sadakat Yönetimi"
                         });
+                });
+
+            modelBuilder.Entity("Domain.Entities.Admin.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles", "admin");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            Description = "Süper Yönetici — Tüm sistem modüllerine sınırsız erişim (Bypass)",
+                            Name = "SuperAdmin"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
+                            Description = "Şube Müdürü — Stok, ürün ve sipariş yönetimi yetkili; finans/ciro ve CRM izinleri dinamik yönetilir",
+                            Name = "BranchManager"
+                        },
+                        new
+                        {
+                            Id = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3"),
+                            Description = "Depo Personeli — Stok, envanter ve saklama koşulları modülleri",
+                            Name = "WarehouseStaff"
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Entities.Admin.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PermissionKey")
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.HasKey("RoleId", "PermissionKey");
+
+                    b.HasIndex("PermissionKey");
+
+                    b.ToTable("RolePermissions", "admin");
+
+                    b.HasData(
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "products.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "inventory.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "storage.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "crm.reviews"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "crm.manage"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "finance.reports"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "orders.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "marketing.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "users.manage"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
+                            PermissionKey = "products.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
+                            PermissionKey = "inventory.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
+                            PermissionKey = "storage.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
+                            PermissionKey = "orders.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3"),
+                            PermissionKey = "inventory.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa3"),
+                            PermissionKey = "storage.view"
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Entities.Admin.RolePermission", b =>
+                {
+                    b.HasOne("Domain.Entities.Admin.ModulePermission", "ModulePermission")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("PermissionKey")
+                        .HasPrincipalKey("Key")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Admin.Role", "Role")
+                        .WithMany("RolePermissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ModulePermission");
+
+                    b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Admin.ModulePermission", b =>
+                {
+                    b.Navigation("RolePermissions");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Admin.Role", b =>
+                {
+                    b.Navigation("RolePermissions");
                 });
 #pragma warning restore 612, 618
         }

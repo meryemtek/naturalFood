@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
 import { StorefrontPage } from './pages/storefront/StorefrontPage';
 import { OurStoryPage } from './pages/storefront/OurStoryPage';
 import { StorefrontNotFoundPage } from './pages/storefront/StorefrontNotFoundPage';
@@ -9,7 +9,10 @@ import { CartPage } from './pages/cart/CartPage';
 import { CheckoutPage } from './pages/checkout/CheckoutPage';
 import { MainLayout } from './components/layout/MainLayout';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { PermissionProvider, PermissionGuard, AdminAuthGuard } from './context/PermissionContext';
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { UsersPage } from './pages/admin/UsersPage';
+import { RolePermissionsPage } from './pages/admin/RolePermissionsPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
 import { InventoryPage } from './pages/inventory/InventoryPage';
 import { SupplierProcurementPage } from './pages/inventory/SupplierProcurementPage';
@@ -51,59 +54,75 @@ export default function App() {
         <Route path="/sepetim" element={<CartPage />} />
         <Route path="/odeme" element={<CheckoutPage />} />
 
-        {/* Yönetim Paneli Rotaları */}
-        <Route element={<MainLayout />}>
+        {/* İzole Yönetim Paneli Rotaları */}
+        <Route
+          element={
+            <PermissionProvider>
+              <Outlet />
+            </PermissionProvider>
+          }
+        >
+          <Route path="admin/login" element={<AdminLoginPage />} />
+          <Route
+            element={
+              <AdminAuthGuard>
+                <MainLayout />
+              </AdminAuthGuard>
+            }
+          >
           <Route path="dashboard" element={<DashboardPage />} />
 
           {/* 1. Ürün ve Menü Yönetimi (Özel Doğal Gıda Modülleri) */}
-          <Route path="products" element={<ProductDefinitionPage />} />
-          <Route path="products/definition" element={<ProductDefinitionPage />} />
-          <Route path="products/allergens-nutrition" element={<AllergensNutritionPage />} />
-          <Route path="products/lot-expiry" element={<LotExpiryTrackingPage />} />
-          <Route path="products/storage-conditions" element={<StorageConditionsPage />} />
+          <Route path="products" element={<PermissionGuard requiredPermission="products.view"><ProductDefinitionPage /></PermissionGuard>} />
+          <Route path="products/definition" element={<PermissionGuard requiredPermission="products.view"><ProductDefinitionPage /></PermissionGuard>} />
+          <Route path="products/allergens-nutrition" element={<PermissionGuard requiredPermission="products.view"><AllergensNutritionPage /></PermissionGuard>} />
+          <Route path="products/lot-expiry" element={<PermissionGuard requiredPermission="products.view"><LotExpiryTrackingPage /></PermissionGuard>} />
+          <Route path="products/storage-conditions" element={<PermissionGuard requiredPermission="storage.view"><StorageConditionsPage /></PermissionGuard>} />
 
           {/* 2. Sipariş ve Sevkiyat Yönetimi */}
-          <Route path="orders" element={<ModulePlaceholderPage />} />
-          <Route path="orders/pending" element={<ModulePlaceholderPage />} />
-          <Route path="orders/completed" element={<ModulePlaceholderPage />} />
-          <Route path="orders/returns" element={<ModulePlaceholderPage />} />
-          <Route path="shipping/shipments" element={<ModulePlaceholderPage />} />
-          <Route path="shipping/carriers" element={<ModulePlaceholderPage />} />
-          <Route path="shipping/zones" element={<ModulePlaceholderPage />} />
+          <Route path="orders" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="orders/pending" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="orders/completed" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="orders/returns" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="shipping/shipments" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="shipping/carriers" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="shipping/zones" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
 
           {/* 3. Stok ve Depo Yönetimi */}
-          <Route path="inventory" element={<InventoryPage />} />
-          <Route path="inventory/suppliers-procurement" element={<SupplierProcurementPage />} />
-          <Route path="inventory/warehouses" element={<ModulePlaceholderPage />} />
-          <Route path="inventory/transactions" element={<ModulePlaceholderPage />} />
-          <Route path="inventory/alerts" element={<ModulePlaceholderPage />} />
+          <Route path="inventory" element={<PermissionGuard requiredPermission="inventory.view"><InventoryPage /></PermissionGuard>} />
+          <Route path="inventory/suppliers-procurement" element={<PermissionGuard requiredPermission="inventory.view"><SupplierProcurementPage /></PermissionGuard>} />
+          <Route path="inventory/warehouses" element={<PermissionGuard requiredPermission="storage.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="inventory/transactions" element={<PermissionGuard requiredPermission="inventory.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="inventory/alerts" element={<PermissionGuard requiredPermission="inventory.view"><ModulePlaceholderPage /></PermissionGuard>} />
 
           {/* 4. Müşteri İlişkileri ve Destek (CRM) */}
-          <Route path="crm/customers" element={<ModulePlaceholderPage />} />
-          <Route path="crm/segments" element={<ModulePlaceholderPage />} />
-          <Route path="crm/tickets" element={<ModulePlaceholderPage />} />
-          <Route path="crm/reviews" element={<CustomerReviewsPage />} />
+          <Route path="crm/customers" element={<PermissionGuard requiredPermission="crm.manage"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="crm/segments" element={<PermissionGuard requiredPermission="crm.manage"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="crm/tickets" element={<PermissionGuard requiredPermission="crm.manage"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="crm/reviews" element={<PermissionGuard requiredPermission="crm.reviews"><CustomerReviewsPage /></PermissionGuard>} />
 
           {/* 5. Pazarlama ve Kampanya Yönetimi */}
-          <Route path="marketing/coupons" element={<ModulePlaceholderPage />} />
-          <Route path="marketing/campaigns" element={<ModulePlaceholderPage />} />
-          <Route path="marketing/flash-sales" element={<ModulePlaceholderPage />} />
-          <Route path="marketing/loyalty" element={<ModulePlaceholderPage />} />
-          <Route path="marketing/newsletters" element={<ModulePlaceholderPage />} />
+          <Route path="marketing/coupons" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="marketing/campaigns" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="marketing/flash-sales" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="marketing/loyalty" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="marketing/newsletters" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
 
           {/* 6. Raporlama ve Analitik */}
-          <Route path="analytics/sales" element={<ModulePlaceholderPage />} />
-          <Route path="analytics/revenue" element={<ModulePlaceholderPage />} />
-          <Route path="analytics/products" element={<ModulePlaceholderPage />} />
-          <Route path="analytics/traffic" element={<ModulePlaceholderPage />} />
+          <Route path="analytics/sales" element={<PermissionGuard requiredPermission="finance.reports"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="analytics/revenue" element={<PermissionGuard requiredPermission="finance.reports"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="analytics/products" element={<PermissionGuard requiredPermission="finance.reports"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="analytics/traffic" element={<PermissionGuard requiredPermission="finance.reports"><ModulePlaceholderPage /></PermissionGuard>} />
 
           {/* 7. Rol, Güvenlik ve Sistem Ayarları */}
-          <Route path="admin/users" element={<UsersPage />} />
-          <Route path="admin/audit-logs" element={<AuditLogsPage />} />
-          <Route path="settings/security" element={<ModulePlaceholderPage />} />
-          <Route path="settings/payments" element={<ModulePlaceholderPage />} />
-          <Route path="settings/invoicing" element={<ModulePlaceholderPage />} />
-          <Route path="settings/general" element={<ModulePlaceholderPage />} />
+          <Route path="admin/users" element={<PermissionGuard requiredPermission="users.manage"><UsersPage /></PermissionGuard>} />
+          <Route path="admin/roles" element={<PermissionGuard requiredPermission="users.manage"><RolePermissionsPage /></PermissionGuard>} />
+          <Route path="admin/audit-logs" element={<PermissionGuard requiredPermission="users.manage"><AuditLogsPage /></PermissionGuard>} />
+          <Route path="settings/security" element={<PermissionGuard requiredPermission="users.manage"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="settings/payments" element={<PermissionGuard requiredPermission="finance.reports"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="settings/invoicing" element={<PermissionGuard requiredPermission="finance.reports"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="settings/general" element={<PermissionGuard requiredPermission="users.manage"><ModulePlaceholderPage /></PermissionGuard>} />
+          </Route>
         </Route>
         <Route path="*" element={<StorefrontNotFoundPage />} />
       </Routes>
