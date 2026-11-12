@@ -24,7 +24,7 @@ internal static class AdminEndpointsHandler
         .WithTags("Admin Health");
 
         // 2. Kullanıcı İşlemleri
-        var users = group.MapGroup("/users").WithTags("Admin Users");
+        var users = group.MapGroup("/users").WithTags("Admin Users").RequirePermission("users.manage");
 
         // GET /api/admin/users?page=1&pageSize=10
         users.MapGet("/", async (
@@ -122,12 +122,13 @@ internal static class AdminEndpointsHandler
         })
         .WithName("GetAdminAuditLogs")
         .WithTags("Admin Audit")
+        .RequirePermission("users.manage")
         .Produces<PaginatedList<AuditLogDto>>(StatusCodes.Status200OK);
 
         // =========================================================================
         // 4. Doğal Gıda Ürün Yönetimi (Products - Vertical Slice 1)
         // =========================================================================
-        var products = group.MapGroup("/products").WithTags("Admin Products");
+        var products = group.MapGroup("/products").WithTags("Admin Products").RequirePermission("products.view");
 
         // GET /api/admin/products (Sayfalama, arama ve kategori/birim filtreli)
         products.MapGet("/", async (
@@ -280,7 +281,7 @@ internal static class AdminEndpointsHandler
         // =========================================================================
         // 5. Envanter ve Stok Yönetimi (Inventory - Vertical Slice 2)
         // =========================================================================
-        var inventory = group.MapGroup("/inventory").WithTags("Admin Inventory");
+        var inventory = group.MapGroup("/inventory").WithTags("Admin Inventory").RequirePermission("inventory.view");
 
         // GET /api/admin/inventory (Sayfalama, arama, kategori ve kritik stok filtreli)
         inventory.MapGet("/", async (
@@ -324,7 +325,7 @@ internal static class AdminEndpointsHandler
         // =========================================================================
         // 6. STT / TETT ve Parti (Lot) Takibi (Lots - Vertical Slice 4)
         // =========================================================================
-        var lots = group.MapGroup("/lots").WithTags("Admin Lots");
+        var lots = group.MapGroup("/lots").WithTags("Admin Lots").RequirePermission("inventory.view");
 
         // GET /api/admin/lots
         lots.MapGet("/", async (
@@ -412,7 +413,7 @@ internal static class AdminEndpointsHandler
         // =========================================================================
         // 7. Saklama Koşulları ve Muhafaza Tanımları (Storage - Vertical Slice 5)
         // =========================================================================
-        var storage = group.MapGroup("/storage-conditions").WithTags("Admin Storage Conditions");
+        var storage = group.MapGroup("/storage-conditions").WithTags("Admin Storage Conditions").RequirePermission("storage.view");
 
         // GET /api/admin/storage-conditions
         storage.MapGet("/", async (
@@ -479,13 +480,14 @@ internal static class AdminEndpointsHandler
                 });
         })
         .WithName("UpdateAdminProductStorage")
+        .RequirePermission("storage.view")
         .Produces<ProductStorageItemDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
         // =========================================================================
         // 8. Müşteri Değerlendirmeleri & Dashboard Risk Takibi (CRM Reviews)
         // =========================================================================
-        var reviews = group.MapGroup("/reviews").WithTags("Admin Customer Reviews");
+        var reviews = group.MapGroup("/reviews").WithTags("Admin Customer Reviews").RequirePermission("crm.reviews");
 
         // GET /api/admin/reviews/dashboard-attention
         reviews.MapGet("/dashboard-attention", async (
@@ -568,6 +570,127 @@ internal static class AdminEndpointsHandler
         .WithName("UpdateAdminReviewStatus")
         .Produces<AdminReviewItemDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // =========================================================================
+        // 9. Dinamik Rol & Modül Yetkilendirme (Dynamic RBAC)
+        // =========================================================================
+        var rbac = group.MapGroup("").WithTags("Admin RBAC");
+
+        // GET /api/admin/roles
+        rbac.MapGet("/roles", async (
+            IAdminRbacService rbacService,
+            CancellationToken ct) =>
+        {
+            var roles = await rbacService.GetRolesAsync(ct);
+            return Results.Ok(roles);
+        })
+        .WithName("GetAdminRoles")
+        .Produces<IReadOnlyList<RoleDto>>(StatusCodes.Status200OK);
+
+        // POST /api/admin/roles
+        rbac.MapPost("/roles", async (
+            CreateRoleRequest req,
+            IAdminRbacService rbacService,
+            CancellationToken ct) =>
+        {
+            try
+            {
+                var created = await rbacService.CreateRoleAsync(req, ct);
+                return Results.Created($"/api/admin/roles/{created.Id}", created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Results.BadRequest(new ProblemDetails
+                {
+                    Status = StatusCodes.Status400BadRequest,
+                    Title = "Rol Oluşturulamadı",
+                    Detail = ex.Message
+                });
+            }
+        })
+        .WithName("CreateAdminRole")
+        .RequirePermission("users.manage")
+        .Produces<RoleDto>(StatusCodes.Status201Created)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+
+        // GET /api/admin/permissions
+        rbac.MapGet("/permissions", async (
+            IAdminRbacService rbacService,
+            CancellationToken ct) =>
+        {
+            var permissions = await rbacService.GetPermissionsAsync(ct);
+            return Results.Ok(permissions);
+        })
+        .WithName("GetAdminPermissions")
+        .Produces<IReadOnlyList<ModulePermissionDto>>(StatusCodes.Status200OK);
+
+        // PUT /api/admin/roles/{roleId}/permissions
+        rbac.MapPut("/roles/{roleId:guid}/permissions", async (
+            Guid roleId,
+            UpdateRolePermissionsRequest req,
+            IAdminRbacService rbacService,
+            CancellationToken ct) =>
+        {
+            var updated = await rbacService.UpdateRolePermissionsAsync(roleId, req, ct);
+            return updated is not null
+                ? Results.Ok(updated)
+                : Results.NotFound(new ProblemDetails
+                {
+                    Status = StatusCodes.Status404NotFound,
+                    Title = "Rol Bulunamadı",
+                    Detail = $"İzinleri güncellenecek '{roleId}' Id numaralı rol bulunamadı."
+                });
+        })
+        .WithName("UpdateAdminRolePermissions")
+        .RequirePermission("users.manage")
+        .Produces<RoleDto>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // GET /api/admin/auth/me/permissions
+        rbac.MapGet("/auth/me/permissions", async (
+            HttpContext httpContext,
+            IAdminRbacService rbacService,
+            CancellationToken ct) =>
+        {
+            var roleName = PermissionEndpointFilter.ResolveCallerRole(httpContext);
+            var permissions = await rbacService.GetPermissionsForRoleAsync(roleName, ct);
+            return Results.Ok(permissions.ToArray());
+        })
+        .WithName("GetMyAdminPermissions")
+        .Produces<string[]>(StatusCodes.Status200OK);
+
+        // POST /api/admin/auth/login
+        rbac.MapPost("/auth/login", async (
+            AdminLoginRequest req,
+            HttpContext httpContext,
+            IAdminRbacService rbacService,
+            CancellationToken ct) =>
+        {
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString();
+            var result = await rbacService.LoginAsync(req, ip, ct);
+
+            if (!result.Succeeded || result.Response is null)
+            {
+                var statusCode = result.IsInactive
+                    ? StatusCodes.Status403Forbidden
+                    : StatusCodes.Status401Unauthorized;
+
+                return Results.Json(
+                    new ProblemDetails
+                    {
+                        Status = statusCode,
+                        Title = result.IsInactive ? "Hesap Pasif" : "Giriş Başarısız",
+                        Detail = result.ErrorMessage ?? "E-posta veya şifre hatalı."
+                    },
+                    statusCode: statusCode);
+            }
+
+            return Results.Ok(result.Response);
+        })
+        .WithName("AdminLogin")
+        .Produces<AdminLoginResponse>(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
+        .Produces<ProblemDetails>(StatusCodes.Status403Forbidden);
 
         return group;
     }

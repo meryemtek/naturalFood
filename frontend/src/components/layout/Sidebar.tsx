@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
-import { authStorage } from '../../api/authApi';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { theme } from '../../theme/tokens';
+import { usePermissions } from '../../context/PermissionContext';
 
 interface SubMenuItem {
   path: string;
   label: string;
+  requiredPermission?: string;
 }
 
 interface MenuItem {
@@ -13,6 +14,7 @@ interface MenuItem {
   label: string;
   icon: React.ReactNode;
   path?: string;
+  requiredPermission?: string;
   subItems?: SubMenuItem[];
 }
 
@@ -28,12 +30,20 @@ export interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const location = useLocation();
-  const customer = authStorage.getCustomer();
-  const fullName = customer ? `${customer.firstName} ${customer.lastName}`.trim() : 'Sistem Yöneticisi';
-  const email = customer?.email || 'admin@koykokusu.com.tr';
-  const initials = customer
-    ? `${customer.firstName?.[0] || ''}${customer.lastName?.[0] || ''}`.toUpperCase() || 'AD'
-    : 'AD';
+  const navigate = useNavigate();
+  const { hasPermission, adminSession, activeRole, activeRoleDisplay, logout } = usePermissions();
+  const displayFullName = adminSession?.user?.fullName || activeRoleDisplay;
+  const displayEmail = adminSession?.user?.email || `${activeRole.toLowerCase()}@naturalfood.local`;
+  const avatarInitials = displayFullName
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || 'AD';
+  const handleAdminLogout = () => {
+    logout();
+    navigate('/admin/login', { replace: true });
+  };
 
   useEffect(() => {
     onClose?.();
@@ -72,10 +82,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/products/definition', label: 'Gelişmiş Ürün Tanımlama' },
-            { path: '/products/allergens-nutrition', label: 'İçerik ve Alerjen Bilgileri' },
-            { path: '/products/lot-expiry', label: 'STT / TETT ve Parti (Lot) Takibi' },
-            { path: '/products/storage-conditions', label: 'Saklama Koşulları' },
+            { path: '/products/definition', label: 'Gelişmiş Ürün Tanımlama', requiredPermission: 'products.view' },
+            { path: '/products/allergens-nutrition', label: 'İçerik ve Alerjen Bilgileri', requiredPermission: 'products.view' },
+            { path: '/products/lot-expiry', label: 'STT / TETT ve Parti (Lot) Takibi', requiredPermission: 'products.view' },
+            { path: '/products/storage-conditions', label: 'Saklama Koşulları', requiredPermission: 'storage.view' },
           ],
         },
       ],
@@ -86,6 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           id: 'order-ops',
           label: 'Sipariş İşlemleri',
+          requiredPermission: 'orders.view',
           icon: (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
@@ -103,6 +114,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           id: 'shipping-ops',
           label: 'Kargo & Sevkiyat',
+          requiredPermission: 'orders.view',
           icon: (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="3" width="15" height="13" />
@@ -133,11 +145,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/inventory', label: 'Stok Durumu (Envanter)' },
-            { path: '/inventory/suppliers-procurement', label: 'Tedarikçi ve Alım Yönetimi' },
-            { path: '/inventory/warehouses', label: 'Depo Tanımları' },
-            { path: '/inventory/transactions', label: 'Stok Hareketleri ve Fişler' },
-            { path: '/inventory/alerts', label: 'Kritik Stok Uyarıları' },
+            { path: '/inventory', label: 'Stok Durumu (Envanter)', requiredPermission: 'inventory.view' },
+            { path: '/inventory/suppliers-procurement', label: 'Tedarikçi ve Alım Yönetimi', requiredPermission: 'inventory.view' },
+            { path: '/inventory/warehouses', label: 'Depo Tanımları', requiredPermission: 'storage.view' },
+            { path: '/inventory/transactions', label: 'Stok Hareketleri ve Fişler', requiredPermission: 'inventory.view' },
+            { path: '/inventory/alerts', label: 'Kritik Stok Uyarıları', requiredPermission: 'inventory.view' },
           ],
         },
       ],
@@ -148,6 +160,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           id: 'crm-ops',
           label: 'Müşteri Yönetimi',
+          requiredPermission: 'crm.manage',
           icon: (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
@@ -173,8 +186,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/crm/tickets', label: 'Destek Biletleri (Tickets)' },
-            { path: '/crm/reviews', label: 'Müşteri Değerlendirmeleri' },
+            { path: '/crm/tickets', label: 'Destek Biletleri (Tickets)', requiredPermission: 'crm.manage' },
+            { path: '/crm/reviews', label: 'Müşteri Değerlendirmeleri', requiredPermission: 'crm.reviews' },
           ],
         },
       ],
@@ -185,6 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           id: 'campaign-ops',
           label: 'Kampanya & İndirim',
+          requiredPermission: 'marketing.view',
           icon: (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="19" y1="5" x2="5" y2="19" />
@@ -201,6 +215,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           id: 'loyalty-ops',
           label: 'Sadakat & İletişim',
+          requiredPermission: 'marketing.view',
           icon: (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="20 12 20 22 4 22 4 12" />
@@ -223,6 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {
           id: 'analytics-ops',
           label: 'Satış & Ciro Analitiği',
+          requiredPermission: 'finance.reports',
           icon: (
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10" />
@@ -251,9 +267,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/admin/users', label: 'Rol Bazlı Yetkilendirme' },
-            { path: '/admin/audit-logs', label: 'Denetim Kayıtları (Audit Logs)' },
-            { path: '/settings/security', label: 'İki Aşamalı Doğrulama (2FA)' },
+            { path: '/admin/users', label: 'Rol Bazlı Yetkilendirme', requiredPermission: 'users.manage' },
+            { path: '/admin/roles', label: 'Modül Yetki Matrisi (RBAC)', requiredPermission: 'users.manage' },
+            { path: '/admin/audit-logs', label: 'Denetim Kayıtları (Audit Logs)', requiredPermission: 'users.manage' },
+            { path: '/settings/security', label: 'İki Aşamalı Doğrulama (2FA)', requiredPermission: 'users.manage' },
           ],
         },
         {
@@ -266,9 +283,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/settings/payments', label: 'Ödeme ve Fatura Entegrasyonları' },
-            { path: '/settings/invoicing', label: 'E-Fatura & Mali Ayarlar' },
-            { path: '/settings/general', label: 'Genel Sistem ve API Ayarları' },
+            { path: '/settings/payments', label: 'Ödeme ve Fatura Entegrasyonları', requiredPermission: 'finance.reports' },
+            { path: '/settings/invoicing', label: 'E-Fatura & Mali Ayarlar', requiredPermission: 'finance.reports' },
+            { path: '/settings/general', label: 'Genel Sistem ve API Ayarları', requiredPermission: 'users.manage' },
           ],
         },
       ],
@@ -387,7 +404,23 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           scrollbarWidth: 'thin',
         }}
       >
-        {SECTIONS.map((section, sIndex) => (
+        {SECTIONS.map((section) => ({
+          ...section,
+          items: section.items
+            .map((item) => {
+              if (item.subItems) {
+                const filteredSubs = item.subItems.filter((sub) =>
+                  hasPermission(sub.requiredPermission ?? item.requiredPermission)
+                );
+                if (filteredSubs.length === 0) return null;
+                return { ...item, subItems: filteredSubs };
+              }
+              return hasPermission(item.requiredPermission) ? item : null;
+            })
+            .filter((x): x is MenuItem => x !== null),
+        }))
+          .filter((section) => section.items.length > 0)
+          .map((section, sIndex) => (
           <div key={sIndex} style={{ marginBottom: '14px' }}>
             {/* Category / Section Title */}
             <div
@@ -600,59 +633,96 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         ))}
       </nav>
 
-      {/* User Footer Card: Organic / Earthy */}
+      {/* User Footer Card: Dynamic Authenticated Admin User + Çıkış Yap */}
       <div
         style={{
-          padding: '14px 18px',
+          padding: '14px 16px',
           borderTop: `1px solid ${theme.colors.border}`,
           backgroundColor: theme.colors.bgCanvas,
           display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
+          flexDirection: 'column',
+          gap: '10px',
         }}
       >
-        <div
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+          <div
+            style={{
+              width: '36px',
+              height: '36px',
+              flexShrink: 0,
+              borderRadius: '50%',
+              backgroundColor: theme.colors.bgActiveSubmenu,
+              color: theme.colors.primary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+              fontSize: '12.5px',
+              border: '1px solid #D5E5D4',
+            }}
+          >
+            {avatarInitials}
+          </div>
+          <div style={{ overflow: 'hidden', flex: 1, minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: '13px',
+                fontWeight: 700,
+                color: theme.colors.espresso,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {displayFullName}
+            </div>
+            <div
+              style={{
+                fontSize: '11px',
+                color: theme.colors.primary,
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {activeRoleDisplay}
+            </div>
+            <div
+              style={{
+                fontSize: '10.5px',
+                color: theme.colors.taupe,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
+            >
+              {displayEmail}
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleAdminLogout}
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '50%',
-            backgroundColor: theme.colors.bgActiveSubmenu,
-            color: theme.colors.primary,
+            width: '100%',
+            padding: '7px 12px',
+            borderRadius: theme.radii.sm,
+            border: `1px solid ${theme.colors.border}`,
+            backgroundColor: theme.colors.bgCard,
+            color: theme.colors.espresso,
+            fontSize: '12.5px',
+            fontWeight: 600,
+            cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 700,
-            fontSize: '13px',
-            border: `1px solid #D5E5D4`,
+            gap: '6px',
           }}
         >
-          {initials}
-        </div>
-        <div style={{ overflow: 'hidden', flex: 1 }}>
-          <div
-            style={{
-              fontSize: '13px',
-              fontWeight: 600,
-              color: theme.colors.espresso,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {fullName}
-          </div>
-          <div
-            style={{
-              fontSize: '11px',
-              color: theme.colors.taupe,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-            }}
-          >
-            {email}
-          </div>
-        </div>
+          <span>Çıkış Yap</span>
+        </button>
       </div>
     </aside>
   );

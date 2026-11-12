@@ -3,6 +3,7 @@ using Application.Common.Security;
 using Application.DTOs.Admin;
 using Application.Services.Admin;
 using Domain.Entities.Admin;
+using Domain.Enums.Admin;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Services.Admin;
@@ -50,13 +51,29 @@ public class AdminService : IAdminService
         // 1. Şifreyi hash'le
         var passwordHash = _passwordHasher.HashPassword(req.Password);
 
-        // 2. Entity oluştur
+        // 2. Rol çözümü & Entity oluştur
+        var resolvedRole = req.Role;
+        string? customRoleName = null;
+        if (!string.IsNullOrWhiteSpace(req.CustomRoleName))
+        {
+            var trimmedRole = req.CustomRoleName.Trim();
+            if (Enum.TryParse<AdminRole>(trimmedRole, ignoreCase: true, out var parsedRole))
+            {
+                resolvedRole = parsedRole;
+            }
+            else
+            {
+                customRoleName = trimmedRole;
+            }
+        }
+
         var user = new AdminUser(
             email: req.Email.Trim().ToLowerInvariant(),
             fullName: req.FullName.Trim(),
             passwordHash: passwordHash,
-            role: req.Role,
-            isActive: true
+            role: resolvedRole,
+            isActive: true,
+            customRoleName: customRoleName
         );
 
         await _context.AdminUsers.AddAsync(user, cancellationToken);
@@ -66,7 +83,7 @@ public class AdminService : IAdminService
             action: "CreateAdminUser",
             resource: "AdminUser",
             adminUserId: user.Id,
-            details: $"Yeni yönetici eklendi: {user.Email} ({user.Role})"
+            details: $"Yeni yönetici eklendi: {user.Email} ({user.EffectiveRoleName})"
         );
         await _context.AuditLogs.AddAsync(auditLog, cancellationToken);
 
@@ -126,7 +143,7 @@ public class AdminService : IAdminService
         u.Email,
         u.FullName,
         u.Role,
-        u.Role.ToString(),
+        u.EffectiveRoleName,
         u.IsActive,
         u.CreatedAtUtc,
         u.LastLoginAtUtc

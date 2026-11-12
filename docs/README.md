@@ -1,7 +1,7 @@
 # MODÜLER E-TİCARET ALTYAPISI — Mühendis ve Ekip Devir Teslim Rehberi (Master Hub)
 
 > **Durum:** Yaşayan Ana Devir Belgesi  
-> **Son Güncelleme:** 11 Kasım 2026  
+> **Son Güncelleme:** 12 Kasım 2026  
 > **Sorumlu:** Mimari & Çekirdek Ekip  
 >
 > **Dokümantasyon Hiyerarşisi:**
@@ -57,7 +57,7 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 
 | Modül Adı | Durum | PostgreSQL Şeması | Panel / Ekran | API (.NET 10) | Test & Doğrulama | Üretime Hazır mı? |
 |---|---|---|---|---|---|---|
-| **Yönetici & Kullanıcı Yönetimi** | Canlı Kalıcı Çekirdek | `admin` (`AdminUsers`) | Var (`UsersPage.tsx`) | Var (`/api/admin/users`) | Var (E2E API & UI Doğrulandı) | Evet (Admin CRUD, Aktif/Pasif, PBKDF2 Hash) |
+| **Yönetici, Dinamik RBAC & Admin Login** | Canlı Kalıcı Çekirdek | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`) | Var (`AdminLoginPage.tsx`, `UsersPage.tsx`, `RolePermissionsPage.tsx`) | Var (`/api/admin/auth/login`, `/users`, `/roles`, `/permissions`) | Var (Çoklu Rol & Özel Rol E2E Doğrulandı) | Evet (İzole Admin Login, Dinamik RBAC, Tek Adımda Rol+Hesap Oluşturma) |
 | **Denetim İzi (Audit Log)** | Canlı Kalıcı Çekirdek | `admin` (`AuditLogs`) | Var (`AuditLogsPage.tsx`) | Var (`/api/admin/audit-logs`) | Var (E2E Veritabanı Doğrulandı) | Evet (Sayfalanabilir sistem geçmişi ve IP kaydı) |
 | **Pluggable Admin Shell** | Canlı Modüler Kabuk | Bağımsız (State-free) | Var (`AdminShell.tsx`) | N/A (Frontend Kabuğu) | Var (TypeScript strict derlendi) | Evet (`AdminFeatureModule` sözleşmesiyle dinamik) |
 | **Docker & DB Altyapısı** | Canlı Veritabanı | `admin` şeması, port 5433 | pgAdmin / psql | Var (EF Core 10 Npgsql) | Var (`docker compose` healthy) | Evet (PostgreSQL 18 container & volume) |

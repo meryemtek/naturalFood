@@ -3,10 +3,23 @@ import { adminApi } from '../../api/adminApi';
 import { Modal } from '../../components/common/Modal';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import type { AdminUser, CreateAdminUserRequest } from '../../api/types';
+import { rbacService, type RoleDto } from '../../services/rbacService';
+import { getRoleDisplayLabel } from '../../context/PermissionContext';
 import { theme } from '../../theme/tokens';
+import { RolePermissionsPanel } from './RolePermissionsPage';
+
+const BUILT_IN_ROLE_ENUM: Record<string, number> = {
+  SuperAdmin: 1,
+  Admin: 2,
+  Moderator: 3,
+  BranchManager: 4,
+  WarehouseStaff: 5,
+};
 
 export const UsersPage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'users' | 'permissions'>('users');
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<RoleDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
@@ -18,12 +31,23 @@ export const UsersPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState<string | null>(null);
+  const [selectedRoleName, setSelectedRoleName] = useState<string>('BranchManager');
   const [formData, setFormData] = useState<CreateAdminUserRequest>({
     email: '',
     fullName: '',
     password: '',
-    role: 2,
+    role: 4,
+    customRoleName: 'BranchManager',
   });
+
+  const fetchRoles = useCallback(async () => {
+    try {
+      const list = await rbacService.getRoles();
+      setAvailableRoles(list);
+    } catch {
+      // Varsayılan rollerle devam edilir
+    }
+  }, []);
 
   const fetchUsers = useCallback(async (targetPage: number) => {
     setIsLoading(true);
@@ -42,8 +66,24 @@ export const UsersPage: React.FC = () => {
   }, [pageSize]);
 
   useEffect(() => {
-    fetchUsers(page);
-  }, [fetchUsers, page]);
+    if (activeTab === 'users') {
+      fetchUsers(page);
+    }
+  }, [fetchUsers, page, activeTab]);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles, activeTab, isModalOpen]);
+
+  const handleRoleSelectionChange = (roleName: string) => {
+    setSelectedRoleName(roleName);
+    const enumValue = BUILT_IN_ROLE_ENUM[roleName] ?? 3;
+    setFormData((prev) => ({
+      ...prev,
+      role: enumValue,
+      customRoleName: BUILT_IN_ROLE_ENUM[roleName] ? null : roleName,
+    }));
+  };
 
   const handleToggleStatus = async (user: AdminUser) => {
     try {
@@ -64,7 +104,8 @@ export const UsersPage: React.FC = () => {
     try {
       await adminApi.createUser(formData);
       setIsModalOpen(false);
-      setFormData({ email: '', fullName: '', password: '', role: 2 });
+      setSelectedRoleName('BranchManager');
+      setFormData({ email: '', fullName: '', password: '', role: 4, customRoleName: null });
       fetchUsers(1);
     } catch (err: any) {
       setFormErrors(err.message || 'Kullanıcı eklenemedi.');
@@ -73,17 +114,24 @@ export const UsersPage: React.FC = () => {
     }
   };
 
-  const getRoleBadgeStyle = (role: number) => {
-    switch (role) {
-      case 1:
-        return { bg: theme.colors.primarySubtle, color: theme.colors.primary, border: '#D5E5D4', label: 'SuperAdmin' };
-      case 2:
-        return { bg: '#F5F2EF', color: theme.colors.cedar, border: theme.colors.border, label: 'Admin' };
-      case 3:
-        return { bg: theme.colors.bgSurface, color: theme.colors.taupe, border: theme.colors.border, label: 'Moderator' };
-      default:
-        return { bg: theme.colors.bgSurface, color: theme.colors.taupe, border: theme.colors.border, label: 'Bilinmiyor' };
+  const getRoleBadgeStyle = (role: number, roleName?: string) => {
+    const normalized = (roleName || '').trim().toLowerCase();
+    if (normalized === 'superadmin' || normalized === 'root' || role === 1) {
+      return { bg: theme.colors.primarySubtle, color: theme.colors.primary, border: '#D5E5D4', label: 'SuperAdmin' };
     }
+    if (normalized === 'branchmanager' || role === 4) {
+      return { bg: '#EDF4EE', color: '#2F6B3E', border: '#C9DEC9', label: 'Şube Müdürü (BranchManager)' };
+    }
+    if (normalized === 'warehousestaff' || role === 5) {
+      return { bg: '#F7EFE5', color: '#8A5A2B', border: '#E8D5BE', label: 'Depo Personeli (WarehouseStaff)' };
+    }
+    if (normalized === 'admin' || role === 2) {
+      return { bg: '#F5F2EF', color: theme.colors.cedar, border: theme.colors.border, label: 'Admin' };
+    }
+    if (normalized === 'moderator' || role === 3) {
+      return { bg: theme.colors.bgSurface, color: theme.colors.taupe, border: theme.colors.border, label: 'Moderator' };
+    }
+    return { bg: theme.colors.bgSurface, color: theme.colors.espresso, border: theme.colors.border, label: roleName || 'Özel Rol' };
   };
 
   return (
@@ -99,6 +147,7 @@ export const UsersPage: React.FC = () => {
           </p>
         </div>
 
+        {activeTab === 'users' && (
         <button
           onClick={() => setIsModalOpen(true)}
           style={{
@@ -117,8 +166,57 @@ export const UsersPage: React.FC = () => {
         >
           <span>+</span> Yeni Yönetici Ekle
         </button>
+        )}
       </div>
 
+      {/* Sub-navigation Tabs */}
+      <div
+        style={{
+          display: 'flex',
+          gap: '8px',
+          flexWrap: 'wrap',
+          borderBottom: `1px solid ${theme.colors.border}`,
+          paddingBottom: '12px',
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => setActiveTab('users')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: theme.radii.md,
+            border: activeTab === 'users' ? `1.5px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
+            backgroundColor: activeTab === 'users' ? theme.colors.primarySubtle : theme.colors.bgCard,
+            color: activeTab === 'users' ? theme.colors.primary : theme.colors.espresso,
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Yönetici Kullanıcılar
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('permissions')}
+          style={{
+            padding: '8px 16px',
+            borderRadius: theme.radii.md,
+            border: activeTab === 'permissions' ? `1.5px solid ${theme.colors.primary}` : `1px solid ${theme.colors.border}`,
+            backgroundColor: activeTab === 'permissions' ? theme.colors.primarySubtle : theme.colors.bgCard,
+            color: activeTab === 'permissions' ? theme.colors.primary : theme.colors.espresso,
+            fontSize: '13px',
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          Rol & Modül Yetkileri (Dinamik RBAC)
+        </button>
+      </div>
+
+      {activeTab === 'permissions' ? (
+        <RolePermissionsPanel />
+      ) : (
+      <>
       {/* Error Alert */}
       {error && (
         <div
@@ -207,7 +305,7 @@ export const UsersPage: React.FC = () => {
               </tr>
             ) : (
               users.map((user) => {
-                const roleStyle = getRoleBadgeStyle(user.role);
+                const roleStyle = getRoleBadgeStyle(user.role, user.roleName);
                 return (
                   <tr key={user.id} style={{ borderBottom: `1px solid ${theme.colors.borderSubtle}` }}>
                     <td style={{ padding: '14px 20px' }}>
@@ -376,8 +474,8 @@ export const UsersPage: React.FC = () => {
               Rol Seçimi
             </label>
             <select
-              value={formData.role}
-              onChange={(e) => setFormData({ ...formData, role: Number(e.target.value) })}
+              value={selectedRoleName}
+              onChange={(e) => handleRoleSelectionChange(e.target.value)}
               style={{
                 width: '100%',
                 padding: '9px 12px',
@@ -385,11 +483,24 @@ export const UsersPage: React.FC = () => {
                 border: `1px solid ${theme.colors.border}`,
                 fontSize: '13px',
                 outline: 'none',
+                backgroundColor: theme.colors.bgSurface,
+                color: theme.colors.espresso,
               }}
             >
-              <option value={2}>Admin (Standart Yönetici)</option>
-              <option value={3}>Moderator (Kısıtlı Yönetici)</option>
-              <option value={1}>SuperAdmin (Tam Yetkili)</option>
+              {availableRoles.length > 0 ? (
+                availableRoles.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {getRoleDisplayLabel(r.name)}
+                    {r.description ? ` — ${r.description}` : ''}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="BranchManager">Şube Müdürü (BranchManager)</option>
+                  <option value="WarehouseStaff">Depo Personeli (WarehouseStaff)</option>
+                  <option value="SuperAdmin">SuperAdmin (Tam Yetkili)</option>
+                </>
+              )}
             </select>
           </div>
 
@@ -430,6 +541,8 @@ export const UsersPage: React.FC = () => {
           </div>
         </form>
       </Modal>
+      </>
+      )}
     </div>
   );
 };

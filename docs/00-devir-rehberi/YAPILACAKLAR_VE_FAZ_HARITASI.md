@@ -1,7 +1,7 @@
 # Yol Haritası, Faz Planlaması ve Yapılacak İşler (YAPILACAKLAR)
 
 > **Durum:** Aktif Faz Haritası & To-Do Listesi  
-> **Son Güncelleme:** 11 Kasım 2026  
+> **Son Güncelleme:** 12 Kasım 2026  
 > **Tamamlanan İşler (Günlük):** [YAPILANLAR_VE_TAMAMLANANLAR.md](YAPILANLAR_VE_TAMAMLANANLAR.md)  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 
@@ -25,7 +25,7 @@ Aşağıdaki tablo, sol menüdeki tüm ekranların bugünkü gerçek bağlanma d
 | **CRM & Destek** | `/crm/customers`, `/segments`, `/tickets` | 🚧 `ModulePlaceholderPage` | ✅ `Customer` backend hazır | **Faz 5** |
 | **Pazarlama** | `/marketing/*` (5 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Promotions`, `Content` backend hazır | **Faz 5** |
 | **Raporlama** | `/analytics/*` (4 Ekran) | 🚧 `ModulePlaceholderPage` | ❌ Rapor sorguları bekleniyor | **Faz 5** |
-| **Yönetim & Güvenlik** | `/admin/users`, `/admin/audit-logs` | ✅ Canlı UI | ✅ `admin` şeması tam bağlı | *(Tamamlandı)* |
+| **Yönetim & Güvenlik** | `/admin/login`, `/admin/users`, `/admin/roles`, `/admin/audit-logs` | ✅ Canlı UI (`AdminLoginPage`, `RolePermissionsPage`, `UsersPage`) | ✅ `admin` şeması (Dinamik RBAC + İzole Auth) tam bağlı | *(Tamamlandı)* |
 | **Sistem Ayarları** | `/settings/*` (4 Ekran) | 🚧 `ModulePlaceholderPage` | ❌ 2FA / POS / Fatura ayarları | **Faz 3 & 5** |
 
 ---
@@ -65,9 +65,9 @@ Stok ve Depo Yönetimi bölümünün `/inventory` dışındaki kalan 4 ekranın�
 - [ ] **Backend Özeti API:** `GET /api/admin/dashboard/summary` ucunun oluşturulması (Toplam ürün, kritik stok, <7 gün kalan SKT partileri, günlük sipariş ve ciro özeti).
 - [ ] **Frontend Bağlantısı:** [`DashboardPage.tsx`](../../frontend/src/pages/dashboard/DashboardPage.tsx) içindeki mock dizilerin (`shelfItems`, `orders` vb.) gerçek API verilerine bağlanması.
 
-#### 3.2. Admin Oturum Yönetimi & JWT Yetkilendirme
-- [ ] **Backend Security:** `AdminEndpointsHandler` rotalarına `[Authorize(Roles = "SuperAdmin,Admin,Moderator")]` kuralının eklenmesi ve `POST /api/admin/auth/login` token ucunun bağlanması.
-- [ ] **Frontend Login & Guard:** `LoginPage.tsx` bileşeninin oluşturulması, `AuthContext` ile JWT saklama ve yetkisiz erişimlerde Login sayfasına yönlendirme.
+#### 3.2. Admin Oturum Yönetimi & Dinamik RBAC Yetkilendirme
+- [x] **Backend Security & Dinamik RBAC:** `POST /api/admin/auth/login` ucu, `Role`/`ModulePermission`/`RolePermission` tabloları ve tüm admin uçlarında `.RequirePermission(...)` (`PermissionEndpointFilter`) ile `SuperAdmin` bypass / diğer roller için fail-closed yetki kontrolü bağlandı.
+- [x] **Frontend İzole Login & Guard:** `/admin/login` (`AdminLoginPage.tsx`), `PermissionContext.tsx` (`nf_admin_session`), `AdminAuthGuard`, `PermissionGuard` ve tek adımda yeni rol + giriş hesabı oluşturma tamamlandı.
 - [ ] **Profil & 2FA (`/settings/security`):** Yönetici şifre değiştirme modalı ve iki aşamalı doğrulama yapılandırması.
 
 ---

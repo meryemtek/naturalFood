@@ -1,7 +1,7 @@
 # Tamamlanan İşler, Checkpoint'ler ve Geliştirme Günlüğü (YAPILANLAR)
 
 > **Durum:** Canlı & Doğrulanmış Teslimat Kayıtları  
-> **Son Güncelleme:** 11 Kasım 2026  
+> **Son Güncelleme:** 12 Kasım 2026  
 > **İlgili Yol Haritası (Yapılacaklar):** [YAPILACAKLAR_VE_FAZ_HARITASI.md](YAPILACAKLAR_VE_FAZ_HARITASI.md)  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 
@@ -12,7 +12,7 @@
 | Alan / Modül | Tamamlanma Durumu | Veritabanı Şeması & Tablolar | Backend & Frontend Bağlantısı |
 |---|---|---|---|
 | **Çekirdek Omurga & Docker** | ✅ %100 Tamamlandı | PostgreSQL 18 (Port 5433) | EF Core 10 + Onion Architecture + Vite Proxy |
-| **Yönetici & Audit Log (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `AuditLogs`) | `/admin/users`, `/admin/audit-logs` (Canlı CRUD) |
+| **Yönetici, Dinamik RBAC & Admin Login (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`, `AuditLogs`) | `/admin/login`, `/admin/users`, `/admin/roles`, `/admin/audit-logs` |
 | **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilimin tamamı canlı PostgreSQL'e bağlı |
 | **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı (Diğer 4 alt sekme Faz 2'de) |
 | **Müşteri Vitrini & Storefront** | ✅ %100 MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | 10+ Ekran (Vitrin, Ürünler, Detay, Sepet, Ödeme, Profil, Auth) |
@@ -144,3 +144,36 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
 ### ✅ CHECKPOINT 17: Kusursuz Otantik Doğal Gıda Görselleri
 * Eski mockup arayüzlerinden ekran görüntüsü alınarak kırpılmış ve piksellerine *"18 Ürün"*, *"12 Ürün"*, tarayıcı üst bantları gömülmüş görseller tamamen temizlendi.
 * Yapay zeka destekli profesyonel stüdyo ve köy sofrası fotoğrafçılığı ile 6 kategori görseli (`cat-kahvaltilik`, `cat-zeytinyagi`, `cat-salca`, `cat-bal-recel`, `cat-bakliyat`, `cat-kuruyemis`), 6 ürün görseli (`product-zeytinyagi`, `product-salca`, `product-kasar`, `product-cam-bali`, `product-tereyagi`, `product-eriste`) ve hikâye görseli (`mehmet-ali-dayi`) sıfırdan yüksek çözünürlükte üretilerek sisteme entegre edildi.
+
+---
+
+## 🔐 AŞAMA 7: Dinamik Rol & Modül Yetkilendirme (RBAC) ve İzole Admin Giriş Sistemi (12 Kasım 2026)
+
+### ✅ CHECKPOINT 18: Dinamik RBAC Altyapısı (Veritabanı, API & Yetki Matrisi)
+* **Veritabanı & Migration (`admin` Şeması):** `Role`, `ModulePermission` ve `RolePermission` tabloları ile `AdminUser.CustomRoleName` alanı eklendi (`20261112120222_Add_Dynamic_RBAC_Tables`, `20261112132036_Seed_AdminUsers_And_CustomRole`, `20261112133841_Seed_Remaining_Module_Permissions`).
+* **Seed Edilen Modül Anahtarları (9 Adet):** `products.view`, `inventory.view`, `storage.view`, `crm.reviews`, `crm.manage`, `finance.reports`, `orders.view`, `marketing.view`, `users.manage`.
+* **Seed Edilen Varsayılan Roller:** `SuperAdmin`, `BranchManager` (Şube Müdürü), `WarehouseStaff` (Depo Personeli).
+* **Backend Güvenliği & Uçlar ([`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs), [`AdminRbacService.cs`](../../backend/src/Infrastructure/Services/Admin/AdminRbacService.cs), [`PermissionEndpointFilter.cs`](../../backend/src/Endpoints/Admin/PermissionEndpointFilter.cs)):**
+  - `GET /api/admin/roles`, `POST /api/admin/roles` (arayüzden yeni özel rol ekleme), `GET /api/admin/permissions`, `PUT /api/admin/roles/{roleId}/permissions` (`RolePermissionsUpdated` audit logu), `GET /api/admin/auth/me/permissions`.
+  - Korumalı minimal API uçlarına `.RequirePermission(...)` eklendi; `SuperAdmin` / `Root` rolü tüm kontrolleri bypass eder.
+  - **Fail-Closed Güvenlik Politikası:** `admin."Roles"` tablosunda karşılığı bulunmayan roller (`Admin`, `Moderator` veya tanımsız roller) varsayılan olarak boş izin listesi (`[]`) ve `403 Forbidden` alır.
+
+### ✅ CHECKPOINT 19: İzole `/admin/login` Giriş Akışı, Tek Adımda Rol+Kullanıcı Oluşturma & Sıkı Modül İzolasyonu
+* **İzole Kimlik Doğrulama:** Müşteri vitrinindeki `/giris` (`kk_access_token`) yapısından tamamen bağımsız `POST /api/admin/auth/login` ucu ve [`AdminLoginPage.tsx`](../../frontend/src/pages/admin/AdminLoginPage.tsx) (`/admin/login`) kuruldu. Başarılı/başarısız girişler `admin."AuditLogs"` tablosuna (`AdminLoginSuccess` / `AdminLoginFailed`) yazılır.
+* **Seed Test Hesapları:**
+  - `superadmin@naturalfood.local` / `Admin123!` (`SuperAdmin`)
+  - `sube.muduru@naturalfood.local` / `Sube123!` (`BranchManager`)
+  - `depo@naturalfood.local` / `Depo123!` (`WarehouseStaff`)
+* **Frontend Oturum & Rota Koruması ([`PermissionContext.tsx`](../../frontend/src/context/PermissionContext.tsx), [`Sidebar.tsx`](../../frontend/src/components/layout/Sidebar.tsx), [`App.tsx`](../../frontend/src/App.tsx), [`DashboardPage.tsx`](../../frontend/src/pages/dashboard/DashboardPage.tsx)):**
+  - Oturum bilgisi `nf_admin_session` anahtarıyla saklanır; `/api/admin/*` çağrılarına otomatik `Authorization` + `X-Admin-Role` başlıkları eklenir (`rbacService.ts`).
+  - `AdminAuthGuard` aktif oturumu olmayan istekleri `/admin/login` sayfasına yönlendirir; `PermissionGuard` ise yetkisi olmayan sayfalarda `Yetkisiz Erişim` uyarısı gösterir.
+  - Sidebar menüleri ve Dashboard KPI/işlem kartları (`orders.view`, `finance.reports`, `inventory.view`, `products.view`, `crm.reviews`) aktif rol izinlerine göre dinamik filtrelenir; pencere odağa döndüğünde yetkiler sessizce senkronize edilir.
+* **Yönetim Ekranı İyileştirmeleri ([`RolePermissionsPage.tsx`](../../frontend/src/pages/admin/RolePermissionsPage.tsx), [`UsersPage.tsx`](../../frontend/src/pages/admin/UsersPage.tsx)):**
+  - `+ Yeni Rol Ekle` penceresine **"Bu rol için ilk kullanıcıyı da oluştur"** (ad soyad, e-posta, şifre) seçeneği eklenerek yeni rol + giriş hesabı tek adımda oluşturulabilir hale getirildi.
+  - `UsersPage.tsx` `+ Yeni Yönetici Ekle` formundaki rol seçimi tüm built-in ve özel rolleri (`CustomRoleName`) destekleyecek şekilde dinamikleştirildi.
+
+---
+
+## 📚 AŞAMA 8: Dokümantasyon Güncellemesi (9–12 Kasım 2026)
+* Tüm teknik şartnameler, `docs/README.md` ve devir rehberi belgeleri yapılan dikey dilimlerle senkronize edildi.
+* **Yapılanlar** ([`YAPILANLAR_VE_TAMAMLANANLAR.md`](YAPILANLAR_VE_TAMAMLANANLAR.md)) ve **Yapılacaklar / Faz Haritası** ([`YAPILACAKLAR_VE_FAZ_HARITASI.md`](YAPILACAKLAR_VE_FAZ_HARITASI.md)) ayrı sayfalara bölündü.
