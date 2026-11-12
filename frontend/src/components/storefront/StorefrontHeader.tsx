@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { authApi, authStorage } from '../../api/authApi';
+import { authApi, authStorage, isAdminRole } from '../../api/authApi';
 import { money, type Cart } from '../../api/storefront/storefrontApi';
 import { cartApi } from '../../api/storefront/cartApi';
 import { accountApi } from '../../api/accountApi';
@@ -142,7 +142,11 @@ export function StorefrontHeader({ wishlistCount, onSearch, onCategorySelect }: 
           <Link to="/hesabim/favoriler" aria-label={`Favorilerim (${favorites})`} className="store-header-favorites"><span className="material-symbols-outlined">favorite</span>{favorites > 0 && <span className="store-header-badge">{favorites}</span>}</Link>
           {customer ? <div className="store-header-account-wrap">
             <button type="button" className="store-header-account" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><span className="material-symbols-outlined">account_circle</span><span className="store-header-account-name">{customer.firstName}</span><span className="material-symbols-outlined store-header-chevron">expand_more</span></button>
-            {menuOpen && <div className="store-header-menu"><Link to="/hesabim" onClick={() => setMenuOpen(false)}>Hesabım</Link><button type="button" onClick={logout}>Çıkış Yap</button></div>}
+            {menuOpen && <div className="store-header-menu">
+              {isAdminRole(customer.role) && <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Yönetim Paneli</Link>}
+              <Link to="/hesabim" onClick={() => setMenuOpen(false)}>Hesabım</Link>
+              <button type="button" onClick={logout}>Çıkış Yap</button>
+            </div>}
           </div> : <Link to="/giris" className="store-header-account"><span className="material-symbols-outlined">account_circle</span><span className="store-header-account-name">Giriş Yap</span></Link>}
           <Link to="/cart" className="store-header-cart"><span className="store-header-cart-icon"><span className="material-symbols-outlined">shopping_bag</span>{count > 0 && <span className="store-header-badge">{count}</span>}</span><span className="store-header-cart-text"><strong>Sepetim</strong><b>{money(total)}</b></span></Link>
         </div>

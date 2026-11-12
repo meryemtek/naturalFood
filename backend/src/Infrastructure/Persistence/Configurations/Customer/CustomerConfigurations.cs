@@ -33,6 +33,11 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Domain.Entities.Cu
         builder.Property(c => c.Phone)
             .HasMaxLength(20);
 
+        builder.Property(c => c.Role)
+            .IsRequired()
+            .HasMaxLength(50)
+            .HasDefaultValue("Customer");
+
         // Navigation'lar
         builder.HasMany(c => c.Addresses)
             .WithOne(a => a.Customer)

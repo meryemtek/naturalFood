@@ -5,7 +5,7 @@ import { AuthFooter } from '../../components/auth/AuthFooter';
 import { StorefrontHeader } from '../../components/storefront/StorefrontHeader';
 import { AuthIcon } from '../../components/auth/AuthIcon';
 import { AuthPasswordField } from '../../components/auth/AuthPasswordField';
-import { authApi, authStorage, type CustomerProfile } from '../../api/authApi';
+import { authApi, authStorage, isAdminRole, type CustomerProfile } from '../../api/authApi';
 import './AuthPage.css';
 
 type AuthMode = 'login' | 'register';
@@ -27,18 +27,22 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
   const [customer, setCustomer] = useState<CustomerProfile | null>(() => authStorage.getCustomer());
 
   const returnTo = searchParams.get('returnUrl');
-  const continueShopping = () => {
+  const continueAfterAuth = (user: CustomerProfile | null) => {
+    if (isAdminRole(user?.role)) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
     const safePath = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') && !returnTo.includes('\\')
       ? returnTo
       : '/';
     navigate(safePath, { replace: true });
   };
 
-  // Zaten giriş yapmış kullanıcı /giris veya /uye-ol sayfasına gelirse doğrudan anasayfaya yönlendir
+  // Zaten giriş yapmış kullanıcı /giris veya /uye-ol sayfasına gelirse rolüne göre yönlendir
   useEffect(() => {
     const path = window.location.pathname;
     if (customer && (path === '/giris' || path === '/uye-ol')) {
-      continueShopping();
+      continueAfterAuth(customer);
     }
   }, [customer]);
 
@@ -68,8 +72,8 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
 
       setCustomer(auth.customer);
 
-      // Giriş veya kayıt başarılı olduğunda doğrudan Anasayfaya yönlendir
-      continueShopping();
+      // Admin rolü ile giriş yapıldıysa yönetim paneline (/dashboard), müşteri ise anasayfaya yönlendir
+      continueAfterAuth(auth.customer);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
     } finally {
@@ -113,9 +117,19 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
                   <h1 className="text-2xl font-bold text-primary">Merhaba, {customer.firstName} {customer.lastName}</h1>
                   <p className="mt-2 text-sm text-on-surface-variant">{customer.email} hesabınızla giriş yaptınız.</p>
                   <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
+                    {isAdminRole(customer.role) && (
+                      <button
+                        type="button"
+                        onClick={() => navigate('/dashboard')}
+                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-on-primary hover:bg-primary-container"
+                      >
+                        <AuthIcon>admin_panel_settings</AuthIcon>
+                        Yönetim Paneline Git
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={continueShopping}
+                      onClick={() => navigate('/')}
                       className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary-container px-5 py-3 text-sm font-bold text-on-primary hover:bg-primary"
                     >
                       <AuthIcon>storefront</AuthIcon>

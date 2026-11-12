@@ -140,5 +140,6 @@ app.MapGet("/", () => Results.Ok(new
 // Şema değişiklikleri ve tohum verileri başlat
 await app.Services.InitializeAdminModuleDatabaseAsync();
 await app.Services.InitializeCatalogModuleDatabaseAsync();
+await app.Services.InitializeCustomerModuleDatabaseAsync();
 
 app.Run();
