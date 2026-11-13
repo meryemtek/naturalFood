@@ -31,6 +31,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     throw new Error(errorDetail);
   }
 
+  // 204 No Content ve 202 Accepted durumlarında JSON gövdesi bulunmaz
+  if (res.status === 204 || res.status === 202) {
+    return undefined as T;
+  }
+
   return res.json();
 }
 

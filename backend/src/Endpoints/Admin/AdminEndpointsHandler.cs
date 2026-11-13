@@ -810,7 +810,11 @@ internal static class AdminEndpointsHandler
             CancellationToken ct) =>
         {
             var success = await contentService.DeleteBannerAsync(id, ct);
-            if (!success) return Results.NotFound();
+            if (!success)
+            {
+                // İdempotent silme: Banner zaten silinmişse 404 yerine 204 No Content dönerek istemciyi kilitleme
+                return Results.NoContent();
+            }
 
             await adminDb.AuditLogs.AddAsync(new AuditLog(
                 action: "BannerDeleted",

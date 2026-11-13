@@ -25,6 +25,7 @@ export const BannerSliderPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form Verileri
   const [formData, setFormData] = useState<CreateBannerRequest>({
@@ -111,15 +112,27 @@ export const BannerSliderPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string | null) => {
+    if (!id || isDeleting) return;
+    setIsDeleting(true);
     try {
       await adminApi.deleteBanner(id);
       setDeleteConfirmId(null);
       setSuccessMessage('Slayt başarıyla silindi.');
       setTimeout(() => setSuccessMessage(null), 3500);
-      fetchBanners();
+      await fetchBanners();
     } catch (err: any) {
-      alert(err?.message || 'Slayt silinirken hata oluştu.');
+      if (err?.message?.includes('404')) {
+        // İlgili banner zaten silinmişse listeyi güncelle ve onay penceresini kapat
+        setDeleteConfirmId(null);
+        setSuccessMessage('Slayt silindi.');
+        setTimeout(() => setSuccessMessage(null), 3500);
+        await fetchBanners();
+      } else {
+        alert(err?.message || 'Slayt silinirken hata oluştu.');
+      }
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1225,6 +1238,7 @@ export const BannerSliderPage: React.FC = () => {
               </button>
               <button
                 type="button"
+                disabled={isDeleting}
                 onClick={() => handleDelete(deleteConfirmId)}
                 style={{
                   padding: '8px 16px',
@@ -1234,10 +1248,11 @@ export const BannerSliderPage: React.FC = () => {
                   color: theme.colors.textInverse,
                   fontSize: '13px',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: isDeleting ? 'not-allowed' : 'pointer',
+                  opacity: isDeleting ? 0.7 : 1,
                 }}
               >
-                Evet, Sil
+                {isDeleting ? 'Siliniyor...' : 'Evet, Sil'}
               </button>
             </div>
           </div>

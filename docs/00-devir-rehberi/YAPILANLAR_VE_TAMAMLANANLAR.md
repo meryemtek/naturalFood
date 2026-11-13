@@ -207,5 +207,6 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
   - Sabit kodlanmış hero alanı kaldırılıp `GET /api/content/banners` üzerinden gelen aktif slaytları dinamik render eden yapıya geçirildi.
   - Birden fazla slayt olduğunda 6 saniyede bir otomatik dönen, fare üzerine geldiğinde duraklayan (pause on hover), önceki/sonraki okları ve slayt gösterge noktaları (indicator dots) içeren akıcı bir karusel eklendi.
   - API yanıt vermezse veya liste boşsa hiçbir görsel bozulma olmadan şık varsayılan vitrine düşen güvenli fallback mekanizması kuruldu.
-* **Hata Giderimi ([`MainLayout.tsx`](../../frontend/src/components/layout/MainLayout.tsx)):**
+* **Hata Giderimi ([`MainLayout.tsx`](../../frontend/src/components/layout/MainLayout.tsx), [`adminApi.ts`](../../frontend/src/api/adminApi.ts), [`BannerSliderPage.tsx`](../../frontend/src/pages/marketing/BannerSliderPage.tsx)):**
   - Git pull sonrasında admin paneline girmeye çalışan yöneticileri yetkisiz sayıp müşteri `/giris` sayfasına atan çakışan kontrol, izole admin oturum kontrolü (`isAdminAuthenticated`) ile değiştirilerek buton ve sayfa kaymaları giderildi.
+  - Slayt silme işleminde `HTTP 204 No Content` yanıtının `adminApi.ts` içerisindeki JSON ayrıştırıcıyı tetiklemesi ve modalın açık kalarak mükerrer istekte `404 Not Found` hatasına yol açması giderildi; backend silme ucu idempotent hale getirildi ve silme butonuna `isDeleting` kilidi eklendi.
