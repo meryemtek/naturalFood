@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { authStorage, isAdminRole } from '../../api/authApi';
+import { usePermissions } from '../../context/PermissionContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 export const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [customer] = useState(() => authStorage.getCustomer());
+  const { isAuthenticated: isAdminAuthenticated } = usePermissions();
   const location = useLocation();
 
   // Automatically close mobile sidebar drawer on navigation
@@ -27,6 +31,10 @@ export const MainLayout: React.FC = () => {
     };
   }, [isSidebarOpen]);
 
+  // Yönetim paneline aktif admin oturumu olanlar veya Admin rolüyle giriş yapmış kullanıcılar erişebilir
+  if (!isAdminAuthenticated && (!authStorage.isAuthenticated() || !isAdminRole(customer?.role))) {
+    return <Navigate to="/admin/login" replace />;
+  }
   return (
     <div className="admin-layout-root" style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#F7F6F2' }}>
       {/* Mobile Backdrop */}

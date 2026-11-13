@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/products/definition', label: 'Gelişmiş Ürün Tanımlama', requiredPermission: 'products.view' },
+            { path: '/products/definition', label: 'Ürün Kataloğu & Görsel Yönetimi', requiredPermission: 'products.view' },
             { path: '/products/allergens-nutrition', label: 'İçerik ve Alerjen Bilgileri', requiredPermission: 'products.view' },
             { path: '/products/lot-expiry', label: 'STT / TETT ve Parti (Lot) Takibi', requiredPermission: 'products.view' },
             { path: '/products/storage-conditions', label: 'Saklama Koşulları', requiredPermission: 'storage.view' },
@@ -228,6 +228,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           subItems: [
             { path: '/marketing/loyalty', label: 'Sadakat ve Puan Programı' },
             { path: '/marketing/newsletters', label: 'E-Bülten & SMS Gönderimi' },
+          ],
+        },
+        {
+          id: 'slider-ops',
+          label: 'Slider & Vitrin Yönetimi',
+          requiredPermission: 'marketing.view',
+          icon: (
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          ),
+          subItems: [
+            { path: '/marketing/slider', label: 'Ana Sayfa Hero Slider' },
           ],
         },
       ],

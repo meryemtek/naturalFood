@@ -16,6 +16,7 @@ public interface IProductService
     Task<ProductDto> CreateProductAsync(CreateProductRequest req, CancellationToken cancellationToken = default);
     Task<ProductDto?> UpdateProductAsync(Guid id, UpdateProductRequest req, CancellationToken cancellationToken = default);
     Task<bool> DeleteProductAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<bool> UpdateProductStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default);
 
     Task<ProductDetailsDto?> GetProductDetailsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<ProductDetailsDto?> UpdateProductDetailsAsync(Guid id, UpdateProductDetailsRequest req, CancellationToken cancellationToken = default);

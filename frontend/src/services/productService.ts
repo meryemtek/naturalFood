@@ -15,6 +15,14 @@ export interface ProductDto {
   imageUrl?: string | null;
   createdAtUtc: string;
   updatedAtUtc?: string | null;
+  shortDescription?: string | null;
+  description?: string | null;
+  origin?: string | null;
+  isBestSeller?: boolean;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  isSeasonal?: boolean;
+  discountPrice?: number | null;
 }
 
 export interface PaginatedProducts {
@@ -38,6 +46,14 @@ export interface CreateProductData {
   barcode?: string | null;
   status?: string;
   imageUrl?: string | null;
+  shortDescription?: string | null;
+  description?: string | null;
+  origin?: string | null;
+  isBestSeller?: boolean;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  isSeasonal?: boolean;
+  discountPrice?: number | null;
 }
 
 export interface UpdateProductData {
@@ -51,6 +67,14 @@ export interface UpdateProductData {
   barcode?: string | null;
   status: string;
   imageUrl?: string | null;
+  shortDescription?: string | null;
+  description?: string | null;
+  origin?: string | null;
+  isBestSeller?: boolean;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  isSeasonal?: boolean;
+  discountPrice?: number | null;
 }
 
 export interface NutritionalValuesDto {
@@ -176,6 +200,35 @@ export const productService = {
     return request<ProductDetailsDto>(`${BASE_URL}/${id}/details`, {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+
+  // POST /api/admin/products/upload-image
+  uploadProductImage: async (file: File): Promise<{ imageUrl: string; fileName: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${BASE_URL}/upload-image`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!res.ok) {
+      let err = 'Görsel yüklenemedi.';
+      try {
+        const body = await res.json();
+        err = body.detail || body.title || err;
+      } catch {
+        /* no body */
+      }
+      throw new Error(err);
+    }
+    return res.json();
+  },
+
+  // PATCH /api/admin/products/{id}/status
+  toggleProductStatus: async (id: string, isActive: boolean): Promise<{ success: boolean; isActive: boolean }> => {
+    return request<{ success: boolean; isActive: boolean }>(`${BASE_URL}/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isActive }),
     });
   },
 };

@@ -13,7 +13,15 @@ public record ProductDto(
     string Status,
     string? ImageUrl,
     DateTime CreatedAtUtc,
-    DateTime? UpdatedAtUtc
+    DateTime? UpdatedAtUtc,
+    string? ShortDescription = null,
+    string? Description = null,
+    string? Origin = null,
+    bool IsBestSeller = false,
+    bool IsNew = true,
+    bool IsFeatured = false,
+    bool IsSeasonal = false,
+    decimal? DiscountPrice = null
 );
 
 public record CreateProductRequest(
@@ -26,7 +34,15 @@ public record CreateProductRequest(
     decimal SellingPrice,
     decimal StockQuantity,
     string? Status,
-    string? ImageUrl
+    string? ImageUrl,
+    string? ShortDescription = null,
+    string? Description = null,
+    string? Origin = null,
+    bool IsBestSeller = false,
+    bool IsNew = true,
+    bool IsFeatured = false,
+    bool IsSeasonal = false,
+    decimal? DiscountPrice = null
 );
 
 public record UpdateProductRequest(
@@ -39,8 +55,18 @@ public record UpdateProductRequest(
     decimal SellingPrice,
     decimal StockQuantity,
     string Status,
-    string? ImageUrl
+    string? ImageUrl,
+    string? ShortDescription = null,
+    string? Description = null,
+    string? Origin = null,
+    bool IsBestSeller = false,
+    bool IsNew = true,
+    bool IsFeatured = false,
+    bool IsSeasonal = false,
+    decimal? DiscountPrice = null
 );
+
+public record UpdateProductStatusRequest(bool IsActive);
 
 public record NutritionalValuesDto(
     decimal EnergyKcal,

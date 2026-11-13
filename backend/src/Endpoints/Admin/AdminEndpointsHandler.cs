@@ -1,7 +1,12 @@
+using Application.Common.Interfaces;
+using Application.Content.DTOs;
+using Application.Content.Services;
 using Application.DTOs.Admin;
 using Application.Services.Admin;
+using Domain.Entities.Admin;
 using FluentValidation;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -277,6 +282,74 @@ internal static class AdminEndpointsHandler
         .WithName("UpdateAdminProductDetails")
         .Produces<ProductDetailsDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
+
+        // POST /api/admin/products/upload-image
+        products.MapPost("/upload-image", async (
+            IFormFile file,
+            CancellationToken ct) =>
+        {
+            if (file == null || file.Length == 0)
+                return Results.BadRequest(new ProblemDetails { Title = "Görsel Dosyası Eksik", Detail = "Yüklenecek dosya seçilmedi." });
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avif" };
+            if (!allowed.Contains(ext))
+                return Results.BadRequest(new ProblemDetails { Title = "Geçersiz Dosya Formatı", Detail = "Sadece JPG, PNG, WEBP veya AVIF formatında görseller yüklenebilir." });
+
+            var safeName = $"prod-{Guid.NewGuid():n}{ext}";
+            var current = Directory.GetCurrentDirectory();
+            var uploadsFolder = Path.Combine(current, "wwwroot", "images", "products");
+            Directory.CreateDirectory(uploadsFolder);
+            var filePath = Path.Combine(uploadsFolder, safeName);
+            await using (var stream = File.Create(filePath))
+            {
+                await file.CopyToAsync(stream, ct);
+            }
+
+            var frontendFolder = ResolveFrontendImagesFolder("products");
+            if (frontendFolder != null)
+            {
+                try
+                {
+                    var frontendFilePath = Path.Combine(frontendFolder, safeName);
+                    File.Copy(filePath, frontendFilePath, overwrite: true);
+                }
+                catch
+                {
+                    // Ignore local dev copy errors
+                }
+            }
+
+            var relativeUrl = $"/images/products/{safeName}";
+            return Results.Ok(new { imageUrl = relativeUrl, fileName = safeName });
+        })
+        .WithName("UploadProductImage")
+        .Produces(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .DisableAntiforgery();
+
+        // PATCH /api/admin/products/{id:guid}/status
+        products.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            [FromBody] UpdateProductStatusRequest req,
+            IProductService productService,
+            IAdminDbContext adminDb,
+            CancellationToken ct) =>
+        {
+            var success = await productService.UpdateProductStatusAsync(id, req.IsActive, ct);
+            if (!success) return Results.NotFound();
+
+            await adminDb.AuditLogs.AddAsync(new AuditLog(
+                action: "ProductStatusChanged",
+                resource: "Catalog.Product",
+                details: $"Ürün aktiflik durumu güncellendi: {id} -> {(req.IsActive ? "Aktif (Satışta)" : "Pasif")}"
+            ), ct);
+            await adminDb.SaveChangesAsync(ct);
+            return Results.Ok(new { Success = true, IsActive = req.IsActive });
+        })
+        .WithName("UpdateAdminProductStatus")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
 
         // =========================================================================
         // 5. Envanter ve Stok Yönetimi (Inventory - Vertical Slice 2)
@@ -692,6 +765,194 @@ internal static class AdminEndpointsHandler
         .Produces<ProblemDetails>(StatusCodes.Status401Unauthorized)
         .Produces<ProblemDetails>(StatusCodes.Status403Forbidden);
 
+        // 9. Banner & Hero Slider Yönetimi
+        var banners = group.MapGroup("/banners")
+            .WithTags("Admin Banners & Slider")
+            .RequirePermission("marketing.view");
+
+        // GET /api/admin/banners
+        banners.MapGet("/", async (IContentService contentService, CancellationToken ct) =>
+        {
+            var list = await contentService.GetAllBannersAsync(ct);
+            return Results.Ok(list);
+        })
+        .WithName("GetAdminBanners")
+        .Produces<IReadOnlyList<BannerDto>>(StatusCodes.Status200OK);
+
+        // GET /api/admin/banners/{id:guid}
+        banners.MapGet("/{id:guid}", async (Guid id, IContentService contentService, CancellationToken ct) =>
+        {
+            var all = await contentService.GetAllBannersAsync(ct);
+            var item = all.FirstOrDefault(b => b.Id == id);
+            return item is not null ? Results.Ok(item) : Results.NotFound();
+        })
+        .WithName("GetAdminBannerById")
+        .Produces<BannerDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/admin/banners
+        banners.MapPost("/", async (
+            CreateBannerRequest req,
+            IContentService contentService,
+            IAdminDbContext adminDb,
+            CancellationToken ct) =>
+        {
+            var created = await contentService.CreateBannerAsync(req, ct);
+            await adminDb.AuditLogs.AddAsync(new AuditLog(
+                action: "BannerCreated",
+                resource: "Banner",
+                details: $"Yeni slider/banner oluşturuldu: {created.Title} ({created.Id})"
+            ), ct);
+            await adminDb.SaveChangesAsync(ct);
+            return Results.Created($"/api/admin/banners/{created.Id}", created);
+        })
+        .WithName("CreateAdminBanner")
+        .Produces<BannerDto>(StatusCodes.Status201Created);
+
+        // PUT /api/admin/banners/{id:guid}
+        banners.MapPut("/{id:guid}", async (
+            Guid id,
+            UpdateBannerRequest req,
+            IContentService contentService,
+            IAdminDbContext adminDb,
+            CancellationToken ct) =>
+        {
+            var updated = await contentService.UpdateBannerAsync(id, req, ct);
+            if (updated is null) return Results.NotFound();
+
+            await adminDb.AuditLogs.AddAsync(new AuditLog(
+                action: "BannerUpdated",
+                resource: "Banner",
+                details: $"Slider/banner güncellendi: {updated.Title} ({updated.Id})"
+            ), ct);
+            await adminDb.SaveChangesAsync(ct);
+            return Results.Ok(updated);
+        })
+        .WithName("UpdateAdminBanner")
+        .Produces<BannerDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // PATCH /api/admin/banners/{id:guid}/status
+        banners.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            [FromBody] UpdateBannerStatusRequest req,
+            IContentService contentService,
+            IAdminDbContext adminDb,
+            CancellationToken ct) =>
+        {
+            var all = await contentService.GetAllBannersAsync(ct);
+            var existing = all.FirstOrDefault(b => b.Id == id);
+            if (existing is null) return Results.NotFound();
+
+            var updateReq = new UpdateBannerRequest(
+                existing.Title,
+                existing.Subtitle,
+                existing.ImageUrl,
+                existing.TargetUrl,
+                existing.ButtonText,
+                existing.DisplayOrder,
+                req.IsActive,
+                existing.BadgeText,
+                existing.Features,
+                existing.SecondaryButtonText,
+                existing.SecondaryTargetUrl);
+
+            var updated = await contentService.UpdateBannerAsync(id, updateReq, ct);
+            await adminDb.AuditLogs.AddAsync(new AuditLog(
+                action: "BannerStatusUpdated",
+                resource: "Banner",
+                details: $"Slider durumu güncellendi: {existing.Title} -> IsActive={req.IsActive}"
+            ), ct);
+            await adminDb.SaveChangesAsync(ct);
+            return Results.Ok(updated);
+        })
+        .WithName("UpdateAdminBannerStatus")
+        .Produces<BannerDto>(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // DELETE /api/admin/banners/{id:guid}
+        banners.MapDelete("/{id:guid}", async (
+            Guid id,
+            IContentService contentService,
+            IAdminDbContext adminDb,
+            CancellationToken ct) =>
+        {
+            var success = await contentService.DeleteBannerAsync(id, ct);
+            if (!success)
+            {
+                // İdempotent silme: Banner zaten silinmişse 404 yerine 204 No Content dönerek istemciyi kilitleme
+                return Results.NoContent();
+            }
+
+            await adminDb.AuditLogs.AddAsync(new AuditLog(
+                action: "BannerDeleted",
+                resource: "Banner",
+                details: $"Slider/banner silindi: {id}"
+            ), ct);
+            await adminDb.SaveChangesAsync(ct);
+            return Results.NoContent();
+        })
+        .WithName("DeleteAdminBanner")
+        .Produces(StatusCodes.Status204NoContent)
+        .Produces(StatusCodes.Status404NotFound);
+
+        // POST /api/admin/banners/upload-image
+        banners.MapPost("/upload-image", async (
+            IFormFile file,
+            CancellationToken ct) =>
+        {
+            if (file == null || file.Length == 0)
+                return Results.BadRequest(new ProblemDetails { Title = "Görsel Dosyası Eksik", Detail = "Yüklenecek dosya seçilmedi." });
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".svg" };
+            if (!allowed.Contains(ext))
+                return Results.BadRequest(new ProblemDetails { Title = "Geçersiz Dosya Türü", Detail = "Yalnızca JPG, PNG, WEBP veya SVG formatları desteklenir." });
+
+            var current = Directory.GetCurrentDirectory();
+            var uploadsFolder = Path.Combine(current, "wwwroot", "images", "banners");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var safeName = $"slider_{Guid.NewGuid():N}{ext}";
+            var targetPath = Path.Combine(uploadsFolder, safeName);
+            await using (var stream = new FileStream(targetPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream, ct);
+            }
+
+            var frontendFolder = ResolveFrontendImagesFolder("banners");
+            if (frontendFolder != null)
+            {
+                try
+                {
+                    var frontendTargetPath = Path.Combine(frontendFolder, safeName);
+                    File.Copy(targetPath, frontendTargetPath, overwrite: true);
+                }
+                catch { }
+            }
+
+            var relativeUrl = $"/images/banners/{safeName}";
+            return Results.Ok(new { imageUrl = relativeUrl, fileName = safeName });
+        })
+        .WithName("UploadBannerImage")
+        .DisableAntiforgery();
+
         return group;
+    }
+
+    private static string? ResolveFrontendImagesFolder(string subfolder)
+    {
+        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (dir != null)
+        {
+            var test = Path.Combine(dir.FullName, "frontend", "public", "images", subfolder);
+            if (Directory.Exists(Path.Combine(dir.FullName, "frontend", "public")))
+            {
+                Directory.CreateDirectory(test);
+                return test;
+            }
+            dir = dir.Parent;
+        }
+        return null;
     }
 }

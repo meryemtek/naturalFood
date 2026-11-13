@@ -116,7 +116,12 @@ public class ContentService : IContentService
                 b.TargetUrl,
                 b.ButtonText,
                 b.DisplayOrder,
-                b.IsActive))
+                b.IsActive,
+                b.BadgeText,
+                b.Features,
+                b.SecondaryButtonText,
+                b.SecondaryTargetUrl,
+                b.CreatedAtUtc))
             .ToListAsync(cancellationToken);
     }
 
@@ -133,20 +138,29 @@ public class ContentService : IContentService
                 b.TargetUrl,
                 b.ButtonText,
                 b.DisplayOrder,
-                b.IsActive))
+                b.IsActive,
+                b.BadgeText,
+                b.Features,
+                b.SecondaryButtonText,
+                b.SecondaryTargetUrl,
+                b.CreatedAtUtc))
             .ToListAsync(cancellationToken);
     }
 
     public async Task<BannerDto> CreateBannerAsync(CreateBannerRequest request, CancellationToken cancellationToken = default)
     {
         var banner = new Banner(
-            request.Title,
-            request.Subtitle,
-            request.ImageUrl,
-            request.TargetUrl,
-            request.ButtonText,
-            request.DisplayOrder,
-            request.IsActive);
+            title: request.Title,
+            subtitle: request.Subtitle,
+            imageUrl: request.ImageUrl,
+            targetUrl: request.TargetUrl,
+            buttonText: request.ButtonText,
+            displayOrder: request.DisplayOrder,
+            isActive: request.IsActive,
+            badgeText: request.BadgeText,
+            features: request.Features,
+            secondaryButtonText: request.SecondaryButtonText,
+            secondaryTargetUrl: request.SecondaryTargetUrl);
 
         _contentDb.Banners.Add(banner);
         await _contentDb.SaveChangesAsync(cancellationToken);
@@ -159,7 +173,12 @@ public class ContentService : IContentService
             banner.TargetUrl,
             banner.ButtonText,
             banner.DisplayOrder,
-            banner.IsActive);
+            banner.IsActive,
+            banner.BadgeText,
+            banner.Features,
+            banner.SecondaryButtonText,
+            banner.SecondaryTargetUrl,
+            banner.CreatedAtUtc);
     }
 
     public async Task<BannerDto?> UpdateBannerAsync(Guid id, UpdateBannerRequest request, CancellationToken cancellationToken = default)
@@ -168,13 +187,17 @@ public class ContentService : IContentService
         if (banner == null) return null;
 
         banner.Update(
-            request.Title,
-            request.Subtitle,
-            request.ImageUrl,
-            request.TargetUrl,
-            request.ButtonText,
-            request.DisplayOrder,
-            request.IsActive);
+            title: request.Title,
+            subtitle: request.Subtitle,
+            imageUrl: request.ImageUrl,
+            targetUrl: request.TargetUrl,
+            buttonText: request.ButtonText,
+            displayOrder: request.DisplayOrder,
+            isActive: request.IsActive,
+            badgeText: request.BadgeText,
+            features: request.Features,
+            secondaryButtonText: request.SecondaryButtonText,
+            secondaryTargetUrl: request.SecondaryTargetUrl);
 
         await _contentDb.SaveChangesAsync(cancellationToken);
 
@@ -186,7 +209,12 @@ public class ContentService : IContentService
             banner.TargetUrl,
             banner.ButtonText,
             banner.DisplayOrder,
-            banner.IsActive);
+            banner.IsActive,
+            banner.BadgeText,
+            banner.Features,
+            banner.SecondaryButtonText,
+            banner.SecondaryTargetUrl,
+            banner.CreatedAtUtc);
     }
 
     public async Task<bool> DeleteBannerAsync(Guid id, CancellationToken cancellationToken = default)

@@ -12,10 +12,11 @@
 | Alan / Modül | Tamamlanma Durumu | Veritabanı Şeması & Tablolar | Backend & Frontend Bağlantısı |
 |---|---|---|---|
 | **Çekirdek Omurga & Docker** | ✅ %100 Tamamlandı | PostgreSQL 18 (Port 5433) | EF Core 10 + Onion Architecture + Vite Proxy |
-| **Yönetici, Dinamik RBAC & İzole Auth (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`, `AuditLogs`) | `/giris` (birleşik giriş / izole oturum), `/admin/users`, `/admin/roles`, `/admin/audit-logs` |
-| **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `ProductImages`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilim + `AdminPagination` + 37 seed ürün canlı PostgreSQL'e bağlı |
+| **Yönetici, Dinamik RBAC & İzole Auth (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`, `AuditLogs`) | `/giris` (birleşik giriş / izole oturum), `/admin/login`, `/admin/users`, `/admin/roles`, `/admin/audit-logs` |
+| **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `ProductImages`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilim + `AdminPagination` + Görsel Yönetimi + 37 seed ürün canlı PostgreSQL'e bağlı |
 | **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı + `AdminPagination` (Diğer 4 alt sekme Faz 2'de) |
 | **Sipariş Yönetimi & İş Akışı (`MOD-05`)** | ✅ %100 Tamamlandı (Sevkiyat hariç) | `orders` (`Orders`, `OrderLines`, `Shipments`, `OrderWorkflows`) | `/orders`, `/orders/pending`, `/orders/completed`, `/orders/returns` + Müşteri `/hesabim/siparisler` & `/siparis-takip` |
+| **Slider & Vitrin Yönetimi (`MOD-05`)** | ✅ %100 Tamamlandı | `content` (`Banners`) | `/marketing/slider` + Canlı Bento Önizleme + Otomatik Karusel |
 | **Müşteri Vitrini & Storefront (`MOD-04-CUST`)** | ✅ Canlı Katalog + MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | Canlı `/api/catalog/products` filtreleme, Adres il/ilçe/mahalle seçimi, Sipariş Takibi, Mobil Responsive Vitrin |
 | **Mobil & Responsive Çekirdek** | ✅ %100 Tamamlandı | — | Admin Çekmece Menü, Storefront Mobil Header/Filtre Çekmecesi/Hesabım Sekmeleri |
 
@@ -214,3 +215,75 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
   - [`StorefrontHeader.tsx`](../../frontend/src/components/storefront/StorefrontHeader.tsx) ve [`StorefrontHeader.css`](../../frontend/src/components/storefront/StorefrontHeader.css): Mobil taşma/bozulmalar onarıldı, üst bardaki `Siparişlerim` butonu ve arama çubuğu yanındaki `Kategoriler` açılır listesi kaldırıldı.
   - [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx): Mobil filtreleme çekmecesinin taşma/kesilme sorunu düzeltildi.
   - [`account.css`](../../frontend/src/pages/account/account.css): `/hesabim` sayfasındaki yatay kaydırmalı (scroll) menü mobilde daha kullanılabilir yapıya dönüştürüldü.
+
+---
+
+## 🎨 AŞAMA 10: Ana Sayfa Hero Slider & Vitrin Yönetim Modülü (13 Kasım 2026)
+
+### ✅ CHECKPOINT 23: Admin Hero Slider Yönetimi & Dinamik Vitrin Entegrasyonu
+* **Kullanıcı Talebi:** Admin paneline yeni bir modül eklenmesi; adminin ana sayfada yer alan slider/hero vitrini (başlık, alt başlık, rozet, özellik etiketleri, butonlar ve yönlendirme linkleri, görsel yükleme veya URL seçimi, sıra ve aktiflik durumu) değiştirip güncelleyebilmesi.
+* **Veritabanı & Entity Geliştirmesi (`content."Banners"` Tablosu):**
+  - `Domain/Entities/Content/Banner.cs` varlığına `BadgeText`, `Features` (virgülle ayrılmış etiketler), `SecondaryButtonText`, `SecondaryTargetUrl` alanları ve `Update(...)` metodu eklendi.
+  - `Infrastructure/Persistence/Configurations/Content/ContentConfigurations.cs` EF Core yapılandırmaları ve `Application/Content/DTOs/ContentDtos.cs` DTO sözleşmeleri güncellendi.
+  - `DependencyInjection.cs` üzerinden kullanıcının paylaştığı otantik köy sofrası görseli (`/images/hero-bento-showcase.png`) ve metinleri varsayılan 1. slayt (`b1`), geleneksel odun ateşi salça görseli ise 2. slayt (`b2`) olarak seed edildi.
+  - `Program.cs` içerisine `InitializeContentModuleDatabaseAsync` eklenerek `content` şeması ve `content."Banners"` tablosunun otomatik ayağa kaldırılması sağlandı.
+* **Admin Minimal API Uçları ([`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs)):**
+  - `GET /api/admin/banners`: Tüm banner'ları sıralı listeleme (`marketing.view` izni korumalı).
+  - `GET /api/admin/banners/{id}`: Tekil banner detayını getirme.
+  - `POST /api/admin/banners`: Yeni vitrin slaytı oluşturma + `AuditLog` kaydı (`BannerCreated`).
+  - `PUT /api/admin/banners/{id}`: Banner metin, görsel, buton ve sıralamasını güncelleme + `AuditLog` kaydı (`BannerUpdated`).
+  - `PATCH /api/admin/banners/{id}/status`: Banner'ı anında aktif/pasif yapma + `AuditLog` kaydı (`BannerStatusChanged`).
+  - `DELETE /api/admin/banners/{id}`: Banner silme + `AuditLog` kaydı (`BannerDeleted`).
+  - `POST /api/admin/banners/upload-image`: Görsel dosyasını doğrudan `wwwroot/images/banners` ve `frontend/public/images/banners` dizinlerine yükleyip relative URL dönen uç.
+* **Admin Paneli Arayüzü ([`BannerSliderPage.tsx`](../../frontend/src/pages/marketing/BannerSliderPage.tsx)):**
+  - **Rota:** `/marketing/slider` (Sidebar menüsünde *"PAZARLAMA VE KAMPANYA YÖNETİMİ"* altında *"Slider & Vitrin Yönetimi"* başlığıyla entegre edildi).
+  - **Canlı Bento Önizleme (Live Bento Hero Preview):** Admin formda metinleri, rozeti, etiketleri veya görseli değiştirirken anında ana sayfada nasıl görüneceğini birebir yansıtan interaktif görsel bento önizleme kutusu.
+  - **Hazır Doğal Gıda Görsel Presetleri:** Dosya yüklemenin yanında tek tıkla seçilebilen yüksek çözünürlüklü vitrin görselleri (`hero-bento-showcase.png`, `hero-anadolu-sofrasi.jpg`, vb.).
+  - **Slayt Listesi:** Sıralama rozetleri, görsel önizlemesi, buton hedefleri, tek tıkla aktif/pasif anahtarı (toggle) ve silme/düzenleme işlemleri.
+* **Müşteri Vitrini Dinamik Slayt Entegrasyonu ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
+  - Sabit kodlanmış hero alanı kaldırılıp `GET /api/content/banners` üzerinden gelen aktif slaytları dinamik render eden yapıya geçirildi.
+  - Birden fazla slayt olduğunda 6 saniyede bir otomatik dönen, fare üzerine geldiğinde duraklayan (pause on hover), önceki/sonraki okları ve slayt gösterge noktaları (indicator dots) içeren akıcı bir karusel eklendi.
+  - API yanıt vermezse veya liste boşsa hiçbir görsel bozulma olmadan şık varsayılan vitrine düşen güvenli fallback mekanizması kuruldu.
+* **Hata Giderimi ([`MainLayout.tsx`](../../frontend/src/components/layout/MainLayout.tsx), [`adminApi.ts`](../../frontend/src/api/adminApi.ts), [`BannerSliderPage.tsx`](../../frontend/src/pages/marketing/BannerSliderPage.tsx)):**
+  - Git pull sonrasında admin paneline girmeye çalışan yöneticileri yetkisiz sayıp müşteri `/giris` sayfasına atan çakışan kontrol, izole admin oturum kontrolü (`isAdminAuthenticated`) ile değiştirilerek buton ve sayfa kaymaları giderildi.
+  - Slayt silme işleminde `HTTP 204 No Content` yanıtının `adminApi.ts` içerisindeki JSON ayrıştırıcıyı tetiklemesi ve modalın açık kalarak mükerrer istekte `404 Not Found` hatasına yol açması giderildi; backend silme ucu idempotent hale getirildi ve silme butonuna `isDeleting` kilidi eklendi.
+
+
+---
+
+## 🌾 AŞAMA 10: Ürün Vitrin, Görsel ve Yöre/Etiket Yönetim Modülü (13 Kasım 2026)
+
+### ✅ CHECKPOINT 21: Ürün Kataloğu, Vitrin Görselleri & Yöre/Etiket Yönetim Modülü
+* **Kullanıcı Talebi:** Hero slider modülünde olduğu gibi, sistemdeki tüm ürünlerin vitrin fotoğraflarının, açıklamalarının (kısa ve detaylı), yöre/menşe bilgilerinin ve etiketlerinin yönetilebileceği bir modülün *"Ürün ve Menü Yönetimi"* menüsü altında devreye alınması (Kullanıcı ekran görüntüsü: 320px bento kartlar, `Çok Satan`, `Yeni Mahsul`, `%11 İndirim`, `📍 Kars & Erzurum Yaylaları`, üstü çizili fiyat).
+* **Menü & Navigasyon Entegrasyonu ([`Sidebar.tsx`](../../frontend/src/components/layout/Sidebar.tsx), [`App.tsx`](../../frontend/src/App.tsx)):**
+  - *"ÜRÜN VE MENÜ YÖNETİMİ"* başlığı altında menü adı **"Ürün Kataloğu & Görsel Yönetimi"** (`/products/definition` ve `/products`) olarak yapılandırıldı.
+  - `products.view` yetki denetimi korundu.
+* **Backend API & Servis Geliştirmeleri ([`ProductDtos.cs`](../../backend/src/Application/DTOs/Admin/ProductDtos.cs), [`ProductService.cs`](../../backend/src/Infrastructure/Services/Admin/ProductService.cs), [`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs), [`CatalogService.cs`](../../backend/src/Infrastructure/Services/Catalog/CatalogService.cs)):**
+  - Admin `ProductDto`, `CreateProductRequest` ve `UpdateProductRequest` sözleşmelerine `ShortDescription`, `Description`, `Origin`, `IsBestSeller`, `IsNew`, `IsFeatured`, `IsSeasonal`, `DiscountPrice` parametreleri eklendi.
+  - `POST /api/admin/products/upload-image`: Bilgisayardan ürün fotoğrafı yükleyip anında statik dosya olarak sunan ve URL dönen multipart/form-data ucu eklendi.
+  - `PATCH /api/admin/products/{id}/status`: Ürünü anında satışa açma/kapatma (Aktif/Pasif) ucu eklendi.
+  - Public `GET /api/catalog/products` uç sözleşmesi ve `CatalogService` `Origin` bilgisini dışa aktaracak şekilde güncellendi.
+* **Admin Paneli Arayüzü ([`ProductDefinitionPage.tsx`](../../frontend/src/pages/products/ProductDefinitionPage.tsx)):**
+  - **Canlı Vitrin Kartı Önizleme (Storefront 1:1 Live Preview):** Ekran görüntüsündeki bento kart tasarımıyla birebir eşleşen canlı kart kutusu. Seçilen herhangi bir ürünün fotoğrafı, çok satan/yeni mahsul/mevsimlik rozetleri, % indirim rozeti, 📍 yöre/menşe satırı, 2 satırlık kısa açıklaması ve indirimli/üstü çizili fiyatı anlık görüntülenir.
+  - **Hazır Doğal Gıda Görsel Presetleri (`PRESET_PRODUCT_IMAGES`):** Ayvalık zeytinyağı, domates/biber salçası, Kars kaşarı, Karakovan çiçek balı, yayık tereyağı, el kesmesi erişte, Halhalı zeytin, sele zeytin, manda kaymağı, siyez unu vb. hazır görseller tek tıkla seçilebilir.
+  - **Hızlı Yöre / Menşe Çipleri (`PRESET_ORIGINS`):** Kars & Erzurum Yaylaları, Karadeniz (Trabzon/Tonya), Ege & Kaz Dağları, Hatay / Antakya, Gaziantep & Nizip, Malatya & Elazığ, Aydın & Germencik gibi yöresel etiketler tek tıkla forma aktarılabilir.
+  - **Gelişmiş Filtreleme & Arama:** Ürün adı, SKU, barkod veya yöre bazında anlık arama; kategori, vitrin rozeti (Çok Satan, Yeni Mahsul, İndirimli, Mevsimlik) ve satış durumu filtreleri.
+  - **Hızlı Durum Değiştirme (Optimistic Toggle):** Tablodan doğrudan tek tıkla ürünü satışa açma veya satıştan kaldırma.
+* **Müşteri Vitrini Entegrasyonu ([`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx), [`storefrontApi.ts`](../../frontend/src/api/storefront/storefrontApi.ts)):**
+  - Vitrin listesinde `origin` ve `badge` eşleştirmeleri backend'den gelen gerçek verileri önceliklendirecek şekilde bağlandı.
+
+
+### ✅ CHECKPOINT 22: Görsel Yükleme Dizin Senkronizasyonu & Ürün Detay Sayfası Dinamikleştirmesi (13 Kasım 2026)
+* **Görsel Yükleme & Antiforgery Düzeltmesi ([`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs)):**
+  - .NET 10 Minimal API `IFormFile` varsayılan antiforgery doğrulaması sebebiyle oluşan `500 Internal Server Error` hatası `.DisableAntiforgery()` direktifiyle giderildi.
+  - Sunucunun nereden başlatıldığına (`repo kökü`, `backend`, `ApiHost` vb.) bakılmaksızın dosya ağacında yukarı doğru arama yapan `ResolveFrontendImagesFolder` fonksiyonu eklendi. Yüklenen ürün ve banner görselleri hem backend `wwwroot` hem de Vite'ın statik sunduğu `frontend/public/images/products/` klasörüne hatasız kopyalanır hale getirildi.
+* **Ürün Detay Sayfası Tam Dinamikleştirmesi ([`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx)):**
+  - Sayfa başında ve sekmelerinde daha önce prototip olarak sabit (hardcoded) kalan zeytinyağı metinleri tamamen kaldırıldı.
+  - **Rozetler:** Fotoğraf üzerindeki sabit zeytin rozetleri yerine admin panelinde işaretlenen gerçek etiketler (`⭐ Çok Satan`, `🌱 Yeni Mahsul`, `🍂 Mevsimlik Ürün`, Kategori adı) bağlandı.
+  - **Açıklama & Hikaye:** Sabit Hatay zeytinyağı paragrafı yerine veritabanındaki gerçek `product.description` ve `product.shortDescription` bağlandı.
+  - **Ürün Özellikleri Tablosu:** Kategori, yöre/menşe, satış birimi, stok adedi ve SKU dinamik hale getirildi.
+  - **Ambalaj / Satış Birimi:** Tekli ambalajı olan ürünlerde (örn. Köy Yumurtası) sahte zeytinyağı hacim seçenekleri yerine doğrudan ürünün satış birimi (`📦 Satış Birimi: Adet`) gösterildi.
+  - **Saklama Koşulları:** Ürünün kategorisine ve `storageConditions` alanına uygun akıllı saklama talimatları (+4°C buzdolabı veya serin kiler) yerleştirildi.
+  - **Üretici Dayanışması:** Yöreye ve ürüne özel dinamik üretici anlatımı entegre edildi.
+* **Vitrin ve Mevsim Bölümleri Güçlendirmesi ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
+  - Anasayfadaki *"Mevsiminde Taze Mahsuller"* ve *"En Çok Tercih Edilen Köy Lezzetleri"* bölümleri dinamik ürün etiketleriyle senkronize edildi; boş kalmayı engelleyen güvenli fallback mekanizması kuruldu.

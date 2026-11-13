@@ -29,8 +29,8 @@ export interface Product {
   isNew: boolean;
   isFeatured: boolean;
   isSeasonal?: boolean;
-  variantCount: number;
   origin?: string | null;
+  variantCount: number;
 }
 
 export interface ProductImage {

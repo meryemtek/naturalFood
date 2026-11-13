@@ -37,3 +37,47 @@ export interface PagedResult<T> {
   hasPreviousPage: boolean;
 }
 
+export interface BannerDto {
+  id: string;
+  title: string;
+  subtitle?: string | null;
+  badgeText?: string | null;
+  features?: string | null;
+  imageUrl: string;
+  targetUrl?: string | null;
+  buttonText?: string | null;
+  secondaryButtonText?: string | null;
+  secondaryTargetUrl?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  createdAtUtc?: string | null;
+}
+
+export interface CreateBannerRequest {
+  title: string;
+  subtitle?: string | null;
+  badgeText?: string | null;
+  features?: string | null;
+  imageUrl: string;
+  targetUrl?: string | null;
+  buttonText?: string | null;
+  secondaryButtonText?: string | null;
+  secondaryTargetUrl?: string | null;
+  displayOrder?: number;
+  isActive?: boolean;
+}
+
+export interface UpdateBannerRequest {
+  title: string;
+  subtitle?: string | null;
+  badgeText?: string | null;
+  features?: string | null;
+  imageUrl: string;
+  targetUrl?: string | null;
+  buttonText?: string | null;
+  secondaryButtonText?: string | null;
+  secondaryTargetUrl?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+}
+

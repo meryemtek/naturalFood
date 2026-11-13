@@ -6,6 +6,7 @@ import { StorefrontHeader } from '../../components/storefront/StorefrontHeader';
 import { cartApi } from '../../api/storefront/cartApi';
 import { useWishlist } from '../../api/storefront/useWishlist';
 import { matchCategory } from '../products/productsMockData';
+import type { BannerDto } from '../../api/types';
 
 interface UiCategory {
   id: string;
@@ -113,6 +114,30 @@ function classifyProductCategory(categorySlug?: string, categoryName?: string, n
   return 'diger';
 }
 
+const DEFAULT_HERO_BANNER: BannerDto = {
+  id: 'default-hero',
+  title: 'Köyün Bereketi, Sofranızın Lezzeti',
+  subtitle: "Anadolu'nun bereketli topraklarından gelen doğal, geleneksel ve yöresel lezzetlerle sofranıza doğallık katın. Katkısız, geleneksel yöntemlerle üretilen en taze mahsuller kapınızda.",
+  imageUrl: '/images/hero-bento-showcase.png',
+  targetUrl: '/products',
+  buttonText: 'Ürünleri Keşfet',
+  displayOrder: 1,
+  isActive: true,
+  badgeText: 'Doğrudan Üreticisinden & Katkısız',
+  features: '%100 Katkısız, Geleneksel Taş Değirmen, Soğuk Sıkım',
+  secondaryButtonText: 'Hikâyemizi Tanıyın',
+  secondaryTargetUrl: '/hikayemiz',
+};
+
+function getFeatureIcon(featureText: string): string {
+  const lower = featureText.toLocaleLowerCase('tr-TR');
+  if (lower.includes('katkısız') || lower.includes('organik') || lower.includes('doğal')) return 'verified';
+  if (lower.includes('taş') || lower.includes('değirmen') || lower.includes('yağ') || lower.includes('sıkım')) return 'water_drop';
+  if (lower.includes('soğuk') || lower.includes('döngü') || lower.includes('taze')) return 'autorenew';
+  if (lower.includes('odun') || lower.includes('ateş')) return 'local_fire_department';
+  return 'eco';
+}
+
 export function StorefrontPage() {
   const navigate = useNavigate();
   const [catalogProducts, setCatalogProducts] = useState<Product[]>([]);
@@ -130,14 +155,40 @@ export function StorefrontPage() {
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
 
+  // Hero Banners Slider state
+  const [banners, setBanners] = useState<BannerDto[]>([DEFAULT_HERO_BANNER]);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isSlidePaused, setIsSlidePaused] = useState(false);
+
   useEffect(() => {
     const controller = new AbortController();
     request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal })
       .then(result => setCatalogProducts(result.items))
       .catch(() => { if (!controller.signal.aborted) setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.'); });
+
+    // Fetch active hero banners from CMS / Content API
+    request<BannerDto[]>('/api/content/banners', { signal: controller.signal })
+      .then(items => {
+        if (Array.isArray(items) && items.length > 0) {
+          setBanners(items);
+        }
+      })
+      .catch(() => {
+        /* silently retain default hero */
+      });
+
     setInitialDataReady(true);
     return () => controller.abort();
   }, []);
+
+  // Hero carousel auto-rotate
+  useEffect(() => {
+    if (banners.length <= 1 || isSlidePaused) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % banners.length);
+    }, 6000);
+    return () => clearInterval(timer);
+  }, [banners.length, isSlidePaused]);
 
   // Toast Auto-dismiss
   useEffect(() => {
@@ -173,8 +224,11 @@ export function StorefrontPage() {
   };
 
   const bestSellers: UiProduct[] = useMemo(() => {
-    const apiItems: UiProduct[] = catalogProducts
-      .filter(p => p.isBestSeller)
+    const matching = catalogProducts.filter(p => p.isBestSeller);
+    const others = catalogProducts.filter(p => !p.isBestSeller);
+    const combined = matching.length >= 3 ? matching : [...matching, ...others];
+
+    const apiItems: UiProduct[] = combined
       .map(p => ({
         id: p.id,
         name: p.name,
@@ -184,7 +238,7 @@ export function StorefrontPage() {
         oldPrice: p.discountPrice != null ? p.basePrice : null,
         rating: 4.9,
         reviewCount: 84,
-        badge: 'Çok Satan',
+        badge: p.isBestSeller ? 'Çok Satan' : 'Tavsiye Edilen',
         badgeColor: 'bg-primary-container text-surface',
         variantCount: p.variantCount,
         imageUrl: p.mainImageUrl || '/images/products/prod-zeytinyagi-hatay.jpg',
@@ -201,23 +255,40 @@ export function StorefrontPage() {
   }, [bestSellers, selectedCategoryTab]);
 
   const seasonalProducts: SeasonalProduct[] = useMemo(() => {
-    const mapProduct = (p: typeof catalogProducts[number]): SeasonalProduct => ({
+    const apiSeasonal = catalogProducts.filter(p => p.isSeasonal).map(p => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
       region: p.categoryName ?? 'Anadolu Hasadı',
-      badge: p.isSeasonal ? 'Mevsimlik' : 'Taze Mahsul',
+      badge: 'Mevsimlik',
       priceInfo: `${money(p.discountPrice ?? p.basePrice)} / ${p.unitInfo}`,
       price: p.discountPrice ?? p.basePrice,
       description: p.shortDescription,
       imageUrl: p.mainImageUrl || '/images/products/prod-ceviz-ici.jpg',
       variantCount: p.variantCount,
-    });
-    const apiSeasonal = catalogProducts.filter(p => p.isSeasonal).map(mapProduct);
-    if (apiSeasonal.length >= 4) return apiSeasonal.slice(0, 4);
-    const others = catalogProducts.filter(p => !p.isSeasonal).map(mapProduct);
-    return [...apiSeasonal, ...others].slice(0, 4);
+    }));
+    return apiSeasonal.slice(0, 4);
   }, [catalogProducts]);
+
+  const activeBanner = banners[currentSlide] ?? banners[0] ?? DEFAULT_HERO_BANNER;
+
+  const bannerFeatures = useMemo(() => {
+    if (!activeBanner.features) return ['%100 Katkısız', 'Geleneksel Taş Değirmen', 'Soğuk Sıkım'];
+    return activeBanner.features.split(',').map(f => f.trim()).filter(Boolean);
+  }, [activeBanner.features]);
+
+  const titleParts = useMemo(() => {
+    const raw = activeBanner.title || '';
+    if (raw.includes('\n')) {
+      const [first, ...rest] = raw.split('\n');
+      return { main: first, sub: rest.join(' ') };
+    }
+    if (raw.includes(',')) {
+      const idx = raw.indexOf(',');
+      return { main: raw.substring(0, idx + 1), sub: raw.substring(idx + 1).trim() };
+    }
+    return { main: raw, sub: '' };
+  }, [activeBanner.title]);
 
   return (
     <>
@@ -238,66 +309,121 @@ export function StorefrontPage() {
         <StorefrontHeader wishlistCount={wishlist.length} />
 
         {/* 3. Immersive Hero Section */}
-        <section className="relative bg-surface-container-high py-12 lg:py-20 border-b border-surface-container-highest overflow-hidden">
+        <section
+          className="relative bg-surface-container-high py-12 lg:py-20 border-b border-surface-container-highest overflow-hidden"
+          onMouseEnter={() => setIsSlidePaused(true)}
+          onMouseLeave={() => setIsSlidePaused(false)}
+        >
           <div className="max-w-[1320px] mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
             {/* Text & Value Content */}
             <div className="lg:col-span-6 flex flex-col items-start space-y-6">
               {/* Provenance Badge */}
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-surface-container-low border border-secondary/30 rounded-full text-secondary font-label-md text-label-md shadow-sm">
                 <span className="material-symbols-outlined text-base text-primary-container">eco</span>
-                <span>Doğrudan Üreticisinden &amp; Katkısız</span>
+                <span>{activeBanner.badgeText || 'Doğrudan Üreticisinden & Katkısız'}</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-[48px] font-extrabold text-primary tracking-tight leading-[1.12]">
-                Köyün Bereketi, <br />
-                <span className="text-secondary block mt-1">Sofranızın Lezzeti</span>
+                {titleParts.main}
+                {titleParts.sub && (
+                  <>
+                    <br />
+                    <span className="text-secondary block mt-1">{titleParts.sub}</span>
+                  </>
+                )}
               </h1>
 
               <p className="text-base sm:text-lg text-on-surface-variant max-w-xl leading-relaxed">
-                Anadolu'nun bereketli topraklarından gelen doğal, geleneksel ve yöresel lezzetlerle sofranıza doğallık katın. Katkısız, geleneksel yöntemlerle üretilen en taze mahsuller kapınızda.
+                {activeBanner.subtitle || "Anadolu'nun bereketli topraklarından gelen doğal, geleneksel ve yöresel lezzetlerle sofranıza doğallık katın. Katkısız, geleneksel yöntemlerle üretilen en taze mahsuller kapınızda."}
               </p>
 
               {/* Value Pills */}
               <div className="flex flex-wrap gap-2.5 pt-1">
-                <span className="px-3.5 py-1.5 rounded-full bg-surface-container text-primary border border-surface-variant text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary-container">verified</span>
-                  %100 Katkısız
-                </span>
-                <span className="px-3.5 py-1.5 rounded-full bg-surface-container text-primary border border-surface-variant text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary-container">water_drop</span>
-                  Geleneksel Taş Değirmen
-                </span>
-                <span className="px-3.5 py-1.5 rounded-full bg-surface-container text-primary border border-surface-variant text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs">
-                  <span className="material-symbols-outlined text-[16px] text-primary-container">autorenew</span>
-                  Soğuk Sıkım
-                </span>
+                {bannerFeatures.map((feat, idx) => (
+                  <span
+                    key={idx}
+                    className="px-3.5 py-1.5 rounded-full bg-surface-container text-primary border border-surface-variant text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-primary-container">
+                      {getFeatureIcon(feat)}
+                    </span>
+                    {feat}
+                  </span>
+                ))}
               </div>
 
               {/* Dual CTA Buttons */}
               <div className="flex flex-wrap items-center gap-4 pt-3">
                 <Link
-                  to="/products"
+                  to={activeBanner.targetUrl || '/products'}
                   className="px-8 py-3.5 bg-primary-container text-on-primary hover:bg-primary font-bold text-base rounded-lg shadow-sm transition-all duration-150 active:translate-y-px flex items-center gap-2"
                 >
-                  <span>Ürünleri Keşfet</span>
+                  <span>{activeBanner.buttonText || 'Ürünleri Keşfet'}</span>
                   <span className="material-symbols-outlined text-lg">arrow_forward</span>
                 </Link>
-                <Link
-                  to="/hikayemiz"
-                  className="px-7 py-3.5 bg-surface-container-low border-2 border-secondary text-secondary hover:bg-surface-variant font-bold text-base rounded-lg transition-all duration-150 active:translate-y-px"
-                >
-                  Hikâyemizi Tanıyın
-                </Link>
+                {activeBanner.secondaryButtonText && (
+                  <Link
+                    to={activeBanner.secondaryTargetUrl || '/hikayemiz'}
+                    className="px-7 py-3.5 bg-surface-container-low border-2 border-secondary text-secondary hover:bg-surface-variant font-bold text-base rounded-lg transition-all duration-150 active:translate-y-px"
+                  >
+                    {activeBanner.secondaryButtonText}
+                  </Link>
+                )}
               </div>
+
+              {/* Slider Carousel Controls (if multiple banners) */}
+              {banners.length > 1 && (
+                <div className="flex items-center gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentSlide(prev => (prev === 0 ? banners.length - 1 : prev - 1))}
+                    className="w-9 h-9 rounded-full bg-surface-container border border-surface-variant hover:bg-surface-container-highest text-primary flex items-center justify-center transition-colors shadow-xs"
+                    title="Önceki vitrin"
+                    aria-label="Önceki vitrin"
+                  >
+                    <span className="material-symbols-outlined text-lg">chevron_left</span>
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {banners.map((b, idx) => (
+                      <button
+                        key={b.id || idx}
+                        type="button"
+                        onClick={() => setCurrentSlide(idx)}
+                        className={`h-2.5 rounded-full transition-all duration-300 ${
+                          idx === currentSlide ? 'w-8 bg-primary' : 'w-2.5 bg-surface-variant hover:bg-secondary/60'
+                        }`}
+                        title={`Vitrin ${idx + 1}`}
+                        aria-label={`Vitrin ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentSlide(prev => (prev + 1) % banners.length)}
+                    className="w-9 h-9 rounded-full bg-surface-container border border-surface-variant hover:bg-surface-container-highest text-primary flex items-center justify-center transition-colors shadow-xs"
+                    title="Sonraki vitrin"
+                    aria-label="Sonraki vitrin"
+                  >
+                    <span className="material-symbols-outlined text-lg">chevron_right</span>
+                  </button>
+                  <span className="text-xs text-on-surface-variant font-medium ml-1">
+                    {currentSlide + 1} / {banners.length}
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Hero Visual Composition: Farmhouse Table Bento Showcase */}
             <div className="lg:col-span-6 relative">
-              <div className="relative mx-auto rounded-2xl overflow-hidden farmhouse-shadow border-2 border-surface-container-highest bg-surface-container">
+              <div className="relative mx-auto rounded-2xl overflow-hidden farmhouse-shadow border-2 border-surface-container-highest bg-surface-container min-h-[300px]">
                 <img
-                  className="w-full h-auto object-cover block"
-                  alt="Köyden Sofraya Zengin Anadolu Kahvaltı Masası"
-                  src="/images/hero-bento-showcase.png"
+                  key={activeBanner.id || currentSlide}
+                  className="w-full h-auto object-cover block transition-opacity duration-500"
+                  alt={activeBanner.title || 'Köyden Sofraya Zengin Anadolu Kahvaltı Masası'}
+                  src={activeBanner.imageUrl || '/images/hero-bento-showcase.png'}
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = '/images/hero-bento-showcase.png';
+                  }}
                 />
               </div>
             </div>
