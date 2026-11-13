@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { authStorage, isAdminRole } from '../../api/authApi';
+import { usePermissions } from '../../context/PermissionContext';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 
 export const MainLayout: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [customer, setCustomer] = useState(() => authStorage.getCustomer());
+  const { isAuthenticated: isAdminAuthenticated } = usePermissions();
   const location = useLocation();
 
   useEffect(() => {
@@ -39,9 +41,9 @@ export const MainLayout: React.FC = () => {
     };
   }, [isSidebarOpen]);
 
-  // Yalnızca Admin rolüyle giriş yapmış kullanıcılar yönetim paneline erişebilir
-  if (!authStorage.isAuthenticated() || !isAdminRole(customer?.role)) {
-    return <Navigate to="/giris" replace />;
+  // Yönetim paneline aktif admin oturumu olanlar veya Admin rolüyle giriş yapmış kullanıcılar erişebilir
+  if (!isAdminAuthenticated && (!authStorage.isAuthenticated() || !isAdminRole(customer?.role))) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return (

@@ -58,20 +58,30 @@ public static class DependencyInjection
 
                 // 1. Hero Bannerlar
                 var b1 = new Banner(
-                    title: "Köyden Sofranıza En Saf Lezzetler",
-                    subtitle: "Kaz Dağları'nın erken hasat soğuk sıkım zeytinyağları ve yayla balları şimdi taptaze stokta.",
-                    imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1600&q=80",
-                    targetUrl: "/kategori/zeytin-ve-zeytinyaglari",
-                    buttonText: "Doğallığı Keşfet",
-                    displayOrder: 1);
+                    title: "Köyün Bereketi, Sofranızın Lezzeti",
+                    subtitle: "Anadolu'nun bereketli topraklarından gelen doğal, geleneksel ve yöresel lezzetlerle sofranıza doğallık katın. Katkısız, geleneksel yöntemlerle üretilen en taze mahsuller kapınızda.",
+                    imageUrl: "/images/hero-bento-showcase.png",
+                    targetUrl: "/products",
+                    buttonText: "Ürünleri Keşfet",
+                    displayOrder: 1,
+                    isActive: true,
+                    badgeText: "Doğrudan Üreticisinden & Katkısız",
+                    features: "%100 Katkısız, Geleneksel Taş Değirmen, Soğuk Sıkım",
+                    secondaryButtonText: "Hikâyemizi Tanıyın",
+                    secondaryTargetUrl: "/hikayemiz");
 
                 var b2 = new Banner(
-                    title: "Geleneksel Güneşte Kurutulmuş Köy Salçaları",
-                    subtitle: "Odun ateşinde pişirilip güneşte olgunlaşan katkısız domates ve biber salçalarımızla yemeklerinize lezzet katın.",
-                    imageUrl: "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1600&q=80",
-                    targetUrl: "/kategori/salca-ve-soslar",
+                    title: "Odun Ateşinde Pişen Köy Salçaları",
+                    subtitle: "Mevsiminde toplanan mis kokulu domates ve kapya biberlerin odun ateşinde pişirilip güneşte olgunlaşmasıyla hazırlanan geleneksel lezzetler sofranızda.",
+                    imageUrl: "/images/hero-anadolu-sofrasi.jpg",
+                    targetUrl: "/products",
                     buttonText: "Salçaları İncele",
-                    displayOrder: 2);
+                    displayOrder: 2,
+                    isActive: true,
+                    badgeText: "Geleneksel & Güneşte Kurutulmuş",
+                    features: "%100 Doğal, İlave Şekersiz, Odun Ateşi",
+                    secondaryButtonText: "Üretim Hikayemiz",
+                    secondaryTargetUrl: "/hikayemiz");
 
                 db.Banners.AddRange(b1, b2);
 

@@ -50,6 +50,10 @@ public record UpdateUserStatusRequest(
     bool IsActive
 );
 
+public record UpdateBannerStatusRequest(
+    bool IsActive
+);
+
 public record AuditLogDto(
     Guid Id,
     Guid? AdminUserId,

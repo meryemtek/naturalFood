@@ -141,5 +141,6 @@ app.MapGet("/", () => Results.Ok(new
 await app.Services.InitializeAdminModuleDatabaseAsync();
 await app.Services.InitializeCatalogModuleDatabaseAsync();
 await app.Services.InitializeCustomerModuleDatabaseAsync();
+await app.Services.InitializeContentModuleDatabaseAsync();
 
 app.Run();

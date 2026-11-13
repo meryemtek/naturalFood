@@ -10,16 +10,25 @@ public record BannerDto(
     string? TargetUrl,
     string? ButtonText,
     int DisplayOrder,
-    bool IsActive);
+    bool IsActive,
+    string? BadgeText = null,
+    string? Features = null,
+    string? SecondaryButtonText = null,
+    string? SecondaryTargetUrl = null,
+    DateTime? CreatedAtUtc = null);
 
 public record CreateBannerRequest(
     string Title,
     string? Subtitle,
     string ImageUrl,
-    string? TargetUrl,
-    string? ButtonText,
+    string? TargetUrl = null,
+    string? ButtonText = null,
     int DisplayOrder = 0,
-    bool IsActive = true);
+    bool IsActive = true,
+    string? BadgeText = null,
+    string? Features = null,
+    string? SecondaryButtonText = null,
+    string? SecondaryTargetUrl = null);
 
 public record UpdateBannerRequest(
     string Title,
@@ -28,7 +37,11 @@ public record UpdateBannerRequest(
     string? TargetUrl,
     string? ButtonText,
     int DisplayOrder,
-    bool IsActive);
+    bool IsActive,
+    string? BadgeText = null,
+    string? Features = null,
+    string? SecondaryButtonText = null,
+    string? SecondaryTargetUrl = null);
 
 public record ShowcaseSectionDto(
     Guid Id,

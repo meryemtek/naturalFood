@@ -5,9 +5,13 @@ public class Banner
     public Guid Id { get; private set; }
     public string Title { get; private set; } = default!;
     public string? Subtitle { get; private set; }
+    public string? BadgeText { get; private set; }
+    public string? Features { get; private set; }
     public string ImageUrl { get; private set; } = default!;
     public string? TargetUrl { get; private set; }
     public string? ButtonText { get; private set; }
+    public string? SecondaryButtonText { get; private set; }
+    public string? SecondaryTargetUrl { get; private set; }
     public int DisplayOrder { get; private set; }
     public bool IsActive { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
@@ -23,7 +27,11 @@ public class Banner
         int displayOrder = 0,
         bool isActive = true,
         Guid? id = null,
-        DateTime? createdAtUtc = null)
+        DateTime? createdAtUtc = null,
+        string? badgeText = null,
+        string? features = null,
+        string? secondaryButtonText = null,
+        string? secondaryTargetUrl = null)
     {
         Id = id ?? Guid.NewGuid();
         Title = title;
@@ -34,6 +42,10 @@ public class Banner
         DisplayOrder = displayOrder;
         IsActive = isActive;
         CreatedAtUtc = createdAtUtc ?? DateTime.UtcNow;
+        BadgeText = badgeText;
+        Features = features;
+        SecondaryButtonText = secondaryButtonText;
+        SecondaryTargetUrl = secondaryTargetUrl;
     }
 
     public void Update(
@@ -43,7 +55,11 @@ public class Banner
         string? targetUrl,
         string? buttonText,
         int displayOrder,
-        bool isActive)
+        bool isActive,
+        string? badgeText = null,
+        string? features = null,
+        string? secondaryButtonText = null,
+        string? secondaryTargetUrl = null)
     {
         Title = title;
         Subtitle = subtitle;
@@ -52,5 +68,9 @@ public class Banner
         ButtonText = buttonText;
         DisplayOrder = displayOrder;
         IsActive = isActive;
+        BadgeText = badgeText;
+        Features = features;
+        SecondaryButtonText = secondaryButtonText;
+        SecondaryTargetUrl = secondaryTargetUrl;
     }
 }

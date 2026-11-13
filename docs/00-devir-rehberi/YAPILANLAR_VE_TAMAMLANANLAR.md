@@ -16,6 +16,7 @@
 | **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilimin tamamı canlı PostgreSQL'e bağlı |
 | **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı (Diğer 4 alt sekme Faz 2'de) |
 | **Müşteri Vitrini & Storefront** | ✅ %100 MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | 10+ Ekran (Vitrin, Ürünler, Detay, Sepet, Ödeme, Profil, Auth) |
+| **Slider & Vitrin Yönetimi (`MOD-05`)** | ✅ %100 Tamamlandı | `content` (`Banners`) | `/marketing/slider` + Canlı Bento Önizleme + Otomatik Karusel |
 | **Mobil & Responsive Çekirdek** | ✅ %100 Tamamlandı | — | Çekmece (Drawer) Menü, Hamburger Butonu, Responsive Tablolar |
 
 ---
@@ -177,3 +178,34 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
 ## 📚 AŞAMA 8: Dokümantasyon Güncellemesi (9–12 Kasım 2026)
 * Tüm teknik şartnameler, `docs/README.md` ve devir rehberi belgeleri yapılan dikey dilimlerle senkronize edildi.
 * **Yapılanlar** ([`YAPILANLAR_VE_TAMAMLANANLAR.md`](YAPILANLAR_VE_TAMAMLANANLAR.md)) ve **Yapılacaklar / Faz Haritası** ([`YAPILACAKLAR_VE_FAZ_HARITASI.md`](YAPILACAKLAR_VE_FAZ_HARITASI.md)) ayrı sayfalara bölündü.
+
+---
+
+## 🎨 AŞAMA 9: Ana Sayfa Hero Slider & Vitrin Yönetim Modülü (13 Kasım 2026)
+
+### ✅ CHECKPOINT 20: Admin Hero Slider Yönetimi & Dinamik Vitrin Entegrasyonu
+* **Kullanıcı Talebi:** Admin paneline yeni bir modül eklenmesi; adminin ana sayfada yer alan slider/hero vitrini (başlık, alt başlık, rozet, özellik etiketleri, butonlar ve yönlendirme linkleri, görsel yükleme veya URL seçimi, sıra ve aktiflik durumu) değiştirip güncelleyebilmesi.
+* **Veritabanı & Entity Geliştirmesi (`content."Banners"` Tablosu):**
+  - `Domain/Entities/Content/Banner.cs` varlığına `BadgeText`, `Features` (virgülle ayrılmış etiketler), `SecondaryButtonText`, `SecondaryTargetUrl` alanları ve `Update(...)` metodu eklendi.
+  - `Infrastructure/Persistence/Configurations/Content/ContentConfigurations.cs` EF Core yapılandırmaları ve `Application/Content/DTOs/ContentDtos.cs` DTO sözleşmeleri güncellendi.
+  - `DependencyInjection.cs` üzerinden kullanıcının paylaştığı otantik köy sofrası görseli (`/images/hero-bento-showcase.png`) ve metinleri varsayılan 1. slayt (`b1`), geleneksel odun ateşi salça görseli ise 2. slayt (`b2`) olarak seed edildi.
+  - `Program.cs` içerisine `InitializeContentModuleDatabaseAsync` eklenerek `content` şeması ve `content."Banners"` tablosunun otomatik ayağa kaldırılması sağlandı.
+* **Admin Minimal API Uçları ([`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs)):**
+  - `GET /api/admin/banners`: Tüm banner'ları sıralı listeleme (`marketing.view` izni korumalı).
+  - `GET /api/admin/banners/{id}`: Tekil banner detayını getirme.
+  - `POST /api/admin/banners`: Yeni vitrin slaytı oluşturma + `AuditLog` kaydı (`BannerCreated`).
+  - `PUT /api/admin/banners/{id}`: Banner metin, görsel, buton ve sıralamasını güncelleme + `AuditLog` kaydı (`BannerUpdated`).
+  - `PATCH /api/admin/banners/{id}/status`: Banner'ı anında aktif/pasif yapma + `AuditLog` kaydı (`BannerStatusChanged`).
+  - `DELETE /api/admin/banners/{id}`: Banner silme + `AuditLog` kaydı (`BannerDeleted`).
+  - `POST /api/admin/banners/upload-image`: Görsel dosyasını doğrudan `wwwroot/images/banners` ve `frontend/public/images/banners` dizinlerine yükleyip relative URL dönen uç.
+* **Admin Paneli Arayüzü ([`BannerSliderPage.tsx`](../../frontend/src/pages/marketing/BannerSliderPage.tsx)):**
+  - **Rota:** `/marketing/slider` (Sidebar menüsünde *"PAZARLAMA VE KAMPANYA YÖNETİMİ"* altında *"Slider & Vitrin Yönetimi"* başlığıyla entegre edildi).
+  - **Canlı Bento Önizleme (Live Bento Hero Preview):** Admin formda metinleri, rozeti, etiketleri veya görseli değiştirirken anında ana sayfada nasıl görüneceğini birebir yansıtan interaktif görsel bento önizleme kutusu.
+  - **Hazır Doğal Gıda Görsel Presetleri:** Dosya yüklemenin yanında tek tıkla seçilebilen yüksek çözünürlüklü vitrin görselleri (`hero-bento-showcase.png`, `hero-anadolu-sofrasi.jpg`, vb.).
+  - **Slayt Listesi:** Sıralama rozetleri, görsel önizlemesi, buton hedefleri, tek tıkla aktif/pasif anahtarı (toggle) ve silme/düzenleme işlemleri.
+* **Müşteri Vitrini Dinamik Slayt Entegrasyonu ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
+  - Sabit kodlanmış hero alanı kaldırılıp `GET /api/content/banners` üzerinden gelen aktif slaytları dinamik render eden yapıya geçirildi.
+  - Birden fazla slayt olduğunda 6 saniyede bir otomatik dönen, fare üzerine geldiğinde duraklayan (pause on hover), önceki/sonraki okları ve slayt gösterge noktaları (indicator dots) içeren akıcı bir karusel eklendi.
+  - API yanıt vermezse veya liste boşsa hiçbir görsel bozulma olmadan şık varsayılan vitrine düşen güvenli fallback mekanizması kuruldu.
+* **Hata Giderimi ([`MainLayout.tsx`](../../frontend/src/components/layout/MainLayout.tsx)):**
+  - Git pull sonrasında admin paneline girmeye çalışan yöneticileri yetkisiz sayıp müşteri `/giris` sayfasına atan çakışan kontrol, izole admin oturum kontrolü (`isAdminAuthenticated`) ile değiştirilerek buton ve sayfa kaymaları giderildi.

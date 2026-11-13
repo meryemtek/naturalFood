@@ -11,10 +11,14 @@ public class BannerConfiguration : IEntityTypeConfiguration<Banner>
         builder.ToTable("Banners");
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Title).IsRequired().HasMaxLength(200);
-        builder.Property(b => b.Subtitle).HasMaxLength(300);
+        builder.Property(b => b.Subtitle).HasMaxLength(1000);
+        builder.Property(b => b.BadgeText).HasMaxLength(150);
+        builder.Property(b => b.Features).HasMaxLength(500);
         builder.Property(b => b.ImageUrl).IsRequired().HasMaxLength(500);
         builder.Property(b => b.TargetUrl).HasMaxLength(500);
         builder.Property(b => b.ButtonText).HasMaxLength(100);
+        builder.Property(b => b.SecondaryButtonText).HasMaxLength(100);
+        builder.Property(b => b.SecondaryTargetUrl).HasMaxLength(500);
         builder.Property(b => b.DisplayOrder).HasDefaultValue(0);
         builder.Property(b => b.IsActive).HasDefaultValue(true);
     }

@@ -24,6 +24,7 @@ import {
   LotExpiryTrackingPage,
   StorageConditionsPage,
 } from './pages/products/FoodProductPages';
+import { BannerSliderPage } from './pages/marketing/BannerSliderPage';
 
 const AuthPage = React.lazy(() => import('./pages/auth/AuthPage').then(module => ({ default: module.AuthPage })));
 const AccountPage = React.lazy(() => import('./pages/account/AccountPage').then(module => ({ default: module.AccountPage })));
@@ -102,6 +103,7 @@ export default function App() {
           <Route path="crm/reviews" element={<PermissionGuard requiredPermission="crm.reviews"><CustomerReviewsPage /></PermissionGuard>} />
 
           {/* 5. Pazarlama ve Kampanya Yönetimi */}
+          <Route path="marketing/slider" element={<PermissionGuard requiredPermission="marketing.view"><BannerSliderPage /></PermissionGuard>} />
           <Route path="marketing/coupons" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
           <Route path="marketing/campaigns" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
           <Route path="marketing/flash-sales" element={<PermissionGuard requiredPermission="marketing.view"><ModulePlaceholderPage /></PermissionGuard>} />
