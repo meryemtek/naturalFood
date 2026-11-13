@@ -6,6 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Infrastructure.Experience;
 public static class ExperienceDependencyInjection
 {
+    public static async Task InitializeExperienceDatabaseAsync(this IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<ExperienceDbContext>().Database.MigrateAsync();
+    }
+
     public static IServiceCollection AddExperience(this IServiceCollection services, IConfiguration config)
     {
         var connection = config.GetConnectionString("DefaultConnection") ?? config.GetConnectionString("AdminDb") ?? throw new InvalidOperationException("Veritabanı bağlantısı yapılandırılmalı.");

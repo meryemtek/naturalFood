@@ -4,6 +4,7 @@ using Infrastructure.Cart;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -11,6 +12,12 @@ namespace Endpoints.Cart;
 
 public static class CartModuleExtensions
 {
+    public static async Task InitializeCartDatabaseAsync(this IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<CartDbContext>().Database.MigrateAsync();
+    }
+
     public static IServiceCollection AddCartModule(this IServiceCollection services, IConfiguration configuration) => services.AddCartInfrastructure(configuration);
     public static IEndpointRouteBuilder MapCartEndpoints(this IEndpointRouteBuilder app)
     {

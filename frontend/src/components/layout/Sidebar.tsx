@@ -106,9 +106,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ),
           subItems: [
             { path: '/orders', label: 'Tüm Siparişler' },
-            { path: '/orders/pending', label: 'Bekleyen Siparişler' },
-            { path: '/orders/completed', label: 'Tamamlanan Siparişler' },
-            { path: '/orders/returns', label: 'İptal ve İade Talepleri' },
           ],
         },
         {
@@ -319,7 +316,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     SECTIONS.forEach((section) => {
       section.items.forEach((item) => {
         if (item.subItems) {
-          const hasActiveChild = item.subItems.some((sub) => sub.path === location.pathname);
+          const hasActiveChild = item.subItems.some(
+            (sub) => sub.path === location.pathname || (sub.path === '/orders' && location.pathname.startsWith('/orders'))
+          );
           if (hasActiveChild) {
             setOpenAccordions((prev) => ({ ...prev, [item.id]: true }));
           }
@@ -500,7 +499,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
                 // Accordion Item
                 const isOpen = !!openAccordions[item.id];
-                const hasActiveChild = item.subItems?.some((sub) => sub.path === location.pathname);
+                const hasActiveChild = item.subItems?.some(
+                  (sub) => sub.path === location.pathname || (sub.path === '/orders' && location.pathname.startsWith('/orders'))
+                );
                 const isSelected = isOpen || hasActiveChild;
 
                 return (
@@ -587,7 +588,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         }}
                       >
                         {item.subItems.map((sub) => {
-                          const isSubActive = location.pathname === sub.path;
+                          const isSubActive =
+                            location.pathname === sub.path ||
+                            (sub.path === '/orders' && location.pathname.startsWith('/orders'));
                           return (
                             <NavLink
                               key={sub.path}

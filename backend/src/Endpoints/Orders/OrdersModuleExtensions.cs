@@ -23,8 +23,11 @@ public static class OrdersModuleExtensions
     public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapOrderWorkflowEndpoints();
-        app.MapGet("/api/admin/orders", async (int? page, int? pageSize, string? filter, IOrderService service, CancellationToken ct) =>
-            Results.Ok(await service.ListAdminAsync(page ?? 1, pageSize ?? 20, filter, ct)))
+        app.MapGet("/api/admin/orders", async (int? page, int? pageSize, string? filter, string? search, IOrderService service, CancellationToken ct) =>
+            Results.Ok(await service.ListAdminAsync(page ?? 1, pageSize ?? 20, filter, search, ct)))
+            .RequireAuthorization().RequirePermission("orders.view").WithTags("Admin Orders");
+        app.MapGet("/api/admin/orders/summary", async (IOrderService service, CancellationToken ct) =>
+            Results.Ok(await service.SummaryAsync(ct)))
             .RequireAuthorization().RequirePermission("orders.view").WithTags("Admin Orders");
         var group = app.MapGroup("/api/orders").WithTags("Siparişler");
         group.MapGet("/quote", async (HttpContext ctx, ICartService carts, IConfiguration config, CancellationToken ct) =>

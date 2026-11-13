@@ -261,8 +261,22 @@ public class ProductService : IProductService
 
         if (!string.IsNullOrWhiteSpace(req.ImageUrl))
         {
-            product.Images.Clear();
-            product.Images.Add(new ProductImage(product.Id, req.ImageUrl.Trim(), product.Name, 0, true));
+            var trimmedUrl = req.ImageUrl.Trim();
+            var mainImage = product.Images.FirstOrDefault(i => i.IsMain) ?? product.Images.FirstOrDefault();
+            if (mainImage != null)
+            {
+                mainImage.Update(trimmedUrl, req.Name.Trim(), 0, true);
+                var extras = product.Images.Where(i => i.Id != mainImage.Id).ToList();
+                foreach (var extra in extras)
+                {
+                    _catalogDb.ProductImages.Remove(extra);
+                }
+            }
+            else
+            {
+                var newImage = new ProductImage(product.Id, trimmedUrl, req.Name.Trim(), 0, true);
+                _catalogDb.ProductImages.Add(newImage);
+            }
         }
 
         await _catalogDb.SaveChangesAsync(cancellationToken);
@@ -276,9 +290,6 @@ public class ProductService : IProductService
         );
         _adminDb.AuditLogs.Add(audit);
         await _adminDb.SaveChangesAsync(cancellationToken);
-
-        await _catalogDb.Entry(product).Reference(p => p.Category).LoadAsync(cancellationToken);
-        await _catalogDb.Entry(product).Collection(p => p.Images).LoadAsync(cancellationToken);
 
         return MapToDto(product);
     }

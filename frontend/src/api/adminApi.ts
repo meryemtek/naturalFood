@@ -10,12 +10,45 @@ import type {
 import type { Workflow, Invoice } from './storefront/orderWorkflowApi';
 
 const BASE_URL = '/api/admin';
+export interface OrderSummaryView {
+  totalOrders: number;
+  waitingPreparation: number;
+  inTransit: number;
+  returnRequests: number;
+}
+
+export interface AdminOrderItemLine {
+  name: string;
+  sku: string;
+  quantity: number;
+  unitPrice: number;
+}
+
+export interface AdminOrderView {
+  isGuest: boolean;
+  email: string;
+  phone: string;
+  deliveryAddress: string;
+  billingAddress: string;
+  order: {
+    id: string;
+    number: string;
+    status: string;
+    createdAtUtc: string;
+    subtotal: number;
+    discount: number;
+    shippingFee: number;
+    total: number;
+    lines: AdminOrderItemLine[];
+    couponCode?: string | null;
+  };
+}
+
 export interface AdminOrderPage {
-  items: { isGuest: boolean; email: string; phone: string; deliveryAddress: string; billingAddress: string; order: {
-    id: string; number: string; status: string; createdAtUtc: string; subtotal: number; discount: number; shippingFee: number; total: number;
-    lines: { name: string; sku: string; quantity: number; unitPrice: number }[];
-  } }[];
-  total: number; page: number; pageSize: number;
+  items: AdminOrderView[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -53,7 +86,9 @@ export const adminApi = {
   resolveOrderRequest: (id: string, requestId: string, decision: string, response: string) => request<void>(`/orders/${id}/requests/${requestId}/resolve`, { method: 'POST', body: JSON.stringify({ decision, response }) }),
   issueDemoInvoice: (id: string) => request<void>(`/orders/${id}/invoice`, { method: 'POST' }),
   orderInvoice: (id: string) => request<Invoice>(`/orders/${id}/invoice`),
-  getOrders: (page: number, filter: string, signal?: AbortSignal) => request<AdminOrderPage>(`/orders?page=${page}&pageSize=20&filter=${encodeURIComponent(filter)}`, { signal }),
+  getOrders: (page: number, filter: string, search?: string, signal?: AbortSignal) =>
+    request<AdminOrderPage>(`/orders?page=${page}&pageSize=20&filter=${encodeURIComponent(filter)}&search=${encodeURIComponent(search ?? '')}`, { signal }),
+  getOrderSummary: (signal?: AbortSignal) => request<OrderSummaryView>('/orders/summary', { signal }),
   // Sağlık kontrolü
   checkHealth: () => request<{ status: string; module: string; databaseSchema: string }>('/health'),
 

@@ -15,7 +15,7 @@
 | **Yönetici, Dinamik RBAC & İzole Auth (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`, `AuditLogs`) | `/giris` (birleşik giriş / izole oturum), `/admin/login`, `/admin/users`, `/admin/roles`, `/admin/audit-logs` |
 | **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `ProductImages`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilim + `AdminPagination` + Görsel Yönetimi + 37 seed ürün canlı PostgreSQL'e bağlı |
 | **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı + `AdminPagination` (Diğer 4 alt sekme Faz 2'de) |
-| **Sipariş Yönetimi & İş Akışı (`MOD-05`)** | ✅ %100 Tamamlandı (Sevkiyat hariç) | `orders` (`Orders`, `OrderLines`, `Shipments`, `OrderWorkflows`) | `/orders`, `/orders/pending`, `/orders/completed`, `/orders/returns` + Müşteri `/hesabim/siparisler` & `/siparis-takip` |
+| **Sipariş Yönetimi & İş Akışı (`MOD-05`)** | ✅ %100 Tamamlandı | `orders` (`Orders`, `Lines`, `Shipments`, `CustomerRequests`, `Invoices`, `Notifications`, `StatusEvents`, `SimulatedPayments`) | `/orders` kurumsal sage yeşili & 2 sütunlu drawer, canlı arama, KPI kartları, durum filtreleri + `/api/admin/orders/summary` + Müşteri `/hesabim/siparisler` & `/siparis-takip` |
 | **Slider & Vitrin Yönetimi (`MOD-05`)** | ✅ %100 Tamamlandı | `content` (`Banners`) | `/marketing/slider` + Canlı Bento Önizleme + Otomatik Karusel |
 | **Müşteri Vitrini & Storefront (`MOD-04-CUST`)** | ✅ Canlı Katalog + MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | Canlı `/api/catalog/products` filtreleme, Adres il/ilçe/mahalle seçimi, Sipariş Takibi, Mobil Responsive Vitrin |
 | **Mobil & Responsive Çekirdek** | ✅ %100 Tamamlandı | — | Admin Çekmece Menü, Storefront Mobil Header/Filtre Çekmecesi/Hesabım Sekmeleri |
@@ -287,3 +287,42 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
   - **Üretici Dayanışması:** Yöreye ve ürüne özel dinamik üretici anlatımı entegre edildi.
 * **Vitrin ve Mevsim Bölümleri Güçlendirmesi ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
   - Anasayfadaki *"Mevsiminde Taze Mahsuller"* ve *"En Çok Tercih Edilen Köy Lezzetleri"* bölümleri dinamik ürün etiketleriyle senkronize edildi; boş kalmayı engelleyen güvenli fallback mekanizması kuruldu.
+
+---
+
+## 📦 AŞAMA 11: Admin Paneli Sipariş Yönetimi Yenilenmesi & Veritabanı Kararlılığı (13 Kasım 2026)
+
+### ✅ CHECKPOINT 23: Sipariş Yönetimi (`/orders`) Sage Yeşili Dönüşümü, 2 Sütunlu Çekmece & Ürün Güncelleme Çözümü
+* **Kullanıcı Talebi:** Mevcut `/orders` ekranındaki ham düz metin blokları, 32 haneli uzun sipariş kodları, bej formlar ve birbirine karışmış bildirim loglarının kurumsal sage yeşili & toprak tonlarındaki Farm-to-Table tasarım sistemine dönüştürülmesi; sol menüdeki gereksiz alt menülerin kaldırılması; ürün güncellemelerinin kaydedilmeme sorununun çözülmesi.
+* **1. Üst Özet Metrikleri & Filtre Çubuğu ([`OrdersPage.tsx`](../../frontend/src/pages/admin/OrdersPage.tsx)):**
+  - **4 Sade KPI Kartı:** *Toplam Sipariş* (📦), *Hazırlanmayı Bekleyenler* (⏳ Paid/Preparing), *Kargodakiler* (🚚 Shipped), *İptal / İade Talepleri* (↩️).
+  - **Backend Desteği ([`OrderContracts.cs`](../../backend/src/Application/Orders/OrderContracts.cs), [`OrderService.cs`](../../backend/src/Infrastructure/Orders/OrderService.cs), [`OrdersModuleExtensions.cs`](../../backend/src/Endpoints/Orders/OrdersModuleExtensions.cs)):** `GET /api/admin/orders/summary` endpoint'i ve `search` parametresi eklendi.
+  - **Canlı Arama Çubuğu:** Sipariş no (#NF-DB6F20 veya DB6F20), müşteri e-posta, telefon ve ürün adına göre canlı anlık arama (temizle butonu `✕` ile).
+  - **Durum Filtre Sekmeleri:** *Tümü, Ödeme Bekleyen, Hazırlanıyor, Kargoda, Teslim Edildi, İptal / İade* hap butonları ve canlı sayaçlar.
+* **2. Düzenli Sipariş Yönetim Tablosu ([`orders.css`](../../frontend/src/pages/admin/orders.css)):**
+  - **Sipariş No:** `#NF-DB6F20` formatında son 6 haneli kısa rozet, yanında tek tıkla kopyalama ikonu (📋), üzerine gelince tam 32 haneli GUID kodunu gösteren tooltip.
+  - **Tarih & Saat:** Okunaklı format (`13.11.2026 15:08`).
+  - **Müşteri:** Müşteri adı/e-posta ve telefon + altında küçük `Üye` (soft adaçayı yeşili) veya `Misafir` (nötr taş) rozeti.
+  - **Ürün Özeti:** Toplam kalem sayısı (örn. `2 Kalem Ürün`) + ilk ürün adı ve ek çeşit sayısı önizlemesi.
+  - **Tutar:** Kalın puntoyla net toplam (`₺549,90`) ve kargo ücreti durumu.
+  - **Durum Rozeti:** Soft botanical sakin renkli hap rozetler (`Ödeme Bekliyor` - amber, `Ödendi / Hazırlanıyor` - sage yeşili, `Kargoda` - slate mavi, `Teslim Edildi` - zümrüt, `İptal / İade` - terracotta).
+  - **İşlem:** Sağ kolonda şık sage çerçeveli `Yönet / Detay ➔` butonu.
+* **3. Sipariş Yönetim Detay Çekmecesi (2 Sütunlu Drawer) ([`OrderManagement.tsx`](../../frontend/src/pages/admin/OrderManagement.tsx)):**
+  - **Sol Sütun (Sipariş İçeriği):**
+    - Sipariş edilen ürünler tablosu (Adet, birim fiyat, satır toplamı, alt toplam, kupon indirimi, kargo ücreti ve genel toplam).
+    - Teslimat ve fatura adresi kartları.
+    - `🧊 Soğuk Zincir & Hassas Taşıma Uyarısı`: Yumurta, peynir, süt, tereyağı veya taze şarküteri ürünleri içeren siparişlerde otomatik beliren buz aküsü ve yalıtımlı ambalaj sevk protokolü kartı.
+    - `Demo E-Arşiv Fatura`: Demo fatura oluşturma ve önizleme desteği.
+  - **Sağ Sütun (Operasyon & Durum Yönetimi):**
+    - Durum güncelleme formu (`Paid`, `Preparing`, `Shipped`, `Delivered`, `Cancelled`).
+    - Kargoya veriliyorsa: Hızlı kargo firması seçim butonları (Yurtiçi, Aras, MNG, Sürat, PTT), Takip No, HTTPS Link ve Tahmini Teslimat alanları.
+    - Müşteriye açıklama/sevk notu textarea alanı (eski bej rengi kaldırıldı; temiz beyaz zemin ve sage yeşili odaklanma halkası) + belirgin sage yeşili `Durumu Güncelle` butonu.
+    - İptal / İade Talebi Değerlendirme (Onayla / Reddet ve yanıt metni).
+    - Kronolojik Sipariş Hareketleri (timeline).
+    - `📬 Sistem & Bildirim Geçmişi`: **Varsayılan olarak kapalı** akordeon içinde gizlendi; demo teknik uyarı notu akordeonun içine taşındı.
+* **4. Sol Menü (Sidebar) Sadeleştirmesi ([`Sidebar.tsx`](../../frontend/src/components/layout/Sidebar.tsx)):**
+  - `Bekleyen Siparişler`, `Tamamlanan Siparişler` ve `İptal ve İade Talepleri` alt menüleri kaldırıldı; doğrudan tekil `Tüm Siparişler` (`/orders`) menüsü bağlandı.
+* **5. Ürün Düzenleme (PUT) Concurrency Hatası Çözümü ([`ProductService.cs`](../../backend/src/Infrastructure/Services/Admin/ProductService.cs)):**
+  - Ürün düzenleme formunda "Değişiklikleri Kaydet" butonuna basıldığında oluşan `500 DbUpdateConcurrencyException` hatası giderildi. `product.Images.Clear()` yerine `mainImage.Update(...)` in-place güncellemesine geçilerek fiyat, indirim, rozet ve stok değişikliklerinin veritabanına anında yazılması sağlandı.
+* **6. Sepet & Promosyon Veritabanı Otomatik Migrasyon Düzeltmesi ([`Program.cs`](../../backend/src/ApiHost/Program.cs), [`CartModuleExtensions.cs`](../../backend/src/Endpoints/Cart/CartModuleExtensions.cs), [`PromotionsDependencyInjection.cs`](../../backend/src/Infrastructure/Promotions/PromotionsDependencyInjection.cs)):**
+  - `cart.Carts` tablosunun bulunamaması sebebiyle oluşan checkout 500 hatası, `ApiHost` başlangıcında `InitializeCartDatabaseAsync`, `InitializePromotionsDatabaseAsync` ve `InitializeExperienceDatabaseAsync` çağrılarıyla çözüldü.
