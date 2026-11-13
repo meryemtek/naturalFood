@@ -61,7 +61,7 @@ export const MainLayout: React.FC = () => {
       {/* Right Column: Header + Main Content */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, width: '100%', maxWidth: '100vw' }}>
         <Header onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)} isSidebarOpen={isSidebarOpen} />
-        <main className="admin-main-content" style={{ padding: '28px', flex: 1, overflowY: 'auto', boxSizing: 'border-box' }}>
+        <main className="admin-main-content" style={{ padding: '28px', flex: 1, overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box' }}>
           <Outlet />
         </main>
       </div>

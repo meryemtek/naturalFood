@@ -369,7 +369,7 @@ export const ProductDefinitionPage: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px 32px', backgroundColor: theme.colors.bgCanvas, minHeight: '100vh', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '22px', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
       {/* Toast Bildirimi */}
       {toastMessage && (
         <div
@@ -396,24 +396,24 @@ export const ProductDefinitionPage: React.FC = () => {
       )}
 
       {/* Breadcrumb & Header */}
-      <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: theme.colors.taupe, marginBottom: '6px' }}>
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: theme.colors.taupe, marginBottom: '6px', flexWrap: 'wrap' }}>
           <span>Ürün ve Menü Yönetimi</span>
           <span>/</span>
           <span style={{ color: theme.colors.primary, fontWeight: 600 }}>Ürün Kataloğu & Görsel Yönetimi</span>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
-          <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 700, color: theme.colors.espresso, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px' }}>
+          <div style={{ minWidth: 0, flex: '1 1 280px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 700, color: theme.colors.espresso, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>
               Ürün Kataloğu & Vitrin Yönetimi
             </h1>
-            <p style={{ margin: 0, fontSize: '14px', color: theme.colors.taupe, maxWidth: '720px', lineHeight: 1.5 }}>
+            <p style={{ margin: 0, fontSize: '13.5px', color: theme.colors.taupe, maxWidth: '720px', lineHeight: 1.5 }}>
               Doğal gıda ürünlerinin vitrin fotoğraflarını, yöre/köken bilgilerini, indirim ve vitrin etiketlerini (Çok Satan, Yeni Mahsul, İndirim, Mevsimlik), açıklamalarını ve fiyatlarını tek ekrandan yönetin.
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
             <button
               onClick={fetchProducts}
               style={{
@@ -456,7 +456,7 @@ export const ProductDefinitionPage: React.FC = () => {
       </div>
 
       {/* KPI İstatistik Kartları */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '12px' }}>
         <div style={{ backgroundColor: theme.colors.bgCard, padding: '16px 20px', borderRadius: theme.radii.lg, border: `1px solid ${theme.colors.border}` }}>
           <div style={{ fontSize: '12px', fontWeight: 600, color: theme.colors.taupe, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Toplam Ürün</div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: theme.colors.espresso, marginTop: '6px' }}>{totalProductsCount}</div>
@@ -489,13 +489,16 @@ export const ProductDefinitionPage: React.FC = () => {
             backgroundColor: theme.colors.bgSurface,
             border: `1px solid ${theme.colors.border}`,
             borderRadius: theme.radii.lg,
-            padding: '20px 24px',
-            marginBottom: '28px',
+            padding: 'clamp(14px, 3vw, 20px)',
+            marginBottom: '8px',
             boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+            boxSizing: 'border-box',
+            maxWidth: '100%',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '16px' }}>👁️</span>
               <span style={{ fontSize: '15px', fontWeight: 700, color: theme.colors.espresso }}>
                 Seçili Ürünün Canlı Mağaza Kartı Görünümü (Müşteri Vitrini)
@@ -524,17 +527,18 @@ export const ProductDefinitionPage: React.FC = () => {
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
             {/* 1:1 Storefront Product Card Replica */}
             <div
               style={{
-                width: '320px',
+                width: '100%',
+                maxWidth: '320px',
                 backgroundColor: '#FFFFFF',
                 borderRadius: '16px',
                 border: '1px solid rgba(138, 116, 92, 0.2)',
                 boxShadow: '0 4px 16px rgba(45, 36, 30, 0.06)',
                 overflow: 'hidden',
-                flexShrink: 0,
+                boxSizing: 'border-box',
                 position: 'relative',
               }}
             >
@@ -680,7 +684,7 @@ export const ProductDefinitionPage: React.FC = () => {
                 </p>
 
                 {/* Fiyat ve Sepet Alanı */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '8px', borderTop: '1px solid #F0EEE9' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingTop: '8px', borderTop: '1px solid #F0EEE9', flexWrap: 'wrap', gap: '8px' }}>
                   <div>
                     {selectedPreviewProduct.discountPrice && selectedPreviewProduct.discountPrice < (selectedPreviewProduct.basePrice || selectedPreviewProduct.sellingPrice) && (
                       <div style={{ fontSize: '12px', color: '#8C827A', textDecoration: 'line-through', marginBottom: '2px' }}>
@@ -706,6 +710,8 @@ export const ProductDefinitionPage: React.FC = () => {
                       alignItems: 'center',
                       gap: '4px',
                       cursor: 'default',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                     }}
                   >
                     <span>+</span>
@@ -716,16 +722,21 @@ export const ProductDefinitionPage: React.FC = () => {
             </div>
 
             {/* Önizleme Yan Açıklama & Hızlı Bilgiler */}
-            <div style={{ flex: 1, minWidth: '280px' }}>
+            <div style={{ flex: '1 1 240px', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box' }}>
               <div style={{ fontSize: '14px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '8px' }}>
                 Vitrin Görünüm Detayları
               </div>
               <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '13px', color: theme.colors.taupe, lineHeight: 1.8 }}>
-                <li><strong>Fotoğraf Kaynağı:</strong> <code>{selectedPreviewProduct.imageUrl || 'Varsayılan'}</code></li>
+                <li style={{ wordBreak: 'break-word' }}>
+                  <strong>Fotoğraf Kaynağı:</strong>{' '}
+                  <code style={{ wordBreak: 'break-all', overflowWrap: 'anywhere', display: 'inline', backgroundColor: 'rgba(0,0,0,0.04)', padding: '2px 4px', borderRadius: '4px' }}>
+                    {selectedPreviewProduct.imageUrl || 'Varsayılan'}
+                  </code>
+                </li>
                 <li><strong>Yöre / Menşe:</strong> {selectedPreviewProduct.origin || 'Belirtilmedi'}</li>
                 <li><strong>Kategori:</strong> {selectedPreviewProduct.category || 'Genel'}</li>
                 <li><strong>Satış Durumu:</strong> {selectedPreviewProduct.status === 'Active' ? '✅ Satışta & Aktif' : '❌ Satışa Kapalı'}</li>
-                <li><strong>Vitrin Rozetleri:</strong> {[
+                <li style={{ wordBreak: 'break-word' }}><strong>Vitrin Rozetleri:</strong> {[
                   selectedPreviewProduct.isBestSeller ? 'Çok Satan' : null,
                   selectedPreviewProduct.isNew ? 'Yeni Mahsul' : null,
                   selectedPreviewProduct.isSeasonal ? 'Mevsimlik' : null,
@@ -735,7 +746,7 @@ export const ProductDefinitionPage: React.FC = () => {
                 <li><strong>Stok Adedi:</strong> {selectedPreviewProduct.stockQuantity} {selectedPreviewProduct.saleUnit}</li>
               </ul>
 
-              <div style={{ marginTop: '14px', display: 'flex', gap: '8px' }}>
+              <div style={{ marginTop: '14px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   onClick={() => handleToggleStatus(selectedPreviewProduct)}
                   style={{
@@ -761,20 +772,23 @@ export const ProductDefinitionPage: React.FC = () => {
       <div
         style={{
           backgroundColor: theme.colors.bgCard,
-          padding: '16px 20px',
+          padding: '14px 16px',
           borderRadius: theme.radii.md,
           border: `1px solid ${theme.colors.border}`,
-          marginBottom: '20px',
+          marginBottom: '8px',
           display: 'flex',
           gap: '12px',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
+          boxSizing: 'border-box',
+          width: '100%',
+          maxWidth: '100%',
         }}
       >
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: 1, minWidth: '320px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', flex: '1 1 280px', minWidth: 0, width: '100%' }}>
           {/* Arama Kutusu */}
-          <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+          <div style={{ position: 'relative', flex: '1 1 200px', minWidth: 'min(100%, 180px)' }}>
             <input
               type="text"
               placeholder="Ürün adı, barkod, SKU veya yöre ara..."
@@ -802,6 +816,8 @@ export const ProductDefinitionPage: React.FC = () => {
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
             style={{
+              flex: '1 1 130px',
+              minWidth: 'min(100%, 130px)',
               padding: '9px 12px',
               border: `1px solid ${theme.colors.border}`,
               borderRadius: theme.radii.sm,
@@ -810,6 +826,7 @@ export const ProductDefinitionPage: React.FC = () => {
               backgroundColor: theme.colors.bgCard,
               outline: 'none',
               cursor: 'pointer',
+              boxSizing: 'border-box',
             }}
           >
             <option value="all">Tüm Kategoriler</option>
@@ -823,6 +840,8 @@ export const ProductDefinitionPage: React.FC = () => {
             value={filterBadge}
             onChange={(e) => setFilterBadge(e.target.value)}
             style={{
+              flex: '1 1 130px',
+              minWidth: 'min(100%, 130px)',
               padding: '9px 12px',
               border: `1px solid ${theme.colors.border}`,
               borderRadius: theme.radii.sm,
@@ -831,6 +850,7 @@ export const ProductDefinitionPage: React.FC = () => {
               backgroundColor: theme.colors.bgCard,
               outline: 'none',
               cursor: 'pointer',
+              boxSizing: 'border-box',
             }}
           >
             <option value="all">Tüm Vitrin Rozetleri</option>
@@ -845,6 +865,8 @@ export const ProductDefinitionPage: React.FC = () => {
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             style={{
+              flex: '1 1 120px',
+              minWidth: 'min(100%, 120px)',
               padding: '9px 12px',
               border: `1px solid ${theme.colors.border}`,
               borderRadius: theme.radii.sm,
@@ -853,6 +875,7 @@ export const ProductDefinitionPage: React.FC = () => {
               backgroundColor: theme.colors.bgCard,
               outline: 'none',
               cursor: 'pointer',
+              boxSizing: 'border-box',
             }}
           >
             <option value="all">Tüm Durumlar</option>
@@ -861,7 +884,7 @@ export const ProductDefinitionPage: React.FC = () => {
           </select>
         </div>
 
-        <div style={{ fontSize: '13px', color: theme.colors.taupe, fontWeight: 500 }}>
+        <div style={{ fontSize: '13px', color: theme.colors.taupe, fontWeight: 500, whiteSpace: 'nowrap' }}>
           {filteredProducts.length} ürün listeleniyor
         </div>
       </div>
@@ -874,6 +897,9 @@ export const ProductDefinitionPage: React.FC = () => {
           borderRadius: theme.radii.lg,
           overflow: 'hidden',
           boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+          boxSizing: 'border-box',
+          width: '100%',
+          maxWidth: '100%',
         }}
       >
         {isLoading ? (
@@ -907,8 +933,8 @@ export const ProductDefinitionPage: React.FC = () => {
             <div style={{ fontSize: '13px', marginTop: '4px' }}>Filtreleri temizleyebilir veya yeni ürün ekleyebilirsiniz.</div>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
+            <table style={{ width: '100%', minWidth: '780px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: theme.colors.bgSurface, borderBottom: `1px solid ${theme.colors.border}`, color: theme.colors.taupe }}>
                   <th style={{ padding: '12px 16px', fontWeight: 600, width: '64px' }}>Görsel</th>
@@ -1215,7 +1241,7 @@ export const ProductDefinitionPage: React.FC = () => {
                 </div>
 
                 {/* Yükleme Butonu & Doğrudan URL Girişi */}
-                <div style={{ flex: 1, minWidth: '260px' }}>
+                <div style={{ flex: '1 1 220px', minWidth: 0, width: '100%' }}>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
                     <label
                       htmlFor={uploadInputId}
@@ -1312,7 +1338,7 @@ export const ProductDefinitionPage: React.FC = () => {
             </div>
 
             {/* BÖLÜM 2: TEMEL BİLGİLER & YÖRE (KÖKEN) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '6px' }}>
                   Ürün Adı *
@@ -1493,7 +1519,7 @@ export const ProductDefinitionPage: React.FC = () => {
                 💰 Fiyatlandırma & İndirim Kampanyası
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 600, color: theme.colors.espresso, marginBottom: '4px' }}>
                     Normal Satış Fiyatı (TL) *
@@ -1565,7 +1591,7 @@ export const ProductDefinitionPage: React.FC = () => {
             </div>
 
             {/* BÖLÜM 5: VİTRİN ROZETLERİ & KODLAR */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: theme.colors.espresso, marginBottom: '8px' }}>
                   🏷️ Vitrin Rozetleri (Kart Üzerinde Gösterilir)

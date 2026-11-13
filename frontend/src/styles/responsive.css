@@ -169,6 +169,12 @@ html, body {
 
 
 /* Global Overflow Guard for Page Containers */
+.admin-main-content {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  box-sizing: border-box !important;
+}
+
 .admin-main-content > div {
   max-width: 100%;
   min-width: 0;

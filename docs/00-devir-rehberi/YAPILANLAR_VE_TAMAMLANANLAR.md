@@ -250,3 +250,20 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
   - **Üretici Dayanışması:** Yöreye ve ürüne özel dinamik üretici anlatımı entegre edildi.
 * **Vitrin ve Mevsim Bölümleri Güçlendirmesi ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
   - Anasayfadaki *"Mevsiminde Taze Mahsuller"* ve *"En Çok Tercih Edilen Köy Lezzetleri"* bölümleri dinamik ürün etiketleriyle senkronize edildi; boş kalmayı engelleyen güvenli fallback mekanizması kuruldu.
+
+### ✅ CHECKPOINT 23: Ürün Kataloğu & Yönetimi Mobil Responsive Görünüm ve Taşma Düzeltmeleri (13 Kasım 2026)
+* **Kullanıcı Talebi:** Mobil ekranlarda (`media_1794564455489_77d39c84.png`) oluşan yatay taşmalar, sağa kaymalar ve kesilen buton/filtre öğelerinin düzeltilmesi.
+* **Giderilen Temel Taşma Nedenleri & Yapılan Düzenlemeler:**
+  1. **İç İçe Çift Padding Sorunu ([`ProductDefinitionPage.tsx`](../../frontend/src/pages/products/ProductDefinitionPage.tsx)):**
+     - `MainLayout` zaten `.admin-main-content` aracılığıyla mobilde `12px 10px` dolgu uygularken sayfa kök etiketinde bulunan sabit `padding: 24px 32px` kaldırıldı. Sayfa kökü diğer standart admin sayfalarıyla uyumlu şekilde `display: flex; flex-direction: column; gap: 22px; min-width: 0; max-width: 100%;` yapısına geçirildi.
+  2. **Canlı Vitrin Önizleme Kartı (Bento Replica) Esnekliği:**
+     - Sabit `width: 320px; flex-shrink: 0;` genişlik yerine `width: 100%; max-width: 320px; box-sizing: border-box;` uygulandı. Dar ekranlarda kart ekran genişliğine otomatik adapte olur, butonlar ve fiyat satırı taşmaz.
+  3. **Uzun Dosya Yolu & URL Kırılma Koruması:**
+     - Vitrin Görünüm Detayları altındaki `Fotoğraf Kaynağı: <code>/images/products/...</code>` öğesine `word-break: break-all; overflow-wrap: anywhere;` eklenerek uzun görsel yollarının ekranı dışarı itmesi engellendi.
+  4. **Arama ve Filtre Çubuğu Mobil Sarmalama (Wrapping):**
+     - `min-width: 320px` ve `min-width: 220px` gibi dar ekranları kilitleyen sabit genişlikler kaldırıldı. Arama kutusu ve kategori/rozet/durum seçim açılır kutuları `flex: 1 1 ...; min-width: min(100%, ...);` esnekliğine kavuşturularak ekrana göre kusursuz satır kırılması sağlandı.
+  5. **Tablo ve Modal Esnekliği:**
+     - Ürün tablosunun bulunduğu kapsayıcıya `overflow-x: auto; -webkit-overflow-scrolling: touch;` eklendi, tablo minimum genişliği korunarak yatay akıcı kaydırma sağlandı.
+     - Ürün Ekle/Düzenle modalındaki gridler `minmax(min(100%, ...), 1fr)` kuralıyla küçük cihazlarda otomatik olarak tek sütuna çökecek şekilde uyarlandı.
+  6. **Admin Shell Taşma Koruması ([`MainLayout.tsx`](../../frontend/src/components/layout/MainLayout.tsx), [`responsive.css`](../../frontend/src/styles/responsive.css)):**
+     - `.admin-main-content` ana kapsayıcısına `overflow-x: hidden !important; max-width: 100vw !important;` atanarak hiçbir alt bileşenin tüm sayfada yatay kaydırma çubuğu oluşturamaması güvenceye alındı.
