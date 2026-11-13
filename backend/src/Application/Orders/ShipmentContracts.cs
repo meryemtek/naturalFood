@@ -1,6 +1,6 @@
 namespace Application.Orders;
 
-public record ShipmentView(Guid OrderId, string Carrier, string TrackingNumber, string Status, DateTime? EstimatedDeliveryUtc, DateTime UpdatedAtUtc);
+public record ShipmentView(Guid OrderId, string Carrier, string TrackingNumber, string Status, DateTime? EstimatedDeliveryUtc, DateTime UpdatedAtUtc, string? TrackingUrl);
 
 public interface IShipmentService
 {

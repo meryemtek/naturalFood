@@ -5,7 +5,8 @@ import { AuthFooter } from '../../components/auth/AuthFooter';
 import { StorefrontHeader } from '../../components/storefront/StorefrontHeader';
 import { AuthIcon } from '../../components/auth/AuthIcon';
 import { AuthPasswordField } from '../../components/auth/AuthPasswordField';
-import { authApi, authStorage, isAdminRole, type CustomerProfile } from '../../api/authApi';
+import { authApi, authStorage, type CustomerProfile } from '../../api/authApi';
+import { rbacService, clearAdminSession, setAdminSession, setActiveAdminRole } from '../../services/rbacService';
 import './AuthPage.css';
 
 type AuthMode = 'login' | 'register';
@@ -27,22 +28,18 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
   const [customer, setCustomer] = useState<CustomerProfile | null>(() => authStorage.getCustomer());
 
   const returnTo = searchParams.get('returnUrl');
-  const continueAfterAuth = (user: CustomerProfile | null) => {
-    if (isAdminRole(user?.role)) {
-      navigate('/dashboard', { replace: true });
-      return;
-    }
+  const continueAfterAuth = () => {
     const safePath = returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//') && !returnTo.includes('\\')
       ? returnTo
       : '/';
     navigate(safePath, { replace: true });
   };
 
-  // Zaten giriş yapmış kullanıcı /giris veya /uye-ol sayfasına gelirse rolüne göre yönlendir
+  // Zaten giriş yapmış müşteri /giris veya /uye-ol sayfasına gelirse yönlendir
   useEffect(() => {
     const path = window.location.pathname;
     if (customer && (path === '/giris' || path === '/uye-ol')) {
-      continueAfterAuth(customer);
+      continueAfterAuth();
     }
   }, [customer]);
 
@@ -63,6 +60,20 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
 
     setBusy(true);
     try {
+      if (mode === 'login') {
+        // Yönetici hesabı (rol bazlı yetkilendirme) önce denenir; başarılıysa yönetim paneli açılır.
+        try {
+          const adminRes = await rbacService.loginAdmin(email.trim(), password);
+          authStorage.clearAuth();
+          setAdminSession(adminRes, rememberMe);
+          setActiveAdminRole(adminRes.role);
+          navigate('/dashboard', { replace: true });
+          return;
+        } catch {
+          // Yönetici değilse müşteri girişine devam edilir.
+        }
+      }
+
       const auth = mode === 'login'
         ? await authApi.login({ email: email.trim(), password }, rememberMe)
         : await authApi.register({
@@ -70,10 +81,11 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
           firstName: firstName.trim(), lastName: lastName.trim(), phone: phone.trim() || undefined,
         }, rememberMe);
 
+      clearAdminSession();
       setCustomer(auth.customer);
 
       // Admin rolü ile giriş yapıldıysa yönetim paneline (/dashboard), müşteri ise anasayfaya yönlendir
-      continueAfterAuth(auth.customer);
+      continueAfterAuth();
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'İşlem tamamlanamadı. Lütfen tekrar deneyin.');
     } finally {
@@ -117,16 +129,6 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
                   <h1 className="text-2xl font-bold text-primary">Merhaba, {customer.firstName} {customer.lastName}</h1>
                   <p className="mt-2 text-sm text-on-surface-variant">{customer.email} hesabınızla giriş yaptınız.</p>
                   <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-                    {isAdminRole(customer.role) && (
-                      <button
-                        type="button"
-                        onClick={() => navigate('/dashboard')}
-                        className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-bold text-on-primary hover:bg-primary-container"
-                      >
-                        <AuthIcon>admin_panel_settings</AuthIcon>
-                        Yönetim Paneline Git
-                      </button>
-                    )}
                     <button
                       type="button"
                       onClick={() => navigate('/')}

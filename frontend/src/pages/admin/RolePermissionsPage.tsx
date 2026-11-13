@@ -175,7 +175,7 @@ export const RolePermissionsPanel: React.FC = () => {
       resetCreateRoleForm();
       setSuccessMessage(
         withUserEmail
-          ? `'${createdName}' rolü ve '${withUserEmail}' giriş hesabı oluşturuldu. Personel /admin/login üzerinden giriş yapabilir.`
+          ? `'${createdName}' rolü ve '${withUserEmail}' giriş hesabı oluşturuldu. Personel /giris üzerinden giriş yapabilir.`
           : `'${createdName}' rolü oluşturuldu ve seçildi. Modül yetkilerini düzenleyebilirsiniz.`
       );
     } catch (err: any) {

@@ -1,6 +1,6 @@
 namespace Application.Payments;
 public record SimulatePaymentRequest(string Result);
-public record SimulatedPaymentView(Guid Id, Guid OrderId, string Result, decimal Amount, string Currency, DateTime CreatedAtUtc, bool IsSimulation);
+public record SimulatedPaymentView(Guid Id, Guid OrderId, string Result, decimal Amount, string Currency, DateTime CreatedAtUtc, bool IsSimulation, string OrderStatus, string Provider = "PayTR-Sim");
 public interface ISimulatedPaymentService
 {
     Task<SimulatedPaymentView> SimulateAsync(Guid orderId, Guid? customerId, string? guestToken, string idempotencyKey, SimulatePaymentRequest request, CancellationToken ct);

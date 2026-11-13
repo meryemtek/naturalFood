@@ -37,6 +37,7 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             new { RoleId = RoleConfiguration.SuperAdminRoleId, PermissionKey = "crm.manage" },
             new { RoleId = RoleConfiguration.SuperAdminRoleId, PermissionKey = "finance.reports" },
             new { RoleId = RoleConfiguration.SuperAdminRoleId, PermissionKey = "orders.view" },
+            new { RoleId = RoleConfiguration.SuperAdminRoleId, PermissionKey = "orders.manage" },
             new { RoleId = RoleConfiguration.SuperAdminRoleId, PermissionKey = "marketing.view" },
             new { RoleId = RoleConfiguration.SuperAdminRoleId, PermissionKey = "users.manage" },
 
@@ -45,6 +46,7 @@ public class RolePermissionConfiguration : IEntityTypeConfiguration<RolePermissi
             new { RoleId = RoleConfiguration.BranchManagerRoleId, PermissionKey = "inventory.view" },
             new { RoleId = RoleConfiguration.BranchManagerRoleId, PermissionKey = "storage.view" },
             new { RoleId = RoleConfiguration.BranchManagerRoleId, PermissionKey = "orders.view" },
+            new { RoleId = RoleConfiguration.BranchManagerRoleId, PermissionKey = "orders.manage" },
 
             // WarehouseStaff (Depo Personeli): Yalnızca Envanter ve Saklama Koşulları
             new { RoleId = RoleConfiguration.WarehouseStaffRoleId, PermissionKey = "inventory.view" },

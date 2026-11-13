@@ -1,7 +1,7 @@
 # MODÜLER E-TİCARET ALTYAPISI — Mühendis ve Ekip Devir Teslim Rehberi (Master Hub)
 
 > **Durum:** Yaşayan Ana Devir Belgesi  
-> **Son Güncelleme:** 12 Kasım 2026  
+> **Son Güncelleme:** 13 Kasım 2026  
 > **Sorumlu:** Mimari & Çekirdek Ekip  
 >
 > **Dokümantasyon Hiyerarşisi:**
@@ -37,9 +37,9 @@
 > * **Gerçek Canlı Müşteri / E-Ticaret Ortamı İçin Eksik & Sıradaki Fazlar:**
 >   - **Stok & Depo Yönetimi — Kalan 4 Alt Ekran (Faz 2):** `/inventory` canlıdır; ancak Tedarikçi & Alım (`SupplierProcurementPage` şu an mock UI), Depo Tanımları, Stok Hareketleri ve Kritik Uyarılar ekranlarının veritabanı bağlantıları sıradadır.
 >   - **Dashboard Canlı Verileri & Admin JWT Koruması (Faz 3):** `DashboardPage` metrikleri henüz mock'tur; admin paneline `LoginPage` ve JWT Bearer token kilidi bağlanacaktır.
->   - **Sipariş & Sevkiyat Yönetimi Admin Ekranları (Faz 4):** Backend'de `Orders`, `Shipment` ve `SimulatedPayment` altyapısı mevcuttur; Admin operasyon ekranları bağlanacaktır.
->   - **CRM, Pazarlama & Analitik Ekranları (Faz 5):** Backend `Customer`, `Promotions` ve `Experience` modülleri hazırdır; Admin ekranları ve raporlama geliştirilecektir.
->   - **Müşteri Web Vitrini Frontend (Faz 6):** Public API uçları hazırdır; müşteri e-ticaret arayüzü bağlanacaktır.
+>   - **Sipariş & Sevkiyat Yönetimi Admin Ekranları (Faz 4):** Sipariş yönetimi (`/orders/*` ve müşteri `/hesabim/siparisler`, `/siparis-takip`) `OrderWorkflow` ile canlıya alındı (**Faz 4.1 ✅**); Sevkiyat/Kargo ekranları (`/shipping/*`, **Faz 4.2**) sırada.
+>   - **CRM, Pazarlama & Analitik Ekranları (Faz 5):** Backend `Customer`, `Promotions` ve `Experience` modülleri hazırdır; `/crm/reviews` canlıdır, diğer Admin ekranları ve raporlama geliştirilecektir.
+>   - **Müşteri Web Vitrini (Faz 6):** Ana sayfa (`StorefrontPage`) ve ürün kataloğu (`ProductsPage`) canlı `/api/catalog/products` ve `Origin` filtrelemesine bağlandı; `ProductDetailPage` tam kilidi, `cart` senkronizasyonu ve Sanal POS/Kargo fazları sıradadır.
 
 ---
 
@@ -66,15 +66,15 @@ Yeni katılan bir geliştiricinin ilk 30 dakikada sistemin neyinin çalışıp n
 | **Stok & Envanter Yönetimi** | Canlı Kalıcı Çekirdek | `catalog` (`StockQuantity`), `admin` (`AuditLogs`) | Var (`InventoryPage.tsx`) | Var (`/api/admin/inventory`, `PATCH /stock`) | Var (Canlı veritabanı bağlandı) | Evet (Hızlı +1/-1, 0 altına düşmeme, kurumsal audit log) |
 | **Müşteri (Public) Katalog Uçları** | Canlı Kalıcı Çekirdek | `catalog` (`Products`, `Categories`) | Hazır API | Var (`/api/catalog/products`, `/categories`) | Var (Single Source of Truth) | Evet (Admin değişiklikleri anında vitrinde listelenir) |
 | **Mobil & Responsive Çekirdek** | Canlı UI İyileştirmesi | N/A | Var (`Sidebar.tsx`, `Header.tsx`, `MainLayout.tsx`) | N/A | Var (Vite build & Mobil test) | Evet (Çekmece menü, hamburger butonu, esnek layout) |
-| **Müşteri Mağazası & Storefront** | Canlı MVP Çekirdek | `catalog`, `cart`, `customer`, `orders`, `promotions`, `content`, `experience`, `payments` | Var (`StorefrontPage`, `ProductsPage`, `ProductDetailPage`, `CartPage`, `CheckoutPage`, `AccountPage`, `AuthPage`) | Var (`/api/catalog/*`, `/api/cart/*`, `/api/auth/*`, `/api/orders/*`) | Var (React 19, TypeScript E2E derlendi) | Evet (B2C Vitrin, Sepet, Ödeme, Temizlenmiş Yüksek Çözünürlüklü Otantik Görseller) |
+| **Müşteri Mağazası & Storefront** | Canlı Katalog + MVP Çekirdek | `catalog`, `cart`, `customer`, `orders`, `promotions`, `content`, `experience`, `payments` | Var (`StorefrontPage`, `ProductsPage`, `ProductDetailPage`, `CartPage`, `CheckoutPage`, `AccountPage`, `AuthPage`, `GuestOrderTrackingPage`) | Var (`/api/catalog/*`, `/api/cart/*`, `/api/auth/*`, `/api/orders/*`) | Var (React 19, TypeScript E2E derlendi) | Evet (Canlı `/api/catalog/products`, il/ilçe/mahalle adres, sipariş takibi, mobil vitrin) |
 
 ### B. Kalan Fazlar & Geliştirilecek Modüller ([YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md))
 
 | Planlanan Bileşen | Mevcut Durum | Backend / Şema Durumu | Panel / Ekran | Hedef Faz | Üretime Hazır mı? |
 |---|---|---|---|---|---|
 | **Tedarikçi, Depo, Hareket & Alarmlar** | 1/5 Canlı (`/inventory` ok) | `inventory` şeması sırada | Kısmi (`SupplierProcurementPage` mock, diğer 3'ü placeholder) | **Faz 2 (Aktif Odak)** | Kısmi (`/inventory` hazır, 4 alt modül sırada) |
-| **Dashboard Canlı Veri & Admin JWT** | Mock UI & Açık Port | `AdminUsers` hazır, Auth token admin uçlarına bağlanacak | `DashboardPage` (mock), `LoginPage` (planlandı) | **Faz 3** | Hayır |
-| **Sipariş & Sevkiyat Admin Ekranları** | Placeholder UI | `orders`, `payments` şemaları & public uçları hazır | `ModulePlaceholderPage` | **Faz 4** | Hayır (Admin UI & uçları bekliyor) |
+| **Dashboard Canlı Veri & Admin JWT** | Kısmi Canlı UI + İzole Auth ✅ | `AdminUsers` + `/giris` izole RBAC hazır; Dashboard özet API'si sırada | `DashboardPage` (yorum widget'ı canlı), `/giris` ✅ | **Faz 3** | Kısmi (Auth/RBAC hazır, Dashboard KPI özetleri sırada) |
+| **Sipariş & Sevkiyat Admin Ekranları** | Siparişler ✅ / Sevkiyat Placeholder | `orders`, `OrderWorkflow`, `payments` hazır | `OrdersPage.tsx` (`/orders/*` ✅) / `/shipping/*` (`ModulePlaceholderPage`) | **Faz 4** | Kısmi (Sipariş İş Akışı ✅, Sevkiyat/Kargo ekranları sırada) |
 | **CRM, Pazarlama & Analitik** | Placeholder UI | `customer`, `promotions`, `experience`, `content` hazır | `ModulePlaceholderPage` | **Faz 5** | Hayır (Admin UI & raporlama bekliyor) |
 | **Müşteri Canlı POS & Kargo Fazları** | Frontend & Backend MVP ✅ | Public API uçları ve React ekranları hazır | Canlı Mağaza Arayüzü Hazır | **Müşteri Fazları (1-5)** | MVP Hazır; Sanal POS, Canlı Kargo ve API kilidi sırada 👉 [MUSTERI_MODULU.md](03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md) |
 

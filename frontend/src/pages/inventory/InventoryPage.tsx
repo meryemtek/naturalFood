@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { StatCard } from '../../components/common/StatCard';
+import { AdminPagination } from '../../components/common/AdminPagination';
 import { theme } from '../../theme/tokens';
 import {
   inventoryService,
@@ -10,6 +11,8 @@ export const InventoryPage: React.FC = () => {
   // Live State from .NET 10 & PostgreSQL
   const [items, setItems] = useState<InventoryItemDto[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 20;
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,7 +35,8 @@ export const InventoryPage: React.FC = () => {
       const res = await inventoryService.getInventory({
         search: searchTerm.trim() || undefined,
         criticalOnly: filterCriticalOnly ? true : undefined,
-        pageSize: 50,
+        page,
+        pageSize,
       });
       setItems(res.items);
       setTotalCount(res.totalCount);
@@ -42,6 +46,10 @@ export const InventoryPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  }, [searchTerm, filterCriticalOnly, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [searchTerm, filterCriticalOnly]);
 
   useEffect(() => {
@@ -409,6 +417,14 @@ export const InventoryPage: React.FC = () => {
             </table>
           )}
         </div>
+        <AdminPagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          itemCount={items.length}
+          onPageChange={setPage}
+          label="stok kalemi"
+        />
       </div>
     </div>
   );

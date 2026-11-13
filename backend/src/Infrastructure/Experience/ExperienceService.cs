@@ -1,11 +1,13 @@
 using Application.Experience;
 using Domain.Entities.Experience;
+using Infrastructure.Orders;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Experience;
-public class ExperienceService(ExperienceDbContext db, CatalogDbContext catalog, CustomerDbContext customers) : IExperienceService
+public class ExperienceService(ExperienceDbContext db, CatalogDbContext catalog, CustomerDbContext customers, OrdersDbContext orders) : IExperienceService
 {
+    private static readonly string[] PurchasedStatuses = ["Paid", "Preparing", "Processing", "Shipped", "Delivered", "Completed"];
     private static string Email(string email)
     {
         if (string.IsNullOrWhiteSpace(email) || email.Length > 256 || !System.Net.Mail.MailAddress.TryCreate(email, out var parsed) || parsed.Address != email.Trim()) throw new ArgumentException("E-posta adresi geçersiz.");
@@ -30,13 +32,31 @@ public class ExperienceService(ExperienceDbContext db, CatalogDbContext catalog,
             return new CustomerReviewView(x.Id, x.ProductId, product?.Name, product?.Slug, x.Rating, x.Text, x.Status, x.CreatedAtUtc);
         }).ToList();
     }
+    public async Task<CanReviewView> CanReviewAsync(Guid productId, Guid customerId, CancellationToken ct)
+    {
+        if (!await customers.Customers.AnyAsync(x => x.Id == customerId && x.IsActive && !x.IsGuest, ct))
+            return new CanReviewView(false, "Yorum yapabilmek için üye girişi yapmanız gerekir.");
+        if (!await catalog.Products.AnyAsync(x => x.Id == productId && x.IsActive, ct))
+            return new CanReviewView(false, "Ürün bulunamadı.");
+        if (await db.Reviews.AnyAsync(x => x.ProductId == productId && x.CustomerId == customerId, ct))
+            return new CanReviewView(false, "Bu ürün için yorumunuz zaten mevcut.");
+        var hasPurchased = await orders.Orders.AsNoTracking()
+            .AnyAsync(o => o.CustomerId == customerId && PurchasedStatuses.Contains(o.Status) && o.Lines.Any(l => l.ProductId == productId), ct);
+        return hasPurchased
+            ? new CanReviewView(true)
+            : new CanReviewView(false, "Bu ürüne yalnızca ürünü satın almış müşteriler yorum yapabilir.");
+    }
+
     public async Task AddReviewAsync(Guid productId, Guid customerId, CreateReviewRequest request, CancellationToken ct)
     {
         if (request.Rating is < 1 or > 5 || string.IsNullOrWhiteSpace(request.Text) || request.Text.Length > 2000) throw new ArgumentException("Yorum veya puan geçersiz.");
         if (!await customers.Customers.AnyAsync(x => x.Id == customerId && x.IsActive && !x.IsGuest, ct)) throw new UnauthorizedAccessException();
         if (!await catalog.Products.AnyAsync(x => x.Id == productId && x.IsActive, ct)) throw new KeyNotFoundException();
         if (await db.Reviews.AnyAsync(x => x.ProductId == productId && x.CustomerId == customerId, ct)) throw new InvalidOperationException("Bu ürün için yorumunuz zaten mevcut.");
-        db.Reviews.Add(new ProductReview { ProductId = productId, CustomerId = customerId, Rating = request.Rating, Text = request.Text.Trim() });
+        var hasPurchased = await orders.Orders.AsNoTracking()
+            .AnyAsync(o => o.CustomerId == customerId && PurchasedStatuses.Contains(o.Status) && o.Lines.Any(l => l.ProductId == productId), ct);
+        if (!hasPurchased) throw new InvalidOperationException("Bu ürüne yalnızca ürünü satın almış müşteriler yorum yapabilir.");
+        db.Reviews.Add(new ProductReview { ProductId = productId, CustomerId = customerId, Rating = request.Rating, Text = request.Text.Trim(), Status = "Pending" });
         await db.SaveChangesAsync(ct);
     }
     public async Task ContactAsync(ContactRequest request, CancellationToken ct)

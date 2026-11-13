@@ -6,7 +6,7 @@ namespace Infrastructure.Orders;
 
 public class ShipmentService(OrdersDbContext db, IOrderService orders) : IShipmentService
 {
-    private static ShipmentView Map(Shipment x) => new(x.OrderId, x.Carrier, x.TrackingNumber, x.Status, x.EstimatedDeliveryUtc, x.UpdatedAtUtc);
+    private static ShipmentView Map(Shipment x) => new(x.OrderId, x.Carrier, x.TrackingNumber, x.Status, x.EstimatedDeliveryUtc, x.UpdatedAtUtc, x.TrackingUrl);
 
     public async Task<ShipmentView?> GetAsync(Guid orderId, Guid? customerId, string? guestToken, CancellationToken ct)
     {

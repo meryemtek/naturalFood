@@ -1,7 +1,7 @@
 # Yol Haritası, Faz Planlaması ve Yapılacak İşler (YAPILACAKLAR)
 
 > **Durum:** Aktif Faz Haritası & To-Do Listesi  
-> **Son Güncelleme:** 12 Kasım 2026  
+> **Son Güncelleme:** 13 Kasım 2026  
 > **Tamamlanan İşler (Günlük):** [YAPILANLAR_VE_TAMAMLANANLAR.md](YAPILANLAR_VE_TAMAMLANANLAR.md)  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 
@@ -20,12 +20,13 @@ Aşağıdaki tablo, sol menüdeki tüm ekranların bugünkü gerçek bağlanma d
 | **Stok & Depo** | `/inventory/warehouses` (Depo Tanımları) | 🚧 `ModulePlaceholderPage` | ❌ `inventory` şeması bekleniyor | **Faz 2** |
 | **Stok & Depo** | `/inventory/transactions` (Stok Hareketleri) | 🚧 `ModulePlaceholderPage` | ❌ `inventory` şeması bekleniyor | **Faz 2** |
 | **Stok & Depo** | `/inventory/alerts` (Kritik Stok Uyarıları) | 🚧 `ModulePlaceholderPage` | ⚠️ Kısmen `/inventory` içinde var | **Faz 2** |
-| **Sipariş & Sevkiyat** | `/orders/*` & `/shipping/*` (7 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Orders`, `Shipment` backend hazır | **Faz 4** |
+| **Sipariş & Sevkiyat** | `/orders/*` (`OrdersPage`, 4 Ekran) | ✅ Canlı UI (`OrdersPage.tsx`, `OrderManagement.tsx`) | ✅ `orders` + `OrderWorkflow` tam bağlı | *(Faz 4.1 Tamamlandı)* |
+| **Sipariş & Sevkiyat** | `/shipping/*` (3 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Shipment` backend hazır | **Faz 4.2** |
 | **CRM & Destek** | `/crm/reviews` (Müşteri Değerlendirmeleri) | ✅ Canlı UI (`CustomerReviewsPage.tsx`) | ✅ `experience.Reviews` + `customer.Customers` tam bağlı | *(Tamamlandı)* |
 | **CRM & Destek** | `/crm/customers`, `/segments`, `/tickets` | 🚧 `ModulePlaceholderPage` | ✅ `Customer` backend hazır | **Faz 5** |
 | **Pazarlama** | `/marketing/*` (5 Ekran) | 🚧 `ModulePlaceholderPage` | ✅ `Promotions`, `Content` backend hazır | **Faz 5** |
 | **Raporlama** | `/analytics/*` (4 Ekran) | 🚧 `ModulePlaceholderPage` | ❌ Rapor sorguları bekleniyor | **Faz 5** |
-| **Yönetim & Güvenlik** | `/admin/login`, `/admin/users`, `/admin/roles`, `/admin/audit-logs` | ✅ Canlı UI (`AdminLoginPage`, `RolePermissionsPage`, `UsersPage`) | ✅ `admin` şeması (Dinamik RBAC + İzole Auth) tam bağlı | *(Tamamlandı)* |
+| **Yönetim & Güvenlik** | `/giris` (izole admin), `/admin/users`, `/admin/roles`, `/admin/audit-logs` | ✅ Canlı UI (`AuthPage`, `RolePermissionsPage`, `UsersPage`) | ✅ `admin` şeması (Dinamik RBAC + İzole Auth) tam bağlı | *(Tamamlandı)* |
 | **Sistem Ayarları** | `/settings/*` (4 Ekran) | 🚧 `ModulePlaceholderPage` | ❌ 2FA / POS / Fatura ayarları | **Faz 3 & 5** |
 
 ---
@@ -77,8 +78,8 @@ Stok ve Depo Yönetimi bölümünün `/inventory` dışındaki kalan 4 ekranın�
 *(Not: Backend tarafında `OrdersDbContext`, `OrdersModuleExtensions` ve `ShipmentEndpoints` halihazırda mevcuttur. Bu fazda Admin yönetim uçları ve React arayüzleri bağlanacaktır.)*
 
 #### 4.1. Sipariş Yaşam Döngüsü (`/orders/*`)
-- [ ] **Backend Admin Uçları:** `GET /api/admin/orders` (filtreli/sayfalı), `PATCH /api/admin/orders/{id}/status` (`Sipariş Alındı` -> `Hazırlanıyor` -> `Kuryede` -> `Teslim Edildi` -> `İptal/İade`).
-- [ ] **Frontend Ekranları:** Tüm Siparişler (`/orders`), Bekleyenler (`/orders/pending`), Tamamlananlar (`/orders/completed`), İptal & İade Talepleri (`/orders/returns`).
+- [x] **Backend Admin Uçları:** `OrderWorkflowEndpoints.cs` / `OrderWorkflowService.cs` (`orders` şeması `OrderWorkflow` + `orders.view` izni) ile filtreli sipariş listeleme ve durum geçişleri bağlandı.
+- [x] **Frontend Ekranları:** Tüm Siparişler (`/orders`), Bekleyenler (`/orders/pending`), Tamamlananlar (`/orders/completed`), İptal & İade Talepleri (`/orders/returns`) (`OrdersPage.tsx`, `OrderManagement.tsx`) ve müşteri tarafı `/hesabim/siparisler`, `/siparis-takip` tamamlandı.
 
 #### 4.2. Sevkiyat, Kargo ve Soğuk Zincir Lojistiği (`/shipping/*`)
 - [ ] **Frontend & API:** Sevkiyat ve Kargo Takibi (`/shipping/shipments`), Kargo Entegrasyonları (`/shipping/carriers` - Termobox/Frigorifik kurye ve Yurtiçi/MNG), Teslimat Bölgeleri (`/shipping/zones` - İlçe bazlı soğuk teslimat saatleri).
@@ -109,7 +110,8 @@ Stok ve Depo Yönetimi bölümünün `/inventory` dışındaki kalan 4 ekranın�
 *(Not: Müşteri arayüzü MVP olarak `StorefrontPage`, `ProductsPage`, `ProductDetailPage`, `CartPage`, `CheckoutPage`, `AccountPage` ve `AuthPage` ekranlarıyla React 19 üzerinde tamamlanmıştır. Ayrıntılı şartname: 👉 [MUSTERI_MODULU.md](../03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md) · [docs/MUSTERI_MODULU.md](../MUSTERI_MODULU.md))*.
 
 #### 6.1. Uçtan Uca Canlı Veri Kilidi (Mock Verilerden %100 Arınma - Müşteri Faz 1)
-- [ ] [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx) ve [`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx) içindeki mock dizilerin tamamen kaldırılarak `storefrontApi` üzerinden canlı `/api/catalog/products` verisine bağlanması.
+- [x] [`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx) ve [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx) ekranlarının `storefrontApi` üzerinden canlı `/api/catalog/products` (sunucu taraflı filtreleme, sayfalama ve `Origin` desteği) ve `/api/catalog/categories` verisine bağlanması.
+- [ ] [`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx) içindeki kalan mock/fallback ürün verilerinin tamamen kaldırılıp canlı `/api/catalog/products/{slug}` verisine kilitlenmesi.
 - [ ] Sepet ve misafir sepetinin (`X-Guest-Cart-Token`) doğrudan PostgreSQL `cart` şemasıyla canlı eşleşmesi ve üye girişi sonrasında `POST /api/cart/merge` çağrısının otomatik tetiklenmesi.
 - [ ] Kupon indirimlerinin doğrudan backend `promotions` motoru üzerinden canlı hesaplanması.
 

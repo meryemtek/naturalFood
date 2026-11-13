@@ -21,7 +21,7 @@ export const accountApi = {
   wishlist: () => authFetch<WishlistItem[]>('/api/customer/wishlist/'),
   addFavorite: (productId: string) => authFetch<WishlistItem>(`/api/customer/wishlist/${productId}`, { method: 'POST' }),
   removeFavorite: (productId: string) => authFetch<void>(`/api/customer/wishlist/${productId}`, { method: 'DELETE' }),
-  orders: () => authFetch<Order[]>('/api/orders/'),
-  order: (id: string) => authFetch<Order>(`/api/orders/${id}`),
+  orders: (signal?: AbortSignal) => authFetch<Order[]>('/api/orders/', { signal }),
+  order: (id: string, signal?: AbortSignal) => authFetch<Order>(`/api/orders/${id}`, { signal }),
   reviews: () => authFetch<CustomerReview[]>('/api/customer/reviews'),
 };

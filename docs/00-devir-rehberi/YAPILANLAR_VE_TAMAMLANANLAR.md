@@ -1,7 +1,7 @@
 # Tamamlanan İşler, Checkpoint'ler ve Geliştirme Günlüğü (YAPILANLAR)
 
 > **Durum:** Canlı & Doğrulanmış Teslimat Kayıtları  
-> **Son Güncelleme:** 12 Kasım 2026  
+> **Son Güncelleme:** 13 Kasım 2026  
 > **İlgili Yol Haritası (Yapılacaklar):** [YAPILACAKLAR_VE_FAZ_HARITASI.md](YAPILACAKLAR_VE_FAZ_HARITASI.md)  
 > **İlgili Ana Belge:** [docs/README.md](../README.md)  
 
@@ -12,11 +12,12 @@
 | Alan / Modül | Tamamlanma Durumu | Veritabanı Şeması & Tablolar | Backend & Frontend Bağlantısı |
 |---|---|---|---|
 | **Çekirdek Omurga & Docker** | ✅ %100 Tamamlandı | PostgreSQL 18 (Port 5433) | EF Core 10 + Onion Architecture + Vite Proxy |
-| **Yönetici, Dinamik RBAC & Admin Login (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`, `AuditLogs`) | `/admin/login`, `/admin/users`, `/admin/roles`, `/admin/audit-logs` |
-| **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilimin tamamı canlı PostgreSQL'e bağlı |
-| **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı (Diğer 4 alt sekme Faz 2'de) |
-| **Müşteri Vitrini & Storefront** | ✅ %100 MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | 10+ Ekran (Vitrin, Ürünler, Detay, Sepet, Ödeme, Profil, Auth) |
-| **Mobil & Responsive Çekirdek** | ✅ %100 Tamamlandı | — | Çekmece (Drawer) Menü, Hamburger Butonu, Responsive Tablolar |
+| **Yönetici, Dinamik RBAC & İzole Auth (`MOD-01`)** | ✅ %100 Tamamlandı | `admin` (`AdminUsers`, `Roles`, `ModulePermissions`, `RolePermissions`, `AuditLogs`) | `/giris` (birleşik giriş / izole oturum), `/admin/users`, `/admin/roles`, `/admin/audit-logs` |
+| **Ürün & Menü Yönetimi (`MOD-03`)** | ✅ %100 Tamamlandı (5/5 Dilim) | `catalog` (`Products`, `ProductImages`, `Categories`, `ProductLots`, `StorageConditions`) | 5 Dikey Dilim + `AdminPagination` + 37 seed ürün canlı PostgreSQL'e bağlı |
+| **Stok & Envanter (`MOD-02`)** | 🚧 %20 Tamamlandı (1/5 Dilim) | `catalog` (`StockQuantity`) + `admin` (`AuditLogs`) | `/inventory` canlı bağlı + `AdminPagination` (Diğer 4 alt sekme Faz 2'de) |
+| **Sipariş Yönetimi & İş Akışı (`MOD-05`)** | ✅ %100 Tamamlandı (Sevkiyat hariç) | `orders` (`Orders`, `OrderLines`, `Shipments`, `OrderWorkflows`) | `/orders`, `/orders/pending`, `/orders/completed`, `/orders/returns` + Müşteri `/hesabim/siparisler` & `/siparis-takip` |
+| **Müşteri Vitrini & Storefront (`MOD-04-CUST`)** | ✅ Canlı Katalog + MVP Tamamlandı | `catalog`, `cart`, `orders`, `customer`, `content`, `promotions`, `experience`, `payments` | Canlı `/api/catalog/products` filtreleme, Adres il/ilçe/mahalle seçimi, Sipariş Takibi, Mobil Responsive Vitrin |
+| **Mobil & Responsive Çekirdek** | ✅ %100 Tamamlandı | — | Admin Çekmece Menü, Storefront Mobil Header/Filtre Çekmecesi/Hesabım Sekmeleri |
 
 ---
 
@@ -177,3 +178,39 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
 ## 📚 AŞAMA 8: Dokümantasyon Güncellemesi (9–12 Kasım 2026)
 * Tüm teknik şartnameler, `docs/README.md` ve devir rehberi belgeleri yapılan dikey dilimlerle senkronize edildi.
 * **Yapılanlar** ([`YAPILANLAR_VE_TAMAMLANANLAR.md`](YAPILANLAR_VE_TAMAMLANANLAR.md)) ve **Yapılacaklar / Faz Haritası** ([`YAPILACAKLAR_VE_FAZ_HARITASI.md`](YAPILACAKLAR_VE_FAZ_HARITASI.md)) ayrı sayfalara bölündü.
+
+---
+
+## 🚀 AŞAMA 9: Sipariş İş Akışı, Canlı Katalog Kilidi ve Müşteri Deneyimi İyileştirmeleri (12–13 Kasım 2026)
+
+### ✅ CHECKPOINT 20: Sipariş İş Akışı & Admin Sipariş Yönetimi (Faz 4.1)
+* **Veritabanı & Migration:**
+  - `orders` şeması için `20261112183021_AddOrderWorkflow` (`OrderWorkflow` entity'si ve aşama geçmişi) ve `admin` şeması için `20261112183143_AddOrderManagementPermission` (`orders.view` yetkisi) uygulandı.
+* **Backend API ([`OrderWorkflowEndpoints.cs`](../../backend/src/Endpoints/Orders/OrderWorkflowEndpoints.cs), [`OrderWorkflowService.cs`](../../backend/src/Infrastructure/Orders/OrderWorkflowService.cs)):**
+  - Sipariş yaşam döngüsü yönetimi, durum geçişleri (Onaylandı, Hazırlanıyor, Kargoda, Teslim Edildi, İptal Edildi) ve kargo/sevkiyat güncellemeleri canlı PostgreSQL'e bağlandı.
+* **Admin & Müşteri Ekranları:**
+  - **Admin (`/orders`, `/orders/pending`, `/orders/completed`, `/orders/returns`):** [`OrdersPage.tsx`](../../frontend/src/pages/admin/OrdersPage.tsx) ve [`OrderManagement.tsx`](../../frontend/src/pages/admin/OrderManagement.tsx) eklendi.
+  - **Müşteri & Misafir Takibi:** [`AccountOrders.tsx`](../../frontend/src/pages/account/AccountOrders.tsx) (`/hesabim/siparisler`) ve [`GuestOrderTrackingPage.tsx`](../../frontend/src/pages/account/GuestOrderTrackingPage.tsx) (`/siparis-takip`) üzerinden canlı sipariş durumu takibi sağlandı.
+  - **Ortak Sipariş Bileşenleri:** [`OrderCustomerDetail.tsx`](../../frontend/src/components/orders/OrderCustomerDetail.tsx) ve [`OrderWorkflowView.tsx`](../../frontend/src/components/orders/OrderWorkflowView.tsx) sadeleştirildi; "Yenile" butonları kaldırılıp yerine "İptal Edildi" vb. net durum bildirimleri eklendi.
+
+### ✅ CHECKPOINT 21: Müşteri Katalog Canlı Bağlantısı, Zengin Ürün Seed & Sayfalama
+* **Canlı Katalog & Yöre (`Origin`) Desteği:**
+  - [`ProductDtos.cs`](../../backend/src/Application/Catalog/DTOs/ProductDtos.cs), [`CatalogService.cs`](../../backend/src/Infrastructure/Services/Catalog/CatalogService.cs) ve [`storefrontApi.ts`](../../frontend/src/api/storefront/storefrontApi.ts) üzerinde `Origin` (Yöre/Menşei) alanı uçtan uca bağlandı.
+  - [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx) sunucu taraflı filtreleme, sıralama ve sayfalama ile canlı `/api/catalog/products` ve kategori sayılarına bağlandı.
+* **Vitrin (`StorefrontPage.tsx`) Görsel ve Etkileşim İyileştirmeleri:**
+  - `StorefrontPage.tsx` `pageSize=100` ile tüm aktif ürünleri çeker hale getirildi.
+  - "Geleneksel Lezzet Kategorileri" kartlarına imleç (hover) etkileşimleri eklendi.
+  - "En Çok Tercih Edilen Köy Lezzetleri" bölümü büyük 3 sütunlu kartlardan kompakt **4 sütunlu** (`grid-cols-2 md:grid-cols-3 lg:grid-cols-4`) dengeli kart düzenine geçirildi.
+* **Ürün Seed & Görsel Kataloğu:** 6 birleştirilmiş kategori altında toplam 37 ürün ve `frontend/public/images/products/` altında ürünle eşleşen görseller oluşturuldu/bağlandı.
+* **Admin Ortak Sayfalama:** [`AdminPagination.tsx`](../../frontend/src/components/common/AdminPagination.tsx) bileşeni oluşturulup [`FoodProductPages.tsx`](../../frontend/src/pages/products/FoodProductPages.tsx), [`InventoryPage.tsx`](../../frontend/src/pages/inventory/InventoryPage.tsx) ve [`CustomerReviewsPage.tsx`](../../frontend/src/pages/crm/CustomerReviewsPage.tsx) sayfalarına entegre edildi.
+
+### ✅ CHECKPOINT 22: Müşteri UX, Mobil Uyumluluk, İl/İlçe/Mahalle Adres Sistemi & Oturum İzolasyonu
+* **Birleşik Giriş & Oturum İzolasyonu ([`AuthPage.tsx`](../../frontend/src/pages/auth/AuthPage.tsx), [`PermissionContext.tsx`](../../frontend/src/context/PermissionContext.tsx)):**
+  - `/admin/login` rotası `/giris` ekranına yönlendirildi; müşteri (`kk_access_token`) ve yönetici (`nf_admin_session`) oturumları izole edildi (`getAdminSession()` varsa `/giris` otomatik `/dashboard`'a yönlendirir).
+* **İl / İlçe / Mahalle Adres Sistemi & Ödeme Ekranı:**
+  - `frontend/public/address-data/`, [`addressApi.ts`](../../frontend/src/api/addressApi.ts) ve [`CheckoutAddressFields.tsx`](../../frontend/src/pages/checkout/CheckoutAddressFields.tsx) ile Türkiye il/ilçe/mahalle seçimi eklendi.
+  - [`CheckoutPage.tsx`](../../frontend/src/pages/checkout/CheckoutPage.tsx) üzerinde ilk kayıtlı adresin varsayılan seçili gelmesi ve sağ üstte `+ Yeni adres ekle` aksiyonunun görünmesi sağlandı.
+* **Mobil Responsive & Header Düzeltmeleri:**
+  - [`StorefrontHeader.tsx`](../../frontend/src/components/storefront/StorefrontHeader.tsx) ve [`StorefrontHeader.css`](../../frontend/src/components/storefront/StorefrontHeader.css): Mobil taşma/bozulmalar onarıldı, üst bardaki `Siparişlerim` butonu ve arama çubuğu yanındaki `Kategoriler` açılır listesi kaldırıldı.
+  - [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx): Mobil filtreleme çekmecesinin taşma/kesilme sorunu düzeltildi.
+  - [`account.css`](../../frontend/src/pages/account/account.css): `/hesabim` sayfasındaki yatay kaydırmalı (scroll) menü mobilde daha kullanılabilir yapıya dönüştürüldü.

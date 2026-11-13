@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+﻿import React, { useState, useEffect, useCallback } from 'react';
 import { theme } from '../../theme/tokens';
 import { Modal } from '../../components/common/Modal';
+import { AdminPagination } from '../../components/common/AdminPagination';
 import {
   productService,
   ProductDto,
@@ -51,6 +52,8 @@ export const ProductDefinitionPage: React.FC = () => {
   // Data & Loading state from Backend API
   const [products, setProducts] = useState<ProductDto[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 20;
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -73,7 +76,7 @@ export const ProductDefinitionPage: React.FC = () => {
   // Form State
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
-    category: 'Zeytinyağı & Şarküteri',
+    category: 'Zeytinyağları',
     sku: '',
     barcode: '',
     saleUnit: 'Kg',
@@ -93,7 +96,8 @@ export const ProductDefinitionPage: React.FC = () => {
         search: searchTerm.trim() || undefined,
         category: filterCategory !== 'all' ? filterCategory : undefined,
         unit: filterUnit !== 'all' ? filterUnit : undefined,
-        pageSize: 50,
+        page,
+        pageSize,
       });
       setProducts(res.items);
       setTotalCount(res.totalCount);
@@ -103,6 +107,10 @@ export const ProductDefinitionPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  }, [searchTerm, filterCategory, filterUnit, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [searchTerm, filterCategory, filterUnit]);
 
   // Load on mount and filter change
@@ -132,7 +140,7 @@ export const ProductDefinitionPage: React.FC = () => {
     setIsAddModalOpen(true);
     setFormData({
       name: '',
-      category: 'Zeytinyağı & Şarküteri',
+      category: 'Zeytinyağları',
       sku: `SKU-FOOD-${Math.floor(100 + Math.random() * 900)}`,
       barcode: `8690${Math.floor(100000000 + Math.random() * 900000000)}`,
       saleUnit: 'Kg',
@@ -415,12 +423,12 @@ export const ProductDefinitionPage: React.FC = () => {
             }}
           >
             <option value="all">Tüm Kategoriler</option>
-            <option value="Zeytinyağı & Şarküteri">Zeytinyağı & Şarküteri</option>
-            <option value="Un & Tahıl Grubu">Un & Tahıl Grubu</option>
-            <option value="Süt & Şarküteri">Süt & Şarküteri</option>
-            <option value="Kahvaltılık">Kahvaltılık</option>
-            <option value="Kuru Yemiş">Kuru Yemiş</option>
-            <option value="Taze Meyve-Sebze">Taze Meyve-Sebze</option>
+            <option value="Köy Kahvaltılıkları">Köy Kahvaltılıkları</option>
+            <option value="Salça & Soslar">Salça & Soslar</option>
+            <option value="Zeytinyağları">Zeytinyağları</option>
+            <option value="Bal & Reçel">Bal & Reçel</option>
+            <option value="Kuru Gıdalar & Bakliyat">Kuru Gıdalar & Bakliyat</option>
+            <option value="Kuruyemiş & Kuru Meyve">Kuruyemiş & Kuru Meyve</option>
           </select>
 
           {/* Unit Filter Buttons */}
@@ -647,6 +655,14 @@ export const ProductDefinitionPage: React.FC = () => {
             </tbody>
           </table>
         )}
+        <AdminPagination
+          page={page}
+          pageSize={pageSize}
+          totalCount={totalCount}
+          itemCount={products.length}
+          onPageChange={setPage}
+          label="ürün"
+        />
       </div>
 
       {/* =========================================================================
@@ -697,13 +713,12 @@ export const ProductDefinitionPage: React.FC = () => {
                     backgroundColor: '#FFFFFF',
                   }}
                 >
-                  <option value="Zeytinyağı & Şarküteri">Zeytinyağı & Şarküteri</option>
-                  <option value="Un & Tahıl Grubu">Un & Tahıl Grubu</option>
-                  <option value="Süt & Şarküteri">Süt & Şarküteri</option>
-                  <option value="Kahvaltılık">Kahvaltılık</option>
-                  <option value="Kuru Yemiş">Kuru Yemiş</option>
-                  <option value="Taze Meyve-Sebze">Taze Meyve-Sebze</option>
-                  <option value="Doğal İçecekler & Sirke">Doğal İçecekler & Sirke</option>
+                  <option value="Köy Kahvaltılıkları">Köy Kahvaltılıkları</option>
+                  <option value="Salça & Soslar">Salça & Soslar</option>
+                  <option value="Zeytinyağları">Zeytinyağları</option>
+                  <option value="Bal & Reçel">Bal & Reçel</option>
+                  <option value="Kuru Gıdalar & Bakliyat">Kuru Gıdalar & Bakliyat</option>
+                  <option value="Kuruyemiş & Kuru Meyve">Kuruyemiş & Kuru Meyve</option>
                 </select>
               </div>
 
@@ -952,13 +967,12 @@ export const ProductDefinitionPage: React.FC = () => {
                     backgroundColor: '#FFFFFF',
                   }}
                 >
-                  <option value="Zeytinyağı & Şarküteri">Zeytinyağı & Şarküteri</option>
-                  <option value="Un & Tahıl Grubu">Un & Tahıl Grubu</option>
-                  <option value="Süt & Şarküteri">Süt & Şarküteri</option>
-                  <option value="Kahvaltılık">Kahvaltılık</option>
-                  <option value="Kuru Yemiş">Kuru Yemiş</option>
-                  <option value="Taze Meyve-Sebze">Taze Meyve-Sebze</option>
-                  <option value="Doğal İçecekler & Sirke">Doğal İçecekler & Sirke</option>
+                  <option value="Köy Kahvaltılıkları">Köy Kahvaltılıkları</option>
+                  <option value="Salça & Soslar">Salça & Soslar</option>
+                  <option value="Zeytinyağları">Zeytinyağları</option>
+                  <option value="Bal & Reçel">Bal & Reçel</option>
+                  <option value="Kuru Gıdalar & Bakliyat">Kuru Gıdalar & Bakliyat</option>
+                  <option value="Kuruyemiş & Kuru Meyve">Kuruyemiş & Kuru Meyve</option>
                 </select>
               </div>
 

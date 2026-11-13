@@ -1,4 +1,4 @@
-using Application.Catalog.Services;
+﻿using Application.Catalog.Services;
 using Domain.Entities.Catalog;
 using Infrastructure.Persistence;
 using Infrastructure.Services.Catalog;
@@ -59,13 +59,14 @@ public static class DependencyInjection
 
                 // 1. Ana Kategoriler
                 var catKoyUrunleri = new Category("Köy Ürünleri", "koy-urunleri", "Geleneksel köy yöntemleriyle üretilen saf lezzetler", "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80", null, 1);
-                var catKahvaltilik = new Category("Kahvaltılıklar", "kahvaltiliklar", "Günün en önemli öğünü için katkısız köy kahvaltılıkları", "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=600&q=80", null, 2);
-                var catZeytinyagi = new Category("Zeytin & Zeytinyağları", "zeytin-ve-zeytinyaglari", "Erken hasat, soğuk sıkım saf Ege ve Hatay zeytinyağları", "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80", null, 3);
-                var catBalRecel = new Category("Bal ve Reçeller", "bal-ve-receller", "Yaylalardan gelen ham bal ve odun ateşinde pişmiş reçeller", "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80", null, 4);
-                var catSalcaSos = new Category("Salça ve Soslar", "salca-ve-soslar", "Güneşte kurutulmuş köy salçaları ve acı/tatlı kahvaltılık soslar", "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80", null, 5);
-                var catBakliyat = new Category("Bakliyat & Tahıllar", "bakliyat-ve-tahillar", "Anadolu'nun ata tohumu bakliyatları ve taş değirmen unları", "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80", null, 6);
+                var catKahvaltilik = new Category("Köy Kahvaltılıkları", "kahvaltiliklar", "Günün en önemli öğünü için katkısız köy kahvaltılıkları", "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?auto=format&fit=crop&w=600&q=80", null, 2);
+                var catZeytinyagi = new Category("Zeytinyağları", "zeytinyaglari", "Erken hasat, soğuk sıkım saf Ege ve Hatay zeytinyağları", "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=600&q=80", null, 3);
+                var catBalRecel = new Category("Bal & Reçel", "bal-ve-receller", "Yaylalardan gelen ham bal ve odun ateşinde pişmiş reçeller", "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=600&q=80", null, 4);
+                var catSalcaSos = new Category("Salça & Soslar", "salca-ve-soslar", "Güneşte kurutulmuş köy salçaları ve acı/tatlı kahvaltılık soslar", "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80", null, 5);
+                var catBakliyat = new Category("Kuru Gıdalar & Bakliyat", "kuru-gidalar", "Anadolu'nun ata tohumu bakliyatları ve taş değirmen unları", "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80", null, 6);
 
-                db.Categories.AddRange(catKoyUrunleri, catKahvaltilik, catZeytinyagi, catBalRecel, catSalcaSos, catBakliyat);
+                var catKuruyemis = new Category("Kuruyemiş & Kuru Meyve", "kuruyemisler", "Yeni mahsul ceviz, fındık ve güneşte kurutulmuş meyveler", null, null, 7);
+                db.Categories.AddRange(catKoyUrunleri, catKahvaltilik, catZeytinyagi, catBalRecel, catSalcaSos, catBakliyat, catKuruyemis);
                 await db.SaveChangesAsync();
 
                 // 2. Alt Kategoriler

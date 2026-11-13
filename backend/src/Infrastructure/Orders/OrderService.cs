@@ -15,6 +15,23 @@ namespace Infrastructure.Orders;
 
 public class OrderService(OrdersDbContext db, IConfiguration config) : IOrderService
 {
+    public async Task<AdminOrderPage> ListAdminAsync(int page, int pageSize, string? filter, CancellationToken ct)
+    {
+        page = Math.Clamp(page, 1, 1000000);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+        var query = db.Orders.AsNoTracking();
+        query = filter switch
+        {
+            "pending" => query.Where(x => x.Status == "PendingPayment" || x.Status == "Paid" || x.Status == "Preparing" || x.Status == "Processing" || x.Status == "Shipped"),
+            "completed" => query.Where(x => x.Status == "Delivered" || x.Status == "Completed"),
+            "returns" => query.Where(x => x.Status == "Cancelled" || x.Status == "Refunded" || x.Status == "Returned" || db.CustomerRequests.Any(r => r.OrderId == x.Id)),
+            _ => query
+        };
+        var total = await query.CountAsync(ct);
+        var orders = await query.Include(x => x.Lines).OrderByDescending(x => x.CreatedAtUtc).ThenByDescending(x => x.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
+        return new(orders.Select(x => new AdminOrderView(View(x), x.CustomerId == null, x.Email, x.Phone, x.DeliveryAddress, x.BillingAddress)).ToList(), total, page, pageSize);
+    }
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private static OrderView View(Order x) => new(x.Id, x.Number, x.Status, x.Subtotal, x.ShippingFee, x.Total, x.CreatedAtUtc, x.ReservationExpiresAtUtc, x.Lines.Select(l => new OrderLineView(l.Name, l.Sku, l.Quantity, l.UnitPrice)).ToList(), x.CouponCode, x.Discount ?? 0);
     private static string? TokenHash(Guid? customer, string? token)
@@ -131,6 +148,7 @@ public class OrderService(OrdersDbContext db, IConfiguration config) : IOrderSer
         order.ShippingFee = discountedSubtotal >= threshold ? 0 : fee.Value;
         order.Total = discountedSubtotal + order.ShippingFee;
         db.Orders.Add(order);
+        OrderWorkflowService.Record(db, order, "Siparişiniz oluşturuldu. Henüz ödeme alınmadı.");
         await db.SaveChangesAsync(ct);
         await using (var clear = new NpgsqlCommand("DELETE FROM cart.\"Items\" WHERE \"CartId\"=@id", conn, tx)) { clear.Parameters.AddWithValue("id", cartId); await clear.ExecuteNonQueryAsync(ct); }
         await using (var clearCoupon = new NpgsqlCommand("UPDATE cart.\"Carts\" SET \"CouponCode\"=NULL WHERE \"Id\"=@id", conn, tx)) { clearCoupon.Parameters.AddWithValue("id", cartId); await clearCoupon.ExecuteNonQueryAsync(ct); }

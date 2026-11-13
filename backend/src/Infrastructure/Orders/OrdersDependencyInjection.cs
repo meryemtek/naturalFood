@@ -13,6 +13,7 @@ public static class OrdersDependencyInjection
         var connection = configuration.GetConnectionString("DefaultConnection") ?? configuration.GetConnectionString("AdminDb") ?? throw new InvalidOperationException("Veritabanı bağlantısı yapılandırılmalı.");
         services.AddDbContext<OrdersDbContext>(o => o.UseNpgsql(connection, n => n.MigrationsHistoryTable("__EFMigrationsHistory_Orders", "orders")));
         services.AddScoped<IOrderService, OrderService>();
+        services.AddScoped<IOrderWorkflowService, OrderWorkflowService>();
         services.AddScoped<ISimulatedPaymentService, SimulatedPaymentService>();
         services.AddScoped<IShipmentService, ShipmentService>();
         services.AddHostedService<ReservationExpiryWorker>();

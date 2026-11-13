@@ -239,7 +239,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isSidebarOpen }
             type="button"
             onClick={() => {
               logout();
-              navigate('/admin/login', { replace: true });
+              navigate('/giris', { replace: true });
             }}
             title="Yönetici oturumunu kapat"
             style={{

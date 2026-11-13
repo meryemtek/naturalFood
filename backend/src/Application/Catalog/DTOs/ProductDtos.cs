@@ -38,7 +38,8 @@ public record ProductDto(
     bool IsFeatured,
     bool IsSeasonal,
     bool IsActive,
-    int VariantCount);
+    int VariantCount,
+    string? Origin = null);
 
 public record ProductAttributeDto(string Name, string Value, int DisplayOrder);
 
@@ -83,7 +84,8 @@ public record ProductListFilter(
     bool? IsDiscounted = null,
     string? SortBy = null, // "price_asc", "price_desc", "newest", "bestselling"
     int PageIndex = 1,
-    int PageSize = 12);
+    int PageSize = 12,
+    string? Origin = null);
 
 public record CreateProductRequest(
     string Name,

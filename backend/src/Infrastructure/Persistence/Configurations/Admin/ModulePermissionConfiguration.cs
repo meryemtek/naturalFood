@@ -31,6 +31,7 @@ public class ModulePermissionConfiguration : IEntityTypeConfiguration<ModulePerm
             .HasMaxLength(120);
 
         builder.HasData(
+            new { Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10"), Key = "orders.manage", Title = "Sipariş Durumu ve Talepleri Yönetme", Category = "Sipariş & Lojistik" },
             new
             {
                 Id = Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"),

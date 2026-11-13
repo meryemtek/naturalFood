@@ -2,19 +2,30 @@ using System.Security.Claims;
 using Npgsql;
 using Application.Orders;
 using Application.Cart;
+using Endpoints.Admin;
 using Infrastructure.Orders;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore;
 
 namespace Endpoints.Orders;
 public static class OrdersModuleExtensions
 {
+    public static async Task InitializeOrdersDatabaseAsync(this IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<OrdersDbContext>().Database.MigrateAsync();
+    }
     public static IServiceCollection AddOrdersModule(this IServiceCollection services, IConfiguration configuration) => services.AddOrdersInfrastructure(configuration);
     public static IEndpointRouteBuilder MapOrdersEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapOrderWorkflowEndpoints();
+        app.MapGet("/api/admin/orders", async (int? page, int? pageSize, string? filter, IOrderService service, CancellationToken ct) =>
+            Results.Ok(await service.ListAdminAsync(page ?? 1, pageSize ?? 20, filter, ct)))
+            .RequireAuthorization().RequirePermission("orders.view").WithTags("Admin Orders");
         var group = app.MapGroup("/api/orders").WithTags("Siparişler");
         group.MapGet("/quote", async (HttpContext ctx, ICartService carts, IConfiguration config, CancellationToken ct) =>
         {

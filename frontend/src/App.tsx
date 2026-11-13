@@ -1,5 +1,7 @@
+import { GuestOrderTrackingPage } from './pages/account/GuestOrderTrackingPage';
+import { OrdersPage } from './pages/admin/OrdersPage';
 import React from 'react';
-import { BrowserRouter, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Outlet, Navigate } from 'react-router-dom';
 import { StorefrontPage } from './pages/storefront/StorefrontPage';
 import { OurStoryPage } from './pages/storefront/OurStoryPage';
 import { StorefrontNotFoundPage } from './pages/storefront/StorefrontNotFoundPage';
@@ -10,7 +12,6 @@ import { CheckoutPage } from './pages/checkout/CheckoutPage';
 import { MainLayout } from './components/layout/MainLayout';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { PermissionProvider, PermissionGuard, AdminAuthGuard } from './context/PermissionContext';
-import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 import { UsersPage } from './pages/admin/UsersPage';
 import { RolePermissionsPage } from './pages/admin/RolePermissionsPage';
 import { AuditLogsPage } from './pages/admin/AuditLogsPage';
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="/product-detail" element={<ProductDetailPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/sepetim" element={<CartPage />} />
+        <Route path="/siparis-takip" element={<GuestOrderTrackingPage />} />
         <Route path="/odeme" element={<CheckoutPage />} />
 
         {/* İzole Yönetim Paneli Rotaları */}
@@ -62,7 +64,7 @@ export default function App() {
             </PermissionProvider>
           }
         >
-          <Route path="admin/login" element={<AdminLoginPage />} />
+          <Route path="admin/login" element={<Navigate to="/giris" replace />} />
           <Route
             element={
               <AdminAuthGuard>
@@ -80,10 +82,10 @@ export default function App() {
           <Route path="products/storage-conditions" element={<PermissionGuard requiredPermission="storage.view"><StorageConditionsPage /></PermissionGuard>} />
 
           {/* 2. Sipariş ve Sevkiyat Yönetimi */}
-          <Route path="orders" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
-          <Route path="orders/pending" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
-          <Route path="orders/completed" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
-          <Route path="orders/returns" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
+          <Route path="orders" element={<PermissionGuard requiredPermission="orders.view"><OrdersPage /></PermissionGuard>} />
+          <Route path="orders/pending" element={<PermissionGuard requiredPermission="orders.view"><OrdersPage /></PermissionGuard>} />
+          <Route path="orders/completed" element={<PermissionGuard requiredPermission="orders.view"><OrdersPage /></PermissionGuard>} />
+          <Route path="orders/returns" element={<PermissionGuard requiredPermission="orders.view"><OrdersPage /></PermissionGuard>} />
           <Route path="shipping/shipments" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
           <Route path="shipping/carriers" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />
           <Route path="shipping/zones" element={<PermissionGuard requiredPermission="orders.view"><ModulePlaceholderPage /></PermissionGuard>} />

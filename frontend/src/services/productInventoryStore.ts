@@ -34,7 +34,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   {
     id: 1,
     name: 'Organik Soğuk Sıkım Sızma Zeytinyağı',
-    category: 'Zeytinyağı & Şarküteri',
+    category: 'Zeytinyağları',
     sku: 'SKU-ORG-OIL-500',
     barcode: '8690123456012',
     unitType: 'Litre',
@@ -46,7 +46,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   {
     id: 2,
     name: 'Taş Değirmen Organik Siyez Unu',
-    category: 'Un & Tahıl Grubu',
+    category: 'Kuru Gıdalar & Bakliyat',
     sku: 'SKU-ORG-FLR-1000',
     barcode: '8690123456029',
     unitType: 'Kg',
@@ -58,7 +58,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   {
     id: 3,
     name: 'Şirden Mayalı Trakya Eski Kaşar Peyniri',
-    category: 'Süt & Şarküteri',
+    category: 'Köy Kahvaltılıkları',
     sku: 'SKU-CHZ-KAS-350',
     barcode: '8690123456036',
     unitType: 'Gramaj',
@@ -70,7 +70,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   {
     id: 4,
     name: "Gezen Tavuk Organik Köy Yumurtası (10'lu)",
-    category: 'Kahvaltılık',
+    category: 'Köy Kahvaltılıkları',
     sku: 'SKU-EGG-VIL-10',
     barcode: '8690123456043',
     unitType: 'Adet',
@@ -82,7 +82,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   {
     id: 5,
     name: 'Ham Çiğ Fıstık & Badem Karışımı',
-    category: 'Kuru Yemiş',
+    category: 'Kuruyemiş & Kuru Meyve',
     sku: 'SKU-NUT-MIX-250',
     barcode: '8690123456050',
     unitType: 'Gramaj',
@@ -94,7 +94,7 @@ export const INITIAL_PRODUCTS: ProductItem[] = [
   {
     id: 6,
     name: 'Doğal Yayık Köy Tereyağı',
-    category: 'Süt & Şarküteri',
+    category: 'Köy Kahvaltılıkları',
     sku: 'SKU-BTR-YAY-500',
     barcode: '8690123456067',
     unitType: 'Kg',

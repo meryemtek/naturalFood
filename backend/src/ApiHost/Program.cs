@@ -39,6 +39,9 @@ if (string.IsNullOrWhiteSpace(jwtSettings.SecretKey) || Encoding.UTF8.GetByteCou
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("orderTracking", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
         context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
@@ -141,5 +144,6 @@ app.MapGet("/", () => Results.Ok(new
 await app.Services.InitializeAdminModuleDatabaseAsync();
 await app.Services.InitializeCatalogModuleDatabaseAsync();
 await app.Services.InitializeCustomerModuleDatabaseAsync();
+await app.Services.InitializeOrdersDatabaseAsync();
 
 app.Run();

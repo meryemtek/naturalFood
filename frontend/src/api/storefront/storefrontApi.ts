@@ -1,5 +1,17 @@
 export interface Category { id: string; name: string; slug: string; description: string | null; imageUrl: string | null; subCategories: Category[] }
 
+export interface CatalogCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  imageUrl: string | null;
+  parentCategoryId: string | null;
+  displayOrder: number;
+  isActive: boolean;
+  productCount: number;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -18,6 +30,7 @@ export interface Product {
   isFeatured: boolean;
   isSeasonal?: boolean;
   variantCount: number;
+  origin?: string | null;
 }
 
 export interface ProductImage {

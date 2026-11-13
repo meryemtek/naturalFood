@@ -1,4 +1,4 @@
-export interface UiProduct {
+﻿export interface UiProduct {
   id: string;
   name: string;
   slug: string;
@@ -25,9 +25,9 @@ export const matchCategory = (prodSlug: string, targetSlug: string) => {
   if (!targetSlug || prodSlug === targetSlug) return true;
   const aliases: Record<string, string[]> = {
     'kahvaltiliklar': ['kahvaltiliklar', 'kahvaltilik', 'demo-0'],
-    'zeytinyaglari': ['zeytinyaglari', 'zeytin-ve-zeytinyaglari', 'zeytinyagi', 'demo-1'],
-    'salca-ve-soslar': ['salca-ve-soslar', 'salca-soslar', 'salca', 'demo-2'],
-    'bal-ve-receller': ['bal-ve-receller', 'bal-recel', 'bal', 'demo-3'],
+    'zeytinyaglari': ['zeytinyaglari', 'zeytin-ve-zeytinyaglari', 'zeytinyagi', 'sizma-zeytinyagi', 'kirma-ve-cizik-zeytin', 'demo-1'],
+    'salca-ve-soslar': ['salca-ve-soslar', 'salca-soslar', 'salca', 'ev-tipi-gunes-salcasi', 'demo-2'],
+    'bal-ve-receller': ['bal-ve-receller', 'bal-recel', 'bal', 'ham-cicek-ve-cam-bali', 'demo-3'],
     'kuru-gidalar': ['kuru-gidalar', 'bakliyat-ve-tahillar', 'bakliyat-eriste', 'bakliyat', 'demo-4'],
     'kuruyemisler': ['kuruyemisler', 'kuruyemis', 'kurutulmus-meyve', 'demo-5'],
   };

@@ -196,6 +196,13 @@ namespace Infrastructure.Persistence.Migrations.Admin
                     b.HasData(
                         new
                         {
+                            Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbb10"),
+                            Category = "Sipariş & Lojistik",
+                            Key = "orders.manage",
+                            Title = "Sipariş Durumu ve Talepleri Yönetme"
+                        },
+                        new
+                        {
                             Id = new Guid("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbb1"),
                             Category = "Katalog & Ürün",
                             Key = "products.view",
@@ -357,6 +364,11 @@ namespace Infrastructure.Persistence.Migrations.Admin
                         new
                         {
                             RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
+                            PermissionKey = "orders.manage"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa1"),
                             PermissionKey = "marketing.view"
                         },
                         new
@@ -383,6 +395,11 @@ namespace Infrastructure.Persistence.Migrations.Admin
                         {
                             RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
                             PermissionKey = "orders.view"
+                        },
+                        new
+                        {
+                            RoleId = new Guid("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaa2"),
+                            PermissionKey = "orders.manage"
                         },
                         new
                         {

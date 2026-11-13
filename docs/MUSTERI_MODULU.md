@@ -1,8 +1,8 @@
 # MÜŞTERİ MODÜLÜ (STOREFRONT & E-TİCARET MAĞAZASI)
 
 > **Dokümantasyon:** [docs/03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md](03-is-alanlari-ve-yonetim/MUSTERI_MODULU.md)  
-> **Durum:** ✅ MVP Tamamlandı (Uçtan Uca Backend & React 19 Frontend)  
-> **Son Güncelleme:** 11 Kasım 2026  
+> **Durum:** ✅ MVP + Canlı Katalog, Sipariş Takibi ve Mobil UX Tamamlandı  
+> **Son Güncelleme:** 13 Kasım 2026  
 > **İlgili Yol Haritası:** [docs/00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md](00-devir-rehberi/YAPILACAKLAR_VE_FAZ_HARITASI.md) · [YAPILANLAR_VE_TAMAMLANANLAR.md](00-devir-rehberi/YAPILANLAR_VE_TAMAMLANANLAR.md)
 
 ---
@@ -31,16 +31,17 @@ Ayrıntılı teknik şartname ve kod haritası için:
 
 ### B. Müşteri Frontend Arayüzü (React 19, TypeScript, Tailwind)
 * **10+ Tamamlanmış Ekran ve Bileşen:**
-  - **Ana Sayfa Vitrini (`/`):** Bento köy sofrası vitrini, güven bantları, 6 kategori kartı, çok satanlar, üretici hikâyesi spotu, mevsim lezzetleri.
-  - **Ürünler Kataloğu (`/products`):** Yöre, kategori, fiyat filtreleri, sıralama, arama ve sayfalama.
+  - **Ana Sayfa Vitrini (`/`):** Bento köy sofrası vitrini, güven bantları, hover etkileşimli 6 kategori kartı, kompakt 4 sütunlu çok satanlar vitrini, üretici hikâyesi spotu, mevsim lezzetleri (`pageSize=100` canlı veri).
+  - **Ürünler Kataloğu (`/products`):** Canlı `/api/catalog/products` bağlantısı, sunucu taraflı kategori/yöre (`Origin`)/fiyat filtreleri, sıralama, arama, sayfalama ve mobil uyumlu filtre çekmecesi.
   - **Ürün Detay (`/products/:slug`):** Fotoğraf galerisi, gramaj/ambalaj seçicisi, yasal 100g besin değerleri, alerjen rozetleri, kullanıcı yorumları.
   - **Sepet Sayfası (`/cart`):** Dinamik ücretsiz kargo ilerleme çubuğu (750 TL eşiği), kupon uygulama, ürün miktarı yönetimi.
-  - **Ödeme Ekranı (`/odeme`):** Teslimat adresi seçimi, kart bilgileri simülasyonu, sipariş tamamlama.
+  - **Ödeme Ekranı (`/odeme`):** İlk kayıtlı adresin otomatik seçimi + `+ Yeni adres ekle` seçeneği, Türkiye il/ilçe/mahalle kademeli adres seçimi, kart bilgileri simülasyonu, sipariş tamamlama.
+  - **Sipariş Takip (`GuestOrderTrackingPage` / `/siparis-takip` & `/hesabim/siparisler`):** Canlı sipariş durum aşamaları ve sadeleştirilmiş zaman çizelgesi (`OrderWorkflowView`, `OrderCustomerDetail`).
   - **Bizim Hikâyemiz (`/hikayemiz`):** Yerel üretici kooperatifleri ve doğal gıda felsefesi.
-  - **Giriş & Kayıt (`/giris`, `/uye-ol`):** JWT saklamalı, form validasyonlu kimlik doğrulama.
-  - **Hesabım Portali (`/hesabim/*`):** Profilim, Siparişlerim, Adreslerim, Favorilerim ve Değerlendirmelerim sekmeleri.
-  - **Gezinme & Çekirdek:** Kategori mega menülü `StorefrontHeader`, SVG animasyonlu `HomeLoadingOverlay`, 404 sayfası.
-* **Görsel Temizliği & Yenileme:** Ekran görüntüsü kırpıntılarından (18 Ürün, 12 Ürün gibi gömülü piksellerden) arındırılmış, stüdyo ve köy sofrası kalitesinde yüksek çözünürlüklü temiz fotoğraflar üretildi ve sisteme entegre edildi.
+  - **Giriş & Kayıt (`/giris`, `/uye-ol`):** Birleşik giriş ekranı, müşteri (`kk_access_token`) ve yönetici (`nf_admin_session`) oturum izolasyonu, form validasyonu.
+  - **Hesabım Portali (`/hesabim/*`):** Mobil uyumlu sekme yapısı, Profilim, Siparişlerim (canlı takip entegreli), Adreslerim (il/ilçe/mahalle destekli), Favorilerim ve Değerlendirmelerim.
+  - **Gezinme & Çekirdek:** Sadeleştirilmiş `StorefrontHeader` (mobil taşma düzeltmeleri, arama çubuğu sadeleştirmesi), SVG animasyonlu `HomeLoadingOverlay`, 404 sayfası.
+* **Görsel Temizliği & Ürün Seed Kataloğu:** 6 birleştirilmiş kategori altında 37 ürün veritabanına seed edildi; ekran görüntüsü kırpıntılarından arındırılmış yüksek çözünürlüklü kategori, vitrin ve ürün görselleri (`frontend/public/images/products/`) sisteme entegre edildi.
 
 ---
 
@@ -49,9 +50,10 @@ Ayrıntılı teknik şartname ve kod haritası için:
 Sistemin gerçek para tahsilatı yapan, canlı kargo kuryesiyle çalışan ve tam donanımlı bir e-ticaret platformuna dönüşmesi için kalan eksiklikler **5 Faza** ayrılmıştır:
 
 ### 🟢 FAZ 1: Uçtan Uca Canlı Veri Kilidi (Mock Verilerden %100 Arınma)
-* [ ] Vitrindeki mock veri dizileri (`productsMockData.ts`, `demoData.ts`) yerine doğrudan `/api/catalog/products` ve `/api/catalog/categories` uçlarının bağlanması.
+* [x] Ana sayfa vitrini (`StorefrontPage`) ve ürün kataloğunun (`ProductsPage`) sunucu taraflı filtreleme, sayfalama ve `Origin` (Yöre) desteğiyle doğrudan `/api/catalog/products` ve `/api/catalog/categories` uçlarına bağlanması.
+* [ ] `ProductDetailPage.tsx` içindeki kalan fallback/mock verilerin tamamen kaldırılıp canlı `/api/catalog/products/{slug}` verisine kilitlenmesi.
 * [ ] Müşteri sepetinin `X-Guest-Cart-Token` ile doğrudan PostgreSQL `cart` şemasıyla canlı eşleşmesi ve üye girişi yapıldığında `POST /api/cart/merge` çağrısının otomatik tetiklenmesi.
-* [ ] Canlı kupon indirimlerinin sepet toplamına backend üzerinden yansıtılması.
+* [ ] Canlı kupon indirimlerinin sepet toplamına backend `promotions` üzerinden yansıtılması.
 
 ### 💳 FAZ 2: Gerçek Finans ve Ödeme Entegrasyonu (Sanal POS & 3D Secure)
 * [ ] `SimulatedPayment` yerine BDDK lisanslı gerçek Sanal POS sağlayıcısı (Iyzico / PayTR / Param) entegrasyonu.

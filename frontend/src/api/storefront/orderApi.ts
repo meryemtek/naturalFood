@@ -30,3 +30,36 @@ export async function createOrder(data: OrderRequest, idempotencyKey: string): P
   window.dispatchEvent(new CustomEvent('naturalfood:cart-changed', { detail: empty }));
   return order;
 }
+
+export interface SimulatedPaymentResult {
+  id: string;
+  orderId: string;
+  result: string;
+  amount: number;
+  currency: string;
+  createdAtUtc: string;
+  isSimulation: boolean;
+  orderStatus: string;
+  provider: string;
+}
+
+export async function simulatePaytrPayment(
+  orderId: string,
+  result: 'Success' | 'Failure',
+  idempotencyKey: string,
+): Promise<SimulatedPaymentResult> {
+  const token = authStorage.getAccessToken();
+  const guestToken = authStorage.getGuestToken();
+  if (!token && !guestToken) throw new Error('Sipariş oturumu bulunamadı.');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'Idempotency-Key': idempotencyKey,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  else if (guestToken) headers['X-Guest-Cart-Token'] = guestToken;
+  return request<SimulatedPaymentResult>(`/api/orders/${orderId}/simulated-payments`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ result }),
+  });
+}

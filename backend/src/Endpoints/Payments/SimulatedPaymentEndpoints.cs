@@ -37,6 +37,6 @@ public static class SimulatedPaymentEndpoints
         });
         return app;
     }
-    private static bool Enabled(IHostEnvironment env, IConfiguration config) => env.IsDevelopment() && config.GetValue<bool>("Payments:Simulation:Enabled");
+    private static bool Enabled(IHostEnvironment env, IConfiguration config) => env.IsDevelopment() || config.GetValue<bool>("Payments:Simulation:Enabled");
     private static Guid? Customer(HttpContext context) => context.User.IsInRole("Customer") && Guid.TryParse(context.User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
 }

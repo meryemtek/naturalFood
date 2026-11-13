@@ -1,8 +1,8 @@
 # [Modül Şartnamesi] Müşteri Deneyimi, E-Ticaret Mağazası ve Storefront Modülü (Customer & Storefront)
 
 > **Modül Kodu:** `MOD-04-CUST`  
-> **Durum:** ✅ MVP Tamamlandı (Uçtan Uca Backend Şemaları + React 19 Storefront Arayüzü)  
-> **Son Güncelleme:** 11 Kasım 2026  
+> **Durum:** ✅ MVP + Canlı Katalog, Sipariş Takibi ve Mobil UX Tamamlandı  
+> **Son Güncelleme:** 13 Kasım 2026  
 > **Sorumlu Katmanlar:**  
 > - **Backend:** `backend/src/Domain/Entities/{Catalog, Cart, Customer, Orders, Payments, Promotions, Content, Experience}/`, `Application/`, `Infrastructure/`, `Endpoints/`  
 > - **Frontend:** `frontend/src/pages/storefront/`, `frontend/src/pages/products/`, `frontend/src/pages/cart/`, `frontend/src/pages/checkout/`, `frontend/src/pages/account/`, `frontend/src/pages/auth/`, `frontend/src/api/storefront/`  
@@ -93,14 +93,14 @@ Müşteri arayüzü; sıcak toprak tonları, zeytin yeşili ve köy dokusu palet
 * **1. Ana Sayfa Vitrini ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
   - Zengin Anadolu Köy Sofrası bento vitrin alanı (`hero-bento-showcase.png`).
   - Dörtlü güven bandı (Kırılmaz Ambalaj, Buz Akülü Soğuk Koruma, %100 Katkısız Geleneksel Şirden Maya, 750 TL Üzeri Ücretsiz Kargo).
-  - 6 Temel kategori kartı (Köy Kahvaltılıkları, Taş Baskı Zeytinyağı, Güneşte Kurutulmuş Salçalar, Ev Yapımı Reçel & Bal, Yöresel Erişte & Bakliyat, Kuruyemiş & Kuru Meyve).
-  - Çok satanlar vitrini ve sekmeli filtreleme (Tümü, Kahvaltılık, Zeytinyağı, Salça).
+  - Hover etkileşimli 6 temel kategori kartı (Köy Kahvaltılıkları, Taş Baskı Zeytinyağı, Güneşte Kurutulmuş Salçalar, Ev Yapımı Reçel & Bal, Yöresel Erişte & Bakliyat, Kuruyemiş & Kuru Meyve).
+  - Kompakt 4 sütunlu çok satanlar vitrini ve sekmeli filtreleme (`pageSize=100` canlı veri).
   - "Mehmet Ali Dayı & Hacıpaşa Köyü" hikâye ve üretici kooperatifi spotu.
   - Mevsim lezzetleri ve dinamik müşteri yorumları vitrini.
 * **2. Tüm Ürünler & Filtreleme ([`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx)):**
-  - Kategori, coğrafi yöre (Ege, Hatay, Antep, Kars, Karadeniz), fiyat aralığı ve etiket filtreleri.
+  - Canlı `/api/catalog/products` bağlantısı ile sunucu taraflı kategori, coğrafi yöre (`Origin`), fiyat aralığı ve etiket filtreleri.
   - Anlık metin araması, sıralama (Fiyat artan/azalan, En çok satan, Puan) ve sayfalama.
-  - Mobil uyumlu filtre çekmecesi ve görünüm değiştirici (Grid / Liste).
+  - Mobil uyumlu (taşmasız) filtre çekmecesi ve görünüm değiştirici (Grid / Liste).
 * **3. Ürün Detay Sayfası ([`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx)):**
   - Çoklu açı fotoğraf galerisi (küçük resim seçici, tam ekran büyütme).
   - Varyant ve ambalaj seçici (500g, 1000g, Teneke / Cam).
@@ -110,20 +110,22 @@ Müşteri arayüzü; sıcak toprak tonları, zeytin yeşili ve köy dokusu palet
   - Dinamik kargo barı (*"750 TL üzerine ücretsiz kargo, X TL kaldı"* animasyonlu ilerleme çubuğu).
   - Miktar artırma/azaltma, silme, kupon kodu giriş alanı ve sepet özeti.
 * **5. Ödeme / Kasa Ekranı ([`CheckoutPage.tsx`](../../frontend/src/pages/checkout/CheckoutPage.tsx)):**
-  - Teslimat adresi seçimi, fatura bilgileri, soğuk zincir teslimat notu.
+  - İlk kayıtlı adresin otomatik seçili gelmesi ve sağ üstte `+ Yeni adres ekle` seçeneği.
+  - Türkiye il/ilçe/mahalle kademeli adres seçimi ([`CheckoutAddressFields.tsx`](../../frontend/src/pages/checkout/CheckoutAddressFields.tsx), [`addressApi.ts`](../../frontend/src/api/addressApi.ts)), fatura bilgileri ve soğuk zincir teslimat notu.
   - Kredi kartı simülasyonu ve sipariş tamamlama adımları.
 * **6. Bizim Hikâyemiz ([`OurStoryPage.tsx`](../../frontend/src/pages/storefront/OurStoryPage.tsx)):**
   - Yerel üretici hikayeleri, kooperatif dayanışması ve geleneksel üretim felsefesi.
-* **7. Müşteri Giriş & Kayıt Ekranı ([`AuthPage.tsx`](../../frontend/src/pages/auth/AuthPage.tsx)):**
-  - Tab geçişli Login / Register formu, şifre göster/gizle, form doğrulama ve JWT token saklama.
-* **8. Müşteri Hesabım Portali ([`AccountPage.tsx`](../../frontend/src/pages/account/AccountPage.tsx)):**
+* **7. Birleşik Giriş & Kayıt Ekranı ([`AuthPage.tsx`](../../frontend/src/pages/auth/AuthPage.tsx)):**
+  - Tab geçişli Login / Register formu, şifre göster/gizle, form doğrulama, müşteri (`kk_access_token`) ve yönetici (`nf_admin_session`) oturum izolasyonu.
+* **8. Müşteri Hesabım Portali ([`AccountPage.tsx`](../../frontend/src/pages/account/AccountPage.tsx)) & Misafir Sipariş Takip ([`GuestOrderTrackingPage.tsx`](../../frontend/src/pages/account/GuestOrderTrackingPage.tsx)):**
+  - Mobil uyumlu sekme/navigasyon düzeni (`account.css`).
   - Profil Bilgilerim (`AccountProfile.tsx`).
-  - Sipariş Geçmişim ve Kargo Takibim (`AccountOrders.tsx`).
-  - Kayıtlı Teslimat Adreslerim (`AccountAddresses.tsx`).
+  - Sipariş Geçmişim ve Canlı Durum Takibim (`AccountOrders.tsx`, `OrderWorkflowView.tsx`, `OrderCustomerDetail.tsx`).
+  - Kayıtlı Teslimat Adreslerim (`AccountAddresses.tsx` — il/ilçe/mahalle destekli).
   - Favori Ürünlerim (`AccountFavorites.tsx`).
   - Değerlendirmelerim ve Yorumlarım (`AccountReviews.tsx`).
 * **9. Genel Gezinme & Üst Çubuk ([`StorefrontHeader.tsx`](../../frontend/src/components/storefront/StorefrontHeader.tsx)):**
-  - Kategori mega menüsü, arama çubuğu, favori sayacı, sepet çekmecesi ve kullanıcı profil menüsü.
+  - Mobil taşma düzeltmeleri (`StorefrontHeader.css`), sadeleştirilmiş arama çubuğu (yan kategori dropdown'ı kaldırıldı), favori sayacı, sepet çekmecesi ve kullanıcı profil menüsü.
 * **10. Açılış Deneyimi ([`HomeLoadingOverlay.tsx`](../../frontend/src/components/storefront/HomeLoadingOverlay.tsx)):**
   - Doğal gıda konseptine uygun, SVG sebze animasyonlu profesyonel splash/yükleme perdesi.
 
@@ -159,11 +161,11 @@ flowchart LR
 > **Öncelik:** Çok Yüksek (P0)  
 > **Hedef:** Vitrindeki statik mock verileri (`productsMockData.ts`, `demoData.ts`) tamamen devreden çıkarıp, admin panelinden eklenen gerçek PostgreSQL verilerini tam zamanlı göstermek.
 
-- [ ] **1.1. Vitrin & Ürünler Sayfası Canlı Bağlantısı:**
-  - [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx) içerisindeki `STITCH_PRODUCTS` mock dizisi yerine doğrudan `storefrontApi.getProducts(filter)` çağrısının bağlanması.
-  - Sayfalama, kategori filtresi ve fiyat aralığının backend `catalog` şeması üzerinden SQL düzeyinde filtrelenmesi.
+- [x] **1.1. Vitrin & Ürünler Sayfası Canlı Bağlantısı:**
+  - [`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx) (`pageSize=100`) ve [`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx) doğrudan `storefrontApi.getProducts(filter)` çağrısına bağlandı.
+  - Sayfalama, kategori filtresi, yöre (`Origin`) ve fiyat aralığının backend `catalog` şeması üzerinden SQL düzeyinde filtrelenmesi sağlandı; 6 birleştirilmiş kategori altında 37 ürün seed edildi.
 - [ ] **1.2. Ürün Detay Sayfası Canlı Bağlantısı:**
-  - [`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx) içindeki mock ürün nesneleri yerine `storefrontApi.getProductBySlug(slug)` verisinin kullanılması.
+  - [`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx) içindeki kalan mock/fallback ürün nesneleri yerine tamamen `storefrontApi.getProductBySlug(slug)` verisinin kullanılması.
   - Alerjenler, STT/TETT, parti bilgisi ve 100g besin değerlerinin canlı `NutritionalValues` alanından okunması.
 - [ ] **1.3. Sepet ve Misafir Sepeti Senkronizasyonu:**
   - LocalStorage tabanlı geçici sepet yerine, tarayıcıda üretilen `X-Guest-Cart-Token` ile doğrudan `backend /api/cart` uçlarının konuşturulması.

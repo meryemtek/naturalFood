@@ -28,20 +28,12 @@ public class ReservationExpiryWorker(IServiceScopeFactory scopes, ILogger<Reserv
             await using var transaction = await db.Database.BeginTransactionAsync(ct);
             var updated = await db.Orders.Where(x => x.Id == id && x.Status == "PendingPayment" && x.ReservationExpiresAtUtc <= now).ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, "Cancelled"), ct);
             if (updated == 0) continue;
-            var lines = await db.Lines.AsNoTracking().Where(x => x.OrderId == id).ToListAsync(ct);
-            foreach (var line in lines)
-            {
-                var rows = line.VariantId.HasValue
-                    ? await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE catalog.\"ProductVariants\" SET \"StockQuantity\" = \"StockQuantity\" + {line.Quantity} WHERE \"Id\" = {line.VariantId.Value} AND \"ProductId\" = {line.ProductId}", ct)
-                    : await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE catalog.\"Products\" SET \"StockQuantity\" = \"StockQuantity\" + {line.Quantity} WHERE \"Id\" = {line.ProductId}", ct);
-                if (rows != 1) throw new InvalidOperationException($"Sipariş {id} stok kaydı bulunamadı.");
-            }
-            var couponId = await db.Orders.AsNoTracking().Where(x => x.Id == id).Select(x => x.CouponId).SingleAsync(ct);
-            if (couponId.HasValue)
-            {
-                var count = await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE promotions.\"Coupons\" SET \"UsageCount\" = \"UsageCount\" - 1 WHERE \"Id\" = {couponId.Value} AND \"UsageCount\" > 0", ct);
-                if (count != 1) throw new InvalidOperationException($"Sipariş {id} kupon rezervasyonu geri bırakılamadı.");
-            }
+            var order = await db.Orders.Include(x => x.Lines).SingleAsync(x => x.Id == id, ct);
+            await OrderWorkflowService.RestoreStockAsync(db, order, ct);
+            OrderWorkflowService.Record(db, order, "Ödeme süresi dolduğu için sipariş iptal edildi.");
+            var requests = await db.CustomerRequests.Where(x => x.OrderId == id && x.Status == "Pending").ToListAsync(ct);
+            foreach (var request in requests) { request.Status = "Approved"; request.Response = "Sipariş ödeme süresi dolduğu için otomatik iptal edildi."; request.ResolvedAtUtc = DateTime.UtcNow; }
+            await db.SaveChangesAsync(ct);
             await transaction.CommitAsync(ct);
         }
     }

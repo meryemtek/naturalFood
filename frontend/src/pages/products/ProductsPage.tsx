@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { request, money, type Category, type Product } from '../../api/storefront/storefrontApi';
+import { request, money, type CatalogCategory, type Product } from '../../api/storefront/storefrontApi';
 import { cartApi } from '../../api/storefront/cartApi';
 import { useWishlist } from '../../api/storefront/useWishlist';
 import { StorefrontHeader } from '../../components/storefront/StorefrontHeader';
@@ -52,7 +52,9 @@ export function ProductsPage() {
 
   // State
   const [products, setProducts] = useState<UiProduct[]>([]);
-  const [, setCategories] = useState<Category[]>([]);
+  const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>([]);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
@@ -99,50 +101,70 @@ export function ProductsPage() {
     setSearchParams(params, { replace: true });
   };
 
-  // Load categories and products from Backend API if available
+  // Load categories with product counts once on mount
   useEffect(() => {
     const controller = new AbortController();
-    request<Category[]>('/api/catalog/categories/tree', { signal: controller.signal })
-      .then(cats => setCategories(cats))
+    request<CatalogCategory[]>('/api/catalog/categories', { signal: controller.signal })
+      .then(cats => setCatalogCategories(cats))
       .catch(() => {});
-
-    request<{ items: Product[] }>('/api/catalog/products?pageSize=50', { signal: controller.signal })
-      .then(res => {
-        if (res.items && res.items.length > 0) {
-          const mapped: UiProduct[] = res.items.map((p, idx) => {
-            const fallback = STITCH_PRODUCTS[idx % STITCH_PRODUCTS.length];
-            return {
-              id: p.id,
-              name: p.name,
-              slug: p.slug,
-              shortDescription: p.shortDescription || fallback.shortDescription,
-              categoryName: p.categoryName || fallback.categoryName,
-              categorySlug: p.categorySlug || fallback.categorySlug,
-              basePrice: p.basePrice,
-              discountPrice: p.discountPrice,
-              stockQuantity: p.stockQuantity,
-              variantCount: p.variantCount,
-              unitInfo: p.unitInfo || fallback.unitInfo,
-              mainImageUrl: p.mainImageUrl || fallback.mainImageUrl,
-              origin: fallback.origin,
-              rating: fallback.rating,
-              reviewCount: fallback.reviewCount,
-              isBestSeller: p.isBestSeller,
-              isNew: p.isNew,
-              isFeatured: p.isFeatured,
-              isColdChain: fallback.isColdChain,
-              badge: p.isBestSeller ? 'Çok Satan' : p.isNew ? 'Yeni Mahsul' : fallback.badge,
-            };
-          });
-          setProducts(mapped);
-        }
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
-      });
 
     return () => controller.abort();
   }, []);
+
+  // Load filtered & paginated products from Backend API
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      pageIndex: String(page),
+      pageSize: String(pageSize),
+    });
+    if (selectedCategory) params.set('categorySlug', selectedCategory);
+    if (search.trim()) params.set('search', search.trim());
+    if (minPrice > 0) params.set('minPrice', String(minPrice));
+    if (maxPrice < 1500) params.set('maxPrice', String(maxPrice));
+    if (selectedRegions.length > 0) params.set('origin', selectedRegions.join(','));
+    if (sortBy && sortBy !== 'rating') params.set('sortBy', sortBy);
+
+    setIsLoading(true);
+    request<{ items: Product[]; totalCount: number }>(`/api/catalog/products?${params.toString()}`, { signal: controller.signal })
+      .then(res => {
+        const mapped: UiProduct[] = (res.items || []).map((p, idx) => {
+          const fallback = STITCH_PRODUCTS[idx % STITCH_PRODUCTS.length];
+          return {
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            shortDescription: p.shortDescription || fallback.shortDescription,
+            categoryName: p.categoryName || fallback.categoryName,
+            categorySlug: p.categorySlug || fallback.categorySlug,
+            basePrice: p.basePrice,
+            discountPrice: p.discountPrice,
+            stockQuantity: p.stockQuantity,
+            variantCount: p.variantCount,
+            unitInfo: p.unitInfo || fallback.unitInfo,
+            mainImageUrl: p.mainImageUrl || fallback.mainImageUrl,
+            origin: p.origin || undefined,
+            rating: fallback.rating,
+            reviewCount: fallback.reviewCount,
+            isBestSeller: p.isBestSeller,
+            isNew: p.isNew,
+            isFeatured: p.isFeatured,
+            isColdChain: fallback.isColdChain,
+            badge: p.isBestSeller ? 'Çok Satan' : p.isNew ? 'Yeni Mahsul' : fallback.badge,
+          };
+        });
+        setProducts(mapped);
+        setTotalCount(res.totalCount ?? mapped.length);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [page, selectedCategory, search, minPrice, maxPrice, selectedRegions, sortBy]);
 
   // Toast auto-hide
   useEffect(() => {
@@ -186,66 +208,44 @@ export function ProductsPage() {
     setPage(1);
   };
 
-  // Filtering & Sorting
+  const selectedCatalogCat = catalogCategories.find(c => c.slug === selectedCategory);
+  const selectedParentCat = selectedCatalogCat?.parentCategoryId
+    ? catalogCategories.find(c => c.id === selectedCatalogCat.parentCategoryId)
+    : undefined;
+
+  const getCategoryCount = (slug: string): number => {
+    if (catalogCategories.length === 0) return slug ? 0 : totalCount;
+    if (!slug) {
+      return catalogCategories.reduce((sum, c) => sum + c.productCount, 0);
+    }
+    const root = catalogCategories.find(c => c.slug === slug);
+    if (!root) return 0;
+    const ids = new Set<string>([root.id]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const cat of catalogCategories) {
+        if (cat.parentCategoryId && ids.has(cat.parentCategoryId) && !ids.has(cat.id)) {
+          ids.add(cat.id);
+          added = true;
+        }
+      }
+    }
+    return catalogCategories
+      .filter(c => ids.has(c.id))
+      .reduce((sum, c) => sum + c.productCount, 0);
+  };
+
+  // Client-side rating sort (category, search, price, origin, and pagination are handled by backend)
   const filteredProducts = useMemo(() => {
-    let result = [...products];
-
-    // Search query
-    if (search.trim()) {
-      const q = search.toLocaleLowerCase('tr-TR');
-      result = result.filter(p =>
-        p.name.toLocaleLowerCase('tr-TR').includes(q) ||
-        p.shortDescription.toLocaleLowerCase('tr-TR').includes(q) ||
-        (p.origin && p.origin.toLocaleLowerCase('tr-TR').includes(q))
-      );
+    const result = [...products];
+    if (sortBy === 'rating') {
+      result.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     }
-
-    // Category filter
-    if (selectedCategory) {
-      result = result.filter(p => matchCategory(p.categorySlug, selectedCategory));
-    }
-
-    // Region filter
-    if (selectedRegions.length > 0) {
-      result = result.filter(p => {
-        if (!p.origin) return false;
-        return selectedRegions.some(reg => {
-          if (p.origin === reg) return true;
-          const mainPart = reg.split(/[&(]/)[0].trim().toLocaleLowerCase('tr-TR');
-          return p.origin!.toLocaleLowerCase('tr-TR').includes(mainPart);
-        });
-      });
-    }
-
-    // Price range
-    result = result.filter(p => {
-      const price = p.discountPrice ?? p.basePrice;
-      return price >= minPrice && price <= maxPrice;
-    });
-
-    // Sorting
-    switch (sortBy) {
-      case 'price_asc':
-        result.sort((a, b) => (a.discountPrice ?? a.basePrice) - (b.discountPrice ?? b.basePrice));
-        break;
-      case 'price_desc':
-        result.sort((a, b) => (b.discountPrice ?? b.basePrice) - (a.discountPrice ?? a.basePrice));
-        break;
-      case 'bestselling':
-        result.sort((a, b) => (b.isBestSeller ? 1 : 0) - (a.isBestSeller ? 1 : 0));
-        break;
-      case 'newest':
-        result.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
-        break;
-      case 'rating':
-        result.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-        break;
-      default: // featured
-        result.sort((a, b) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0));
-    }
-
     return result;
-  }, [products, search, selectedCategory, selectedRegions, minPrice, maxPrice, sortBy]);
+  }, [products, sortBy]);
+
+  const displayTotalCount = totalCount;
 
   // Clear all filters
   const clearFilters = () => {
@@ -296,11 +296,11 @@ export function ProductsPage() {
       />
 
       {/* Main Canvas */}
-      <main className="flex-1 w-full max-w-[1320px] mx-auto px-6 lg:px-12 py-6">
+      <main className="flex-1 w-full max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-12 py-6">
         {/* Clean, Unified Page Header & Toolbar */}
         <div className="mb-7 pb-5 border-b border-secondary/20 flex flex-col lg:flex-row lg:items-end justify-between gap-5">
           <div>
-            <nav className="flex items-center gap-1.5 text-xs font-medium text-secondary mb-2">
+            <nav className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-secondary mb-2">
               <Link to="/" className="hover:text-primary transition-colors">Ana Sayfa</Link>
               <span className="text-secondary/50">/</span>
               <button
@@ -310,19 +310,36 @@ export function ProductsPage() {
               >
                 Tüm Ürünler
               </button>
-              {matchedFilter && (
+              {matchedFilter ? (
                 <>
                   <span className="text-secondary/50">/</span>
                   <span className="text-primary font-semibold">{matchedFilter.name}</span>
+                </>
+              ) : selectedCatalogCat && (
+                <>
+                  {selectedParentCat && (
+                    <>
+                      <span className="text-secondary/50">/</span>
+                      <button
+                        type="button"
+                        onClick={() => updateCategory(selectedParentCat.slug)}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {selectedParentCat.name}
+                      </button>
+                    </>
+                  )}
+                  <span className="text-secondary/50">/</span>
+                  <span className="text-primary font-semibold">{selectedCatalogCat.name}</span>
                 </>
               )}
             </nav>
 
             <h1 className="text-2xl sm:text-[28px] font-extrabold text-primary tracking-tight leading-tight">
-              {activeMeta.title}
+              {selectedCatalogCat ? selectedCatalogCat.name : activeMeta.title}
             </h1>
             <p className="text-sm text-on-surface-variant mt-1 max-w-2xl">
-              {activeMeta.subtitle}
+              {selectedCatalogCat?.description || activeMeta.subtitle}
             </p>
           </div>
 
@@ -337,7 +354,7 @@ export function ProductsPage() {
             </button>
 
             <div className="text-xs sm:text-sm text-on-surface-variant pr-2 border-r border-secondary/20">
-              <strong className="font-extrabold text-primary">{filteredProducts.length}</strong> ürün listeleniyor
+              <strong className="font-extrabold text-primary">{displayTotalCount}</strong> ürün listeleniyor
             </div>
 
             <div className="flex items-center gap-2">
@@ -347,7 +364,7 @@ export function ProductsPage() {
               <select
                 id="products-sort"
                 value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
+                onChange={e => { setSortBy(e.target.value); setPage(1); }}
                 className="bg-surface-container/80 hover:bg-surface-container border border-secondary/25 rounded-lg py-1.5 pl-3 pr-8 text-xs sm:text-sm font-semibold text-primary focus:ring-primary focus:border-primary cursor-pointer transition-colors"
               >
                 <option value="featured">Öne Çıkanlar</option>
@@ -381,7 +398,7 @@ export function ProductsPage() {
         {/* Main Content Area: Sidebar Filter + Product Grid */}
         <div className="flex gap-8 items-start">
           {/* Left Sidebar Filters */}
-          <aside className={`w-64 xl:w-72 flex-shrink-0 sticky top-28 space-y-4 lg:block ${mobileFilterOpen ? 'block fixed inset-0 z-50 bg-surface p-6 overflow-y-auto w-full' : 'hidden'}`}>
+          <aside className={`space-y-4 lg:block lg:static lg:w-64 xl:w-72 lg:flex-shrink-0 lg:sticky lg:top-28 lg:p-0 lg:bg-transparent lg:overflow-visible ${mobileFilterOpen ? 'fixed inset-0 z-50 w-full bg-background p-5 overflow-y-auto' : 'hidden'}`}>
             {mobileFilterOpen && (
               <div className="flex items-center justify-between pb-3 border-b border-secondary/20 lg:hidden">
                 <span className="font-headline-sm text-headline-sm font-bold text-primary">Filtreler</span>
@@ -428,24 +445,53 @@ export function ProductsPage() {
                   >
                     <span>Tüm Ürünler</span>
                     <span className={`text-xs ${!selectedCategory ? 'text-on-primary/80' : 'text-on-surface-variant'}`}>
-                      {products.length}
+                      {getCategoryCount('')}
                     </span>
                   </button>
                   {CATEGORY_FILTERS.map(cat => {
-                    const count = products.filter(p => matchCategory(p.categorySlug, cat.slug)).length;
+                    const count = getCategoryCount(cat.slug);
+                    const rootCat = catalogCategories.find(c => c.slug === cat.slug);
+                    const subcategories = rootCat
+                      ? catalogCategories
+                          .filter(c => c.parentCategoryId === rootCat.id && c.isActive)
+                          .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name, 'tr'))
+                      : [];
                     const isChecked = matchCategory(selectedCategory, cat.slug);
+                    const isParentOrChildSelected =
+                      isChecked || subcategories.some(sub => sub.slug === selectedCategory);
                     return (
-                      <button
-                        key={cat.slug}
-                        type="button"
-                        onClick={() => updateCategory(isChecked ? '' : cat.slug)}
-                        className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors ${isChecked ? 'bg-primary text-on-primary font-semibold' : 'text-on-surface hover:bg-surface-container'}`}
-                      >
-                        <span>{cat.name}</span>
-                        <span className={`text-xs ${isChecked ? 'text-on-primary/80' : 'text-on-surface-variant'}`}>
-                          {count}
-                        </span>
-                      </button>
+                      <div key={cat.slug} className="space-y-1">
+                        <button
+                          type="button"
+                          onClick={() => updateCategory(isChecked ? '' : cat.slug)}
+                          className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left transition-colors ${isChecked ? 'bg-primary text-on-primary font-semibold' : isParentOrChildSelected ? 'bg-primary/10 text-primary font-semibold' : 'text-on-surface hover:bg-surface-container'}`}
+                        >
+                          <span>{cat.name}</span>
+                          <span className={`text-xs ${isChecked ? 'text-on-primary/80' : 'text-on-surface-variant'}`}>
+                            {count}
+                          </span>
+                        </button>
+                        {subcategories.length > 0 && (
+                          <div className="ml-3 pl-2.5 border-l border-secondary/25 space-y-1">
+                            {subcategories.map(sub => {
+                              const isSubChecked = selectedCategory === sub.slug;
+                              return (
+                                <button
+                                  key={sub.id}
+                                  type="button"
+                                  onClick={() => updateCategory(isSubChecked ? cat.slug : sub.slug)}
+                                  className={`w-full flex items-center justify-between px-2 py-1 rounded-md text-xs text-left transition-colors ${isSubChecked ? 'bg-primary text-on-primary font-semibold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'}`}
+                                >
+                                  <span>{sub.name}</span>
+                                  <span className={`text-[11px] ${isSubChecked ? 'text-on-primary/80' : 'text-on-surface-variant/80'}`}>
+                                    {sub.productCount}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
@@ -552,7 +598,7 @@ export function ProductsPage() {
                 onClick={() => setMobileFilterOpen(false)}
                 className="w-full py-3 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold mt-4 lg:hidden"
               >
-                Sonuçları Gör ({filteredProducts.length})
+                Sonuçları Gör ({displayTotalCount})
               </button>
             )}
           </aside>
@@ -595,7 +641,11 @@ export function ProductsPage() {
               </div>
             )}
 
-            {filteredProducts.length === 0 ? (
+            {isLoading && filteredProducts.length === 0 ? (
+              <div className="bg-surface-container rounded-2xl p-12 text-center border border-secondary/20 text-on-surface-variant">
+                Ürünler yükleniyor...
+              </div>
+            ) : filteredProducts.length === 0 ? (
               <div className="bg-surface-container rounded-2xl p-12 text-center border border-secondary/20">
                 <span className="material-symbols-outlined text-[48px] text-secondary mb-3" data-icon="search_off">search_off</span>
                 <h3 className="text-headline-md font-bold text-primary mb-2">Aramanıza Uygun Ürün Bulunamadı</h3>
@@ -611,7 +661,7 @@ export function ProductsPage() {
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.slice(0, page * pageSize).map(product => {
+                {filteredProducts.map(product => {
                   const isFavorited = wishlist.includes(product.id);
                   const hasDiscount = product.discountPrice != null && product.discountPrice < product.basePrice;
                   const discountPercent = hasDiscount
@@ -706,7 +756,7 @@ export function ProductsPage() {
             ) : (
               /* List View */
               <div className="space-y-4">
-                {filteredProducts.slice(0, page * pageSize).map(product => {
+                {filteredProducts.map(product => {
                   const isFavorited = wishlist.includes(product.id);
                   const hasDiscount = product.discountPrice != null && product.discountPrice < product.basePrice;
 
@@ -781,43 +831,48 @@ export function ProductsPage() {
               </div>
             )}
 
-            {/* Pagination & Loading Indicator */}
-            {filteredProducts.length > 0 && (
-              <div className="mt-12 pt-6 border-t border-secondary/20 flex flex-col sm:flex-row items-center justify-between gap-6">
-                <div className="font-body-sm text-body-sm text-on-surface-variant">
-                  Sayfa <strong className="text-primary font-bold">{page}</strong> / {Math.ceil(filteredProducts.length / pageSize)} ({Math.min(page * pageSize, filteredProducts.length)} / {filteredProducts.length} Ürün Listelendi)
+            {/* Pagination */}
+            {displayTotalCount > 0 && (() => {
+              const totalPages = Math.max(1, Math.ceil(displayTotalCount / pageSize));
+              return (
+                <div className="mt-10 pt-6 border-t border-secondary/20 flex flex-col items-center justify-center gap-3">
+                  <div className="inline-flex flex-wrap items-center justify-center gap-3 sm:gap-4 rounded-xl border border-secondary/20 bg-surface-container-low px-4 py-2.5 shadow-sm">
+                    <span className="font-body-sm text-body-sm text-on-surface-variant whitespace-nowrap">
+                      Sayfa <strong className="text-primary font-bold">{page}</strong> / {totalPages} ({filteredProducts.length} / {displayTotalCount} Ürün)
+                    </span>
+                    <span className="hidden sm:inline-block h-5 w-px bg-secondary/20" aria-hidden="true" />
+                    <div className="flex flex-wrap items-center justify-center gap-1.5">
+                      <button
+                        type="button"
+                        disabled={page === 1}
+                        onClick={() => { setPage(prev => Math.max(prev - 1, 1)); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
+                        className="px-3 py-1.5 rounded-lg border border-secondary/20 bg-white text-on-surface-variant font-label-md text-label-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container-high transition-colors"
+                      >
+                        Önceki
+                      </button>
+                      {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => { setPage(p); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
+                          className={`w-9 h-9 rounded-lg font-label-md text-label-md font-bold transition-colors ${p === page ? 'bg-primary text-on-primary shadow-sm' : 'border border-secondary/20 bg-white text-on-surface hover:bg-surface-container-high'}`}
+                        >
+                          {p}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        disabled={page >= totalPages}
+                        onClick={() => { setPage(prev => Math.min(prev + 1, totalPages)); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
+                        className="px-3 py-1.5 rounded-lg border border-secondary/20 bg-white text-on-surface hover:bg-surface-container-high font-label-md text-label-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Sonraki
+                      </button>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="flex items-center gap-1.5">
-                  <button
-                    disabled={page === 1}
-                    onClick={() => { setPage(prev => Math.max(prev - 1, 1)); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
-                    className="px-3 py-1.5 rounded-lg border border-secondary/20 text-on-surface-variant font-label-md text-label-md disabled:opacity-40 disabled:cursor-not-allowed hover:bg-surface-container-high transition-colors"
-                  >
-                    Önceki
-                  </button>
-                  <button className="w-9 h-9 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-bold shadow-sm">
-                    {page}
-                  </button>
-                  <button
-                    disabled={page * pageSize >= filteredProducts.length}
-                    onClick={() => { setPage(prev => prev + 1); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
-                    className="px-3 py-1.5 rounded-lg border border-secondary/20 text-on-surface hover:bg-surface-container-high font-label-md text-label-md disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Sonraki
-                  </button>
-                </div>
-
-                {page * pageSize < filteredProducts.length && (
-                  <button
-                    onClick={() => setPage(prev => prev + 1)}
-                    className="px-6 py-2.5 bg-surface border-2 border-secondary text-primary hover:bg-surface-container rounded-lg font-label-md text-label-md font-bold tactile-depress transition-all"
-                  >
-                    Daha Fazla Göster ({Math.min(page * pageSize, filteredProducts.length)} / {filteredProducts.length})
-                  </button>
-                )}
-              </div>
-            )}
+              );
+            })()}
           </section>
         </div>
 

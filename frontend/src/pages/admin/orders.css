@@ -1,0 +1,16 @@
+.admin-orders { padding: 24px; color: #24352c; }
+.admin-orders header, .admin-orders nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+.admin-orders h1 { font-size: 26px; margin: 0; }
+.admin-orders h2 { font-size: 16px; overflow-wrap: anywhere; margin: 0; }
+.admin-orders p { margin: 12px 0; overflow-wrap: anywhere; }
+.admin-orders button { padding: 10px 18px; border: 1px solid #cdd8cf; border-radius: 8px; background: white; cursor: pointer; }
+.admin-orders button:disabled { opacity: .45; cursor: default; }
+.order-card { background: white; border: 1px solid #dce4dd; border-radius: 12px; padding: 20px; margin: 16px 0; }
+.order-total { font-weight: 700; }
+.order-addresses { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.order-table { overflow-x: auto; }
+.order-table table { width: 100%; border-collapse: collapse; }
+.order-table th, .order-table td { text-align: left; padding: 12px 8px; border-bottom: 1px solid #e5e9e5; }
+.order-card summary { cursor: pointer; padding: 8px 0; }
+.orders-error { padding: 12px; background: #fff1ef; color: #8b2e22; }
+@media (max-width: 600px) { .admin-orders { padding: 12px; } .order-card { padding: 14px; } }

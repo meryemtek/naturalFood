@@ -151,6 +151,21 @@ public class CatalogService : ICatalogService
                 (p.Origin != null && p.Origin.ToLower().Contains(search)));
         }
 
+        // Menşei / Yöre filtresi (virgülle ayrılmış çoklu seçim destekli)
+        if (!string.IsNullOrWhiteSpace(filter.Origin))
+        {
+            var origins = filter.Origin
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(o => o.Split('&')[0].Split('(')[0].Trim().ToLower())
+                .Where(o => o.Length > 0)
+                .ToList();
+
+            if (origins.Count > 0)
+            {
+                query = query.Where(p => p.Origin != null && origins.Any(o => p.Origin.ToLower().Contains(o)));
+            }
+        }
+
         // Fiyat aralığı
         if (filter.MinPrice.HasValue)
             query = query.Where(p => (p.Variants.Where(v => v.IsActive).Select(v => (decimal?)(v.DiscountPrice ?? v.Price)).Min() ?? p.DiscountPrice ?? p.BasePrice) >= filter.MinPrice.Value);
@@ -213,7 +228,8 @@ public class CatalogService : ICatalogService
                 p.IsFeatured,
                 p.IsSeasonal,
                 p.IsActive,
-                p.Variants.Count(v => v.IsActive)))
+                p.Variants.Count(v => v.IsActive),
+                p.Origin))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<ProductDto>(items, totalCount, pageIndex, pageSize);
@@ -279,7 +295,8 @@ public class CatalogService : ICatalogService
                 p.IsFeatured,
                 p.IsSeasonal,
                 p.IsActive,
-                p.Variants.Count(v => v.IsActive)))
+                p.Variants.Count(v => v.IsActive),
+                p.Origin))
             .ToListAsync(cancellationToken);
     }
 

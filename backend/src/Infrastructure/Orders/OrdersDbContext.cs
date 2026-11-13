@@ -9,9 +9,42 @@ public class OrdersDbContext(DbContextOptions<OrdersDbContext> options) : DbCont
     public DbSet<OrderLine> Lines => Set<OrderLine>();
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<SimulatedPayment> SimulatedPayments => Set<SimulatedPayment>();
+    public DbSet<OrderStatusEvent> StatusEvents => Set<OrderStatusEvent>();
+    public DbSet<OrderCustomerRequest> CustomerRequests => Set<OrderCustomerRequest>();
+    public DbSet<OrderNotification> Notifications => Set<OrderNotification>();
+    public DbSet<OrderInvoice> Invoices => Set<OrderInvoice>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.HasDefaultSchema("orders");
+        modelBuilder.Entity<OrderStatusEvent>(b => {
+            b.HasKey(x => x.Id);
+            b.HasIndex(x => new { x.OrderId, x.CreatedAtUtc });
+            b.Property(x => x.Status).HasMaxLength(30);
+            b.Property(x => x.Note).HasMaxLength(1000);
+            b.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<OrderCustomerRequest>(b => {
+            b.HasKey(x => x.Id);
+            b.HasIndex(x => new { x.OrderId, x.Kind }).IsUnique().HasFilter("\"Status\" = 'Pending'");
+            b.Property(x => x.Kind).HasMaxLength(30);
+            b.Property(x => x.Status).HasMaxLength(30);
+            b.Property(x => x.Reason).HasMaxLength(1000);
+            b.Property(x => x.Response).HasMaxLength(1000);
+            b.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<OrderNotification>(b => {
+            b.HasKey(x => x.Id);
+            b.HasIndex(x => new { x.EventId, x.Channel }).IsUnique();
+            b.Property(x => x.Channel).HasMaxLength(20);
+            b.Property(x => x.Message).HasMaxLength(1500);
+            b.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        });
+        modelBuilder.Entity<OrderInvoice>(b => {
+            b.HasKey(x => x.Id);
+            b.HasIndex(x => x.OrderId).IsUnique();
+            b.Property(x => x.Number).HasMaxLength(50);
+            b.HasOne<Order>().WithMany().HasForeignKey(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
+        });
         modelBuilder.Entity<Order>(b =>
         {
             b.HasKey(x => x.Id);
@@ -49,6 +82,7 @@ public class OrdersDbContext(DbContextOptions<OrdersDbContext> options) : DbCont
             b.HasOne(x => x.Order).WithOne().HasForeignKey<Shipment>(x => x.OrderId).OnDelete(DeleteBehavior.Restrict);
             b.Property(x => x.Carrier).HasMaxLength(150).IsRequired();
             b.Property(x => x.TrackingNumber).HasMaxLength(150).IsRequired();
+            b.Property(x => x.TrackingUrl).HasMaxLength(1000);
             b.Property(x => x.Status).HasMaxLength(30).IsRequired();
         });
         modelBuilder.Entity<OrderLine>(b =>

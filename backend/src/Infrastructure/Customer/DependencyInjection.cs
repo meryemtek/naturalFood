@@ -101,29 +101,6 @@ public static class DependencyInjection
                 await db.SaveChangesAsync();
             }
 
-            // Admin kullanıcısı tohum verisi (Müşteri giriş ekranından yönetim paneline erişim için ayrı 'Admin' rolüyle)
-            const string adminEmail = "admin@koykokusu.com.tr";
-            var existingAdmin = await db.Customers.FirstOrDefaultAsync(c => c.Email == adminEmail);
-            if (existingAdmin == null)
-            {
-                logger.LogInformation("Admin kullanıcısı (admin@koykokusu.com.tr) oluşturuluyor...");
-
-                var adminCustomer = Domain.Entities.Customer.Customer.CreateRegistered(
-                    email: adminEmail,
-                    passwordHash: AuthService.HashPassword("Admin123*"),
-                    firstName: "Sistem",
-                    lastName: "Yöneticisi",
-                    phone: "05320000000",
-                    role: "Admin");
-
-                db.Customers.Add(adminCustomer);
-                await db.SaveChangesAsync();
-            }
-            else if (existingAdmin.Role != "Admin")
-            {
-                existingAdmin.SetRole("Admin");
-                await db.SaveChangesAsync();
-            }
         }
         catch (Exception ex)
         {

@@ -13,6 +13,7 @@ import {
   ensureAdminRoleFetchInterceptor,
 } from '../services/rbacService';
 import { theme } from '../theme/tokens';
+import { authStorage } from '../api/authApi';
 
 // İlk yüklemede /api/admin interceptor hazır olsun
 ensureAdminRoleFetchInterceptor();
@@ -194,12 +195,19 @@ export function usePermissions(): PermissionContextValue {
 }
 
 export const AdminAuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated } = usePermissions();
+  const { isAuthenticated, logout } = usePermissions();
   const location = useLocation();
+  const hasCustomerSession = Boolean(authStorage.getCustomer());
 
-  if (!isAuthenticated) {
+  useEffect(() => {
+    if (isAuthenticated && hasCustomerSession) {
+      logout();
+    }
+  }, [isAuthenticated, hasCustomerSession, logout]);
+
+  if (!isAuthenticated || hasCustomerSession) {
     const returnUrl = `${location.pathname}${location.search}`;
-    return <Navigate to={`/admin/login?returnUrl=${encodeURIComponent(returnUrl)}`} replace />;
+    return <Navigate to={`/giris?returnUrl=${encodeURIComponent(returnUrl)}`} replace />;
   }
 
   return <>{children}</>;

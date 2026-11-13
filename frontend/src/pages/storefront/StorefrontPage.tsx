@@ -132,7 +132,7 @@ export function StorefrontPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    request<{ items: Product[] }>('/api/catalog/products?pageSize=50', { signal: controller.signal })
+    request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal })
       .then(result => setCatalogProducts(result.items))
       .catch(() => { if (!controller.signal.aborted) setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.'); });
     setInitialDataReady(true);
@@ -201,19 +201,22 @@ export function StorefrontPage() {
   }, [bestSellers, selectedCategoryTab]);
 
   const seasonalProducts: SeasonalProduct[] = useMemo(() => {
-    const apiSeasonal = catalogProducts.filter(p => p.isSeasonal).map(p => ({
+    const mapProduct = (p: typeof catalogProducts[number]): SeasonalProduct => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
       region: p.categoryName ?? 'Anadolu Hasadı',
-      badge: 'Mevsimlik',
+      badge: p.isSeasonal ? 'Mevsimlik' : 'Taze Mahsul',
       priceInfo: `${money(p.discountPrice ?? p.basePrice)} / ${p.unitInfo}`,
       price: p.discountPrice ?? p.basePrice,
       description: p.shortDescription,
       imageUrl: p.mainImageUrl || '/images/products/prod-ceviz-ici.jpg',
       variantCount: p.variantCount,
-    }));
-    return apiSeasonal.slice(0, 4);
+    });
+    const apiSeasonal = catalogProducts.filter(p => p.isSeasonal).map(mapProduct);
+    if (apiSeasonal.length >= 4) return apiSeasonal.slice(0, 4);
+    const others = catalogProducts.filter(p => !p.isSeasonal).map(mapProduct);
+    return [...apiSeasonal, ...others].slice(0, 4);
   }, [catalogProducts]);
 
   return (
@@ -364,20 +367,29 @@ export function StorefrontPage() {
                 <Link
                   key={cat.id}
                   to={`/products?category=${cat.slug}`}
-                  className="group relative rounded-xl overflow-hidden border border-surface-container-highest bg-surface-container-low hover:border-secondary transition-all duration-200 farmhouse-shadow"
+                  className="group relative rounded-xl overflow-hidden border border-surface-container-highest bg-surface-container-low hover:-translate-y-1.5 hover:shadow-xl hover:border-secondary transition-all duration-300 farmhouse-shadow"
                 >
                   <div className="h-60 overflow-hidden relative">
                     <img
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                       alt={cat.name}
                       src={cat.imageUrl}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-primary/55 via-primary/5 to-transparent pointer-events-none"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/65 via-primary/10 to-transparent group-hover:from-primary/75 transition-colors duration-300 pointer-events-none"></div>
+                    <span className="absolute bottom-3 right-3 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-surface/95 text-primary text-xs font-bold shadow-sm opacity-0 translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
+                      Keşfet
+                      <span className="material-symbols-outlined text-[15px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+                    </span>
                   </div>
                   <div className="p-5">
-                    <h3 className="text-headline-sm font-headline-sm font-bold text-primary group-hover:text-secondary transition-colors">
-                      {cat.name}
-                    </h3>
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-headline-sm font-headline-sm font-bold text-primary group-hover:text-secondary transition-colors">
+                        {cat.name}
+                      </h3>
+                      <span className="material-symbols-outlined text-[20px] text-secondary opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                        arrow_forward
+                      </span>
+                    </div>
                     <p className="text-body-sm font-body-sm text-on-surface-variant mt-1.5">{cat.description}</p>
                   </div>
                 </Link>
@@ -441,8 +453,8 @@ export function StorefrontPage() {
               </div>
             </div>
 
-            {/* 6-Product Responsive Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Compact Responsive Product Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
               {filteredBestSellers.map(product => {
                 const isFav = wishlist.includes(product.id);
                 return (
@@ -451,7 +463,7 @@ export function StorefrontPage() {
                     className="bg-surface rounded-xl border border-surface-container-highest overflow-hidden farmhouse-shadow flex flex-col justify-between group"
                   >
                     <div>
-                      <div className="relative h-64 bg-surface-container-low overflow-hidden">
+                      <div className="relative h-44 sm:h-48 bg-surface-container-low overflow-hidden">
                         <Link to={`/products/${product.slug}`} className="block w-full h-full">
                           <img
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
@@ -459,47 +471,47 @@ export function StorefrontPage() {
                             src={product.imageUrl}
                           />
                         </Link>
-                        <span className={`absolute top-3 left-3 px-2.5 py-1 ${product.badgeColor} font-label-sm rounded-md font-bold shadow-sm`}>
+                        <span className={`absolute top-2.5 left-2.5 px-2 py-0.5 ${product.badgeColor} text-[11px] rounded-md font-bold shadow-sm`}>
                           {product.badge}
                         </span>
                         <button
                           onClick={e => toggleWishlist(product.id, e)}
                           aria-label="Favoriye ekle"
-                          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-surface/90 hover:bg-surface text-primary flex items-center justify-center transition-colors shadow-sm active:scale-95"
+                          className="absolute top-2.5 right-2.5 w-8 h-8 rounded-full bg-surface/90 hover:bg-surface text-primary flex items-center justify-center transition-colors shadow-sm active:scale-95"
                         >
-                          <span className={`material-symbols-outlined text-xl ${isFav ? 'fill-icon text-tertiary-container' : ''}`}>
+                          <span className={`material-symbols-outlined text-[18px] ${isFav ? 'fill-icon text-tertiary-container' : ''}`}>
                             favorite
                           </span>
                         </button>
                       </div>
 
-                      <div className="p-5 pb-2">
+                      <div className="p-3.5 sm:p-4 pb-2">
                         <Link to={`/products/${product.slug}`}>
-                          <h3 className="text-headline-sm font-headline-sm font-bold text-primary leading-tight hover:text-secondary transition-colors">
+                          <h3 className="text-sm sm:text-base font-bold text-primary leading-snug line-clamp-2 hover:text-secondary transition-colors">
                             {product.name}
                           </h3>
                         </Link>
                       </div>
                     </div>
 
-                    <div className="p-5 pt-3 border-t border-surface-container">
-                      <div className="flex items-center justify-between mb-4">
+                    <div className="p-3.5 sm:p-4 pt-2.5 border-t border-surface-container">
+                      <div className="flex flex-wrap items-center justify-between gap-1 mb-2.5 sm:mb-3">
                         <div>
                           {product.oldPrice && (
-                            <span className="text-label-sm font-label-sm text-outline line-through block">
+                            <span className="text-xs text-outline line-through block">
                               {money(product.oldPrice)}
                             </span>
                           )}
-                          <p className="text-headline-md font-headline-md font-bold text-primary">
+                          <p className="text-base sm:text-lg font-bold text-primary">
                             {money(product.price)}
                           </p>
                         </div>
                       </div>
                       <button
                         onClick={e => handleAddToCart(product, e)}
-                        className="w-full py-3 bg-primary-container hover:bg-primary text-surface font-label-md font-bold rounded-lg transition-colors flex items-center justify-center gap-2 active:translate-y-px shadow-sm"
+                        className="w-full py-2 px-3 bg-primary-container hover:bg-primary text-surface text-xs sm:text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 active:translate-y-px shadow-sm"
                       >
-                        <span className="material-symbols-outlined text-lg">shopping_bag</span>
+                        <span className="material-symbols-outlined text-[16px]">shopping_bag</span>
                         <span>Sepete Ekle</span>
                       </button>
                     </div>
@@ -621,7 +633,7 @@ export function StorefrontPage() {
         {/* 10. Village Newsletter & Harvest Alert */}
         <section className="py-14 bg-surface-container-high">
           <div className="max-w-[1320px] mx-auto px-6 lg:px-12">
-            <div className="bg-tertiary-container rounded-2xl p-8 lg:p-12 text-surface border border-tertiary relative overflow-hidden farmhouse-shadow">
+            <div className="bg-tertiary-container rounded-2xl p-5 sm:p-8 lg:p-12 text-surface border border-tertiary relative overflow-hidden farmhouse-shadow">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
                 <div className="lg:col-span-7 space-y-3">
                   <span className="px-3 py-1 bg-surface/20 rounded-md text-tertiary-fixed text-label-sm font-label-sm font-bold uppercase">

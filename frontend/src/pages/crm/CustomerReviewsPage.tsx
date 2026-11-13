@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { theme } from '../../theme/tokens';
 import { Modal } from '../../components/common/Modal';
+import { AdminPagination } from '../../components/common/AdminPagination';
 import {
   reviewService,
   AdminReviewItemDto,
@@ -9,6 +10,8 @@ import {
 export const CustomerReviewsPage: React.FC = () => {
   const [reviews, setReviews] = useState<AdminReviewItemDto[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
+  const [page, setPage] = useState<number>(1);
+  const pageSize = 20;
   const [avgRating, setAvgRating] = useState<number>(0);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [negativeUnresolvedCount, setNegativeUnresolvedCount] = useState<number>(0);
@@ -45,7 +48,8 @@ export const CustomerReviewsPage: React.FC = () => {
         onlyNegative: ratingFilter === 'negative' ? true : undefined,
         status: statusFilter !== 'all' ? statusFilter : undefined,
         search: searchTerm.trim() || undefined,
-        pageSize: 50,
+        page,
+        pageSize,
       });
 
       setReviews(res.items);
@@ -58,6 +62,10 @@ export const CustomerReviewsPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  }, [ratingFilter, statusFilter, searchTerm, page]);
+
+  useEffect(() => {
+    setPage(1);
   }, [ratingFilter, statusFilter, searchTerm]);
 
   useEffect(() => {
@@ -510,6 +518,16 @@ export const CustomerReviewsPage: React.FC = () => {
             );
           })
         )}
+        <div style={{ borderRadius: theme.radii.md, overflow: 'hidden', border: `1px solid ${theme.colors.border}` }}>
+          <AdminPagination
+            page={page}
+            pageSize={pageSize}
+            totalCount={totalCount}
+            itemCount={reviews.length}
+            onPageChange={setPage}
+            label="yorum"
+          />
+        </div>
       </div>
 
       {/* Quick Response Modal */}

@@ -42,7 +42,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     .join('') || 'AD';
   const handleAdminLogout = () => {
     logout();
-    navigate('/admin/login', { replace: true });
+    navigate('/giris', { replace: true });
   };
 
   useEffect(() => {

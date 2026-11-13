@@ -89,7 +89,7 @@ export function OurStoryPage() {
                   Köyden Sofraya, çocukluğumuzdaki o gerçek tereyağı kokusunu, genzi hafifçe yakan taş baskı zeytinyağını ve güneşte ağır ağır kıvam alan köy salçasını yeniden şehirdeki sofralarla buluşturmak için doğdu.
                 </p>
 
-                <div className="grid grid-cols-3 gap-4 pt-3 max-w-lg border-t border-secondary/20">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 pt-3 max-w-lg border-t border-secondary/20">
                   <div>
                     <p className="text-2xl sm:text-3xl font-extrabold text-primary">14+</p>
                     <p className="text-xs sm:text-sm text-secondary font-medium">Köy Kooperatifi</p>
