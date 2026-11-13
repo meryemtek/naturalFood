@@ -173,7 +173,7 @@ export function ProductDetailPage() {
   // Determine current active gallery images
   const galleryImages = product?.images && product.images.length > 0
     ? product.images.map(img => ({ url: img.imageUrl, alt: img.altText || product.name }))
-    : DEFAULT_IMAGES;
+    : [{ url: '/images/products/product-zeytinyagi.jpg', alt: product?.name || 'Doğal Ürün' }];
 
   // Determine current variants
   const variants = product?.variants && product.variants.length > 0
@@ -185,7 +185,7 @@ export function ProductDetailPage() {
         note: v.unitInfo,
         badge: i === 1 ? 'Çok Satan' : null
       }))
-    : product ? [{ id: '', name: product.unitInfo || 'Standart', price: product.basePrice, discountPrice: product.discountPrice, note: product.unitInfo, badge: null }] : DEFAULT_VARIANTS;
+    : product ? [{ id: 'std', name: product.unitInfo || 'Standart Paket', price: product.basePrice, discountPrice: product.discountPrice, note: product.unitInfo || '1 Adet', badge: null }] : DEFAULT_VARIANTS;
 
   const currentVariant = variants.find(v => v.id === selectedVariantId) || variants[0];
   const currentPrice = currentVariant.discountPrice ?? currentVariant.price;
@@ -265,17 +265,26 @@ export function ProductDetailPage() {
 
               {/* Provenance and Technical Badges */}
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-                <span className="bg-primary text-on-primary px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[14px]" data-icon="eco">eco</span>
-                  Erken Hasat 2024/2025
-                </span>
-                <span className="bg-primary-container text-surface px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm flex items-center gap-1.5 border border-primary-fixed-dim/20">
-                  <span className="material-symbols-outlined text-[14px]" data-icon="thermostat">thermostat</span>
-                  %100 Soğuk Sıkım (Max 24°C)
-                </span>
-                <span className="bg-surface-container-lowest text-secondary border border-secondary/30 px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm font-bold">
-                  Düşük Asit: Max %0.3
-                </span>
+                {product?.isBestSeller && (
+                  <span className="bg-[#4A3B32] text-white px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm font-bold flex items-center gap-1.5">
+                    <span>⭐</span> Çok Satan
+                  </span>
+                )}
+                {product?.isNew && (
+                  <span className="bg-primary text-on-primary px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm font-bold flex items-center gap-1.5">
+                    <span>🌱</span> Yeni Mahsul
+                  </span>
+                )}
+                {product?.isSeasonal && (
+                  <span className="bg-[#8C5E35] text-white px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm font-bold flex items-center gap-1.5">
+                    <span>🍂</span> Mevsimlik Ürün
+                  </span>
+                )}
+                {product?.categoryName && (
+                  <span className="bg-surface-container-lowest text-secondary border border-secondary/30 px-3 py-1 rounded-full text-label-sm font-label-sm shadow-sm font-bold">
+                    {product.categoryName}
+                  </span>
+                )}
               </div>
 
               {/* Wishlist Floating Toggle */}
@@ -291,17 +300,19 @@ export function ProductDetailPage() {
             </div>
 
             {/* Thumbnail Slider Grid */}
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
-              {galleryImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveImageIndex(idx)}
-                  className={`aspect-square rounded-lg overflow-hidden transition-all bg-surface-container-high ${activeImageIndex === idx ? 'border-2 border-primary ring-2 ring-primary/20 opacity-100 scale-105' : 'border border-secondary/20 opacity-70 hover:opacity-100'}`}
-                >
-                  <img className="w-full h-full object-cover" alt={img.alt} src={img.url} />
-                </button>
-              ))}
-            </div>
+            {galleryImages.length > 1 && (
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
+                {galleryImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImageIndex(idx)}
+                    className={`aspect-square rounded-lg overflow-hidden transition-all bg-surface-container-high ${activeImageIndex === idx ? 'border-2 border-primary ring-2 ring-primary/20 opacity-100 scale-105' : 'border border-secondary/20 opacity-70 hover:opacity-100'}`}
+                  >
+                    <img className="w-full h-full object-cover" alt={img.alt} src={img.url} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* SAĞ KOLON: Satın Alma, Varyant & Detay Kartı */}
@@ -310,7 +321,7 @@ export function ProductDetailPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 bg-surface-container-highest px-3 py-1 rounded-full text-label-md font-label-md text-secondary border border-secondary/20">
                 <span className="material-symbols-outlined text-[16px] text-tertiary-container" data-icon="location_on">location_on</span>
-                <span>{product?.origin || 'Hatay / Altınözü - Hacıpaşa Köyü Zeytinliği'}</span>
+                <span>{product?.origin || 'Doğal Köy Üretimi'}</span>
               </div>
               <div className="flex items-center gap-1 text-tertiary font-bold text-label-md">
                 <span className="material-symbols-outlined text-[16px] fill-icon text-secondary-container" style={{ fontVariationSettings: '"FILL" 1' }} data-icon="star">star</span>
@@ -321,10 +332,10 @@ export function ProductDetailPage() {
             {/* Ürün Başlığı */}
             <div>
               <h1 className="text-headline-lg font-headline-lg font-bold text-primary tracking-tight">
-                {product?.name || 'Taş Baskı Erken Hasat Soğuk Sıkım Zeytinyağı'}
+                {product?.name || 'Doğal Köy Ürünü'}
               </h1>
               <p className="text-body-sm font-body-sm text-on-surface-variant mt-1.5 leading-relaxed">
-                {product?.shortDescription || 'Ekim ayında erken toplanan zeytinlerden soğuk sıkımla elde edilen en yüksek polifenollü saf zeytinyağı.'}
+                {product?.shortDescription || 'Anadolu köylerinden katkısız ve geleneksel yöntemlerle sofranıza.'}
               </p>
             </div>
 
@@ -342,47 +353,61 @@ export function ProductDetailPage() {
             </div>
 
             {/* Hacim / Varyant Seçimi */}
-            <div className="flex flex-col gap-2 pt-1">
-              <label className="text-label-md font-label-md text-on-surface font-bold flex items-center justify-between">
-                <span>Ambalaj / Hacim Seçiniz:</span>
-                <span className="text-body-sm text-secondary font-normal">Seçili: {currentVariant.name}</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                {variants.map(v => {
-                  const isSelected = v.id === selectedVariantId;
-                  const vPrice = v.discountPrice ?? v.price;
-                  return (
-                    <button
-                      key={v.id}
-                      onClick={() => setSelectedVariantId(v.id)}
-                      className={`flex flex-col text-left p-3 rounded-lg relative transition-all active:translate-y-px ${isSelected ? 'border-2 border-primary bg-primary/5 shadow-sm' : 'border border-secondary/20 bg-surface hover:border-primary'}`}
-                    >
-                      {v.badge && (
-                        <span className="absolute -top-2 right-2 bg-primary text-on-primary text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
-                          {v.badge}
+            {product?.variants && product.variants.length > 0 ? (
+              <div className="flex flex-col gap-2 pt-1">
+                <label className="text-label-md font-label-md text-on-surface font-bold flex items-center justify-between">
+                  <span>Ambalaj / Hacim Seçiniz:</span>
+                  <span className="text-body-sm text-secondary font-normal">Seçili: {currentVariant.name}</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2.5">
+                  {variants.map(v => {
+                    const isSelected = v.id === selectedVariantId;
+                    const vPrice = v.discountPrice ?? v.price;
+                    return (
+                      <button
+                        key={v.id}
+                        onClick={() => setSelectedVariantId(v.id)}
+                        className={`flex flex-col text-left p-3 rounded-lg relative transition-all active:translate-y-px ${isSelected ? 'border-2 border-primary bg-primary/5 shadow-sm' : 'border border-secondary/20 bg-surface hover:border-primary'}`}
+                      >
+                        {v.badge && (
+                          <span className="absolute -top-2 right-2 bg-primary text-on-primary text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                            {v.badge}
+                          </span>
+                        )}
+                        <span className={`text-label-md font-label-md font-bold ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
+                          {v.name}
                         </span>
-                      )}
-                      <span className={`text-label-md font-label-md font-bold ${isSelected ? 'text-primary' : 'text-on-surface'}`}>
-                        {v.name}
-                      </span>
-                      <span className={`text-body-sm font-body-sm mt-1 ${isSelected ? 'text-primary font-bold' : 'text-secondary'}`}>
-                        {money(vPrice)}
-                      </span>
-                      <span className="text-label-sm font-label-sm text-outline mt-1">
-                        {v.note}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span className={`text-body-sm font-body-sm mt-1 ${isSelected ? 'text-primary font-bold' : 'text-secondary'}`}>
+                          {money(vPrice)}
+                        </span>
+                        <span className="text-label-sm font-label-sm text-outline mt-1">
+                          {v.note}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-3 py-1">
+                <span className="text-label-md font-bold text-on-surface">Satış Birimi:</span>
+                <span className="px-3.5 py-1.5 bg-surface rounded-lg text-primary font-bold text-label-md border border-secondary/20 shadow-sm flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-tertiary-container" data-icon="inventory_2">inventory_2</span>
+                  {product?.unitInfo || 'Standart Birim'}
+                </span>
+              </div>
+            )}
 
             {/* Stok & Tazelik Uyarısı */}
             <div className="flex items-center gap-2 bg-surface-container-high/60 px-3.5 py-2 rounded-lg border border-secondary/15 text-body-sm font-body-sm text-on-surface">
               <span className="w-2.5 h-2.5 rounded-full bg-primary-container animate-pulse"></span>
-              <span className="font-bold text-primary">Stokta Var</span>
+              <span className="font-bold text-primary">
+                {product?.stockQuantity && product.stockQuantity > 0 ? 'Stokta Var' : 'Satışta'}
+              </span>
               <span className="text-outline">·</span>
-              <span className="text-on-surface-variant">Taze hasat zeytinlerden taze dolum yapılmıştır.</span>
+              <span className="text-on-surface-variant">
+                {product?.origin ? `${product.origin} - Doğal ve katkısız üretim.` : 'Katkısız ve geleneksel yöntemlerle taze üretilmiştir.'}
+              </span>
             </div>
 
             {/* Adet Seçici & Eylemler */}
@@ -501,19 +526,21 @@ export function ProductDetailPage() {
               <div className="grid grid-cols-12 gap-8 items-start">
                 <div className="col-span-12 lg:col-span-8 flex flex-col gap-5">
                   <h2 className="text-headline-md font-headline-md font-bold text-primary">
-                    Anadolu'nun Bereketli Topraklarından: Altınözü Erken Hasadı
+                    {product?.origin ? `Anadolu'nun Bereketli Topraklarından: ${product.origin}` : 'Geleneksel & Katkısız Köy Üretimi'}
                   </h2>
-                  <p className="text-body-md font-body-md text-on-surface-variant leading-relaxed">
-                    Hatay'ın güney ucunda, zeytin ağaçlarının yüzlerce yıllık köklerle toprağa tutunduğu Hacıpaşa Köyü'nde üretilen bu zeytinyağı, henüz tam kararmamış yeşil zeytinlerin elle tek tek toplanmasıyla elde edilir. Hasat edilen zeytinler çuvallarda bekletilmeden, en geç 4 saat içerisinde köydeki tarihi granit taş değirmenlere ulaştırılır.
+                  <p className="text-body-md font-body-md text-on-surface-variant leading-relaxed whitespace-pre-line">
+                    {product?.description || product?.shortDescription || 'Anadolu köylerinde katkısız, geleneksel ve temiz yöntemlerle üretilen en taze mahsuller doğrudan sofranıza ulaştırılmaktadır.'}
                   </p>
-                  <p className="text-body-md font-body-md text-on-surface-variant leading-relaxed">
-                    24 derecenin altında (Soğuk Sıkım) preslenen meyve suyu kıvamındaki yağımız filtreden geçirilmez; tortusunun doğal çökeltilmesi beklenerek ham haliyle şişelenir. Kapağını açtığınız anda genzinizde hissettiğiniz taze biçilmiş çimen, enginar ve çağla aroması, içerdiği yoğun polifenol ve antioksidan zenginliğinin kanıtıdır.
-                  </p>
+                  {product?.shortDescription && product?.description && (
+                    <p className="text-body-md font-body-md text-on-surface-variant leading-relaxed">
+                      {product.shortDescription}
+                    </p>
+                  )}
                   {/* Vurgu Kutusu */}
                   <div className="bg-surface-container p-4 rounded-lg border-l-4 border-primary flex items-start gap-3 mt-2">
                     <span className="material-symbols-outlined text-primary text-[24px]" data-icon="verified">verified</span>
                     <div className="text-body-sm font-body-sm text-on-surface">
-                      <strong>Tadım Notu:</strong> Damakta diri bir meyvemsilik, boğazda hafif tatlı bir yakıcılık bırakır. Çiğ tüketime (kahvaltılar, taze salatalar ve meze sosları) mükemmel uyum sağlar.
+                      <strong>Üretim Özelliği:</strong> {product?.origin ? `${product.origin} yöresine ait geleneksel yöntemlerle hazırlanmıştır.` : 'Doğrudan üreticisinden sofranıza, hiçbir kimyasal katkı maddesi içermez.'}
                     </div>
                   </div>
                 </div>
@@ -521,28 +548,28 @@ export function ProductDetailPage() {
                 <div className="col-span-12 lg:col-span-4 bg-surface-container-low p-6 rounded-xl border border-secondary/20 flex flex-col gap-4">
                   <h3 className="font-headline-sm text-headline-sm font-bold text-primary flex items-center gap-2">
                     <span className="material-symbols-outlined text-primary text-[20px]" data-icon="lab_profile">lab_profile</span>
-                    Hasat &amp; Analiz Değerleri
+                    Ürün &amp; Hasat Özellikleri
                   </h3>
                   <div className="space-y-3 font-label-md text-label-md">
                     <div className="flex justify-between border-b border-secondary/15 pb-2">
-                      <span className="text-on-surface-variant">Asit Oranı</span>
-                      <strong className="text-primary font-bold">Max %0.3</strong>
+                      <span className="text-on-surface-variant">Kategori</span>
+                      <strong className="text-primary font-bold">{product?.categoryName || 'Genel'}</strong>
                     </div>
                     <div className="flex justify-between border-b border-secondary/15 pb-2">
-                      <span className="text-on-surface-variant">Sıkım Sıcaklığı</span>
-                      <strong className="text-primary font-bold">22°C - 24°C</strong>
+                      <span className="text-on-surface-variant">Yöre / Menşe</span>
+                      <strong className="text-primary font-bold">{product?.origin || 'Köy Üretimi'}</strong>
                     </div>
                     <div className="flex justify-between border-b border-secondary/15 pb-2">
-                      <span className="text-on-surface-variant">Polifenol Değeri</span>
-                      <strong className="text-primary font-bold">420+ mg/kg</strong>
+                      <span className="text-on-surface-variant">Satış Birimi</span>
+                      <strong className="text-primary font-bold">{product?.unitInfo || 'Adet'}</strong>
                     </div>
                     <div className="flex justify-between border-b border-secondary/15 pb-2">
-                      <span className="text-on-surface-variant">Hasat Yılı</span>
-                      <strong className="text-primary font-bold">Ekim 2024 / 2025</strong>
+                      <span className="text-on-surface-variant">Stok Durumu</span>
+                      <strong className="text-primary font-bold">{product?.stockQuantity ?? 100} {product?.unitInfo || 'Adet'}</strong>
                     </div>
                     <div className="flex justify-between pb-1">
-                      <span className="text-on-surface-variant">Zeytin Çeşidi</span>
-                      <strong className="text-primary font-bold">Halhalı &amp; Saurani</strong>
+                      <span className="text-on-surface-variant">Stok Kodu (SKU)</span>
+                      <strong className="text-primary font-bold">{product?.sku || 'SKU-DOĞAL'}</strong>
                     </div>
                   </div>
                 </div>
@@ -552,42 +579,46 @@ export function ProductDetailPage() {
             {activeTab === 'storage' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <h3 className="text-headline-md font-headline-md font-bold text-primary">Saklama Talimatı</h3>
+                  <h3 className="text-headline-md font-headline-md font-bold text-primary">Saklama Talimatı &amp; Koşulları</h3>
                   <p className="text-body-md text-on-surface-variant leading-relaxed">
-                    Zeytinyağı yaşayan bir gıdadır; güneş ışığı, hava ve yüksek sıcaklık lezzetini azaltır. Şişeyi doğrudan güneş almayan, 15-20°C serin ve rutubetsiz bir kiler dolabında muhafaza ediniz.
+                    {product?.storageConditions || (
+                      product?.categoryName?.toLowerCase().includes('kahvaltılık') || product?.name?.toLowerCase().includes('yumurta') || product?.name?.toLowerCase().includes('peynir')
+                        ? 'Ürününüzü +4°C buzdolabında muhafaza ediniz. Güneş ışığı ve nemden koruyunuz.'
+                        : 'Serin, kuru ve doğrudan güneş ışığı almayan temiz bir ortamda muhafaza ediniz.'
+                    )}
                   </p>
                   <ul className="space-y-2 font-label-md text-label-md text-on-surface">
                     <li className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-primary text-[18px]" data-icon="check">check</span>
-                      Kapağını her kullanımdan sonra hava almayacak şekilde sıkıca kapatınız.
+                      Doğal ve katkısız yapısını koruması için kapağını / ambalajını kapalı tutunuz.
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-primary text-[18px]" data-icon="check">check</span>
-                      Ocak yanı, kalorifer üstü gibi ısı kaynaklarından uzak tutunuz.
+                      Doğrudan güneş ışığı ve yüksek ısı kaynaklarından uzak muhafaza ediniz.
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="material-symbols-outlined text-primary text-[18px]" data-icon="check">check</span>
-                      Soğuk havalarda donması doğallığının ve katkısızlığının en açık göstergesidir.
+                      {product?.shelfLife ? `Tavsiye Edilen Tüketim Süresi: ${product.shelfLife}` : 'Doğal üretim olduğu için açıldıktan sonra tazeliğini koruyarak tüketilmesi tavsiye edilir.'}
                     </li>
                   </ul>
                 </div>
                 <div className="bg-surface-container p-6 rounded-xl border border-secondary/20 space-y-4">
-                  <h3 className="text-headline-sm font-headline-sm font-bold text-primary">Önerilen Kullanım Alanları</h3>
+                  <h3 className="text-headline-sm font-headline-sm font-bold text-primary">Doğal Tüketim &amp; Sofranız</h3>
                   <p className="text-body-sm text-on-surface-variant">
-                    Polifenol ve E vitamini kaybı yaşamamak için çiğ olarak tüketilmesi önerilir:
+                    Katkısız ve geleneksel yöntemlerle üretilen taze mahsulün lezzet özellikleri:
                   </p>
                   <div className="grid grid-cols-2 gap-3 text-label-md font-label-md">
                     <div className="p-3 bg-surface rounded-lg border border-secondary/20 font-bold text-primary">
-                      🥗 Gurme Salatalar
+                      🍳 Köy Sofraları
                     </div>
                     <div className="p-3 bg-surface rounded-lg border border-secondary/20 font-bold text-primary">
-                      🍳 Köy Kahvaltıları
+                      🥗 Doğal Tarifler
                     </div>
                     <div className="p-3 bg-surface rounded-lg border border-secondary/20 font-bold text-primary">
-                      🫒 Meze &amp; Soslar
+                      🌿 %100 Katkısız
                     </div>
                     <div className="p-3 bg-surface rounded-lg border border-secondary/20 font-bold text-primary">
-                      🥖 Sıcak Ekmek &amp; Kekik
+                      📍 {product?.origin || 'Yöresel Lezzet'}
                     </div>
                   </div>
                 </div>
@@ -596,12 +627,14 @@ export function ProductDetailPage() {
 
             {activeTab === 'farmer' && (
               <div className="space-y-4">
-                <h3 className="text-headline-md font-headline-md font-bold text-primary">Hacıpaşa Köyü Üretici Kooperatifi</h3>
+                <h3 className="text-headline-md font-headline-md font-bold text-primary">
+                  {product?.origin ? `${product.origin} Üretici Kooperatifi` : 'Yerel Köy Üretici Dayanışması'}
+                </h3>
                 <p className="text-body-md text-on-surface-variant leading-relaxed">
-                  Altınözü ilçesi sınırındaki Hacıpaşa Köyü, yüzlerce yıllık kadim zeytinlikleriyle bilinir. Köydeki 14 aileden oluşan üretici kooperatifi, atalarından devraldıkları taş baskı geleneğini günümüz hijyen standartlarıyla harmanlayarak sürdürmektedir.
+                  {product?.origin || 'Anadolu'} yöresindeki yerel üretici aileler ve kooperatifler tarafından geleneksel miras korunarak yetiştirilmektedir.
                 </p>
                 <p className="text-body-md text-on-surface-variant leading-relaxed">
-                  Hiçbir kimyasal tarım ilacı veya suni gübre kullanılmadan, sadece doğal kaynak suları ve organik bakım ile yetiştirilen zeytinler adil ticaret (Fair Trade) ilkeleriyle doğrudan sizlerin sofrasına ulaştırılmaktadır.
+                  Hiçbir kimyasal koruyucu, endüstriyel katkı veya suni aroma kullanılmadan; temiz toprak ve temiz su kaynaklarıyla üretilen mahsuller adil ticaret ilkeleriyle doğrudan sofranıza ulaştırılmaktadır.
                 </p>
               </div>
             )}
@@ -655,20 +688,22 @@ export function ProductDetailPage() {
           <div className="col-span-12 lg:col-span-4 rounded-xl overflow-hidden shadow-sm aspect-4/3 bg-surface-container">
             <img
               className="w-full h-full object-cover"
-              alt="Mehmet Ali Dayı - Hatay Hacıpaşa Köyü"
-              src="/images/products/mehmet-ali-dayi.jpg"
+              alt={product?.name || 'Doğal Üretici'}
+              src={galleryImages[0]?.url || '/images/products/mehmet-ali-dayi.jpg'}
             />
           </div>
           <div className="col-span-12 lg:col-span-8 flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <span className="bg-primary text-on-primary text-label-sm font-label-sm px-3 py-1 rounded-full">Toprağın Emekçisi</span>
-              <span className="text-label-md font-label-md text-secondary">Hacıpaşa Köyü Üretici Dayanışması</span>
+              <span className="text-label-md font-label-md text-secondary">
+                {product?.origin ? `${product.origin} Üretici Dayanışması` : 'Anadolu Köy Kooperatifi'}
+              </span>
             </div>
             <h3 className="text-headline-lg font-headline-lg font-bold text-primary">
-              Üreticimiz: Mehmet Ali Dayı &amp; Hacıpaşa Köyü Kooperatifi
+              Üreticimizden Sofranıza: {product?.name || 'Doğal Köy Mahsulü'}
             </h3>
             <p className="text-body-md font-body-md text-on-surface-variant leading-relaxed">
-              "Biz dedemizden ne gördüysek onu yaparız. Kimyasal gübre zeytinin kalbini kırar. Ağaçlarımızı kuyu suyuyla, toprağımızı hayvan gübresiyle besleriz. Bu yağ soframıza koyduğumuz, çocuklarımıza içirdiğimiz yağdır." Mehmet Ali Dayı ve kooperatif üyesi 14 aile, 3 kuşaktır Altınözü'nün yerel Halhalı ve Saurani cinsi zeytinlerini koruyup geleneksel taş baskı yöntemiyle üretime devam ediyor.
+              "{product?.name || 'Mahsulümüz'}, {product?.origin ? `${product.origin} yöresinde ` : ''}atalarımızdan gördüğümüz geleneksel usullerle yetiştirilip hazırlanmaktadır. Kimyasal katkı, sentetik koruyucu veya endüstriyel işlem görmez. Kendi çocuklarımıza yedirdiğimiz, soframıza koyduğumuz temizliği ve doğallığı sizlerle paylaşıyoruz."
             </p>
             <div className="flex flex-wrap items-center gap-6 pt-2 text-label-md font-label-md text-primary font-bold">
               <div className="flex items-center gap-1.5">

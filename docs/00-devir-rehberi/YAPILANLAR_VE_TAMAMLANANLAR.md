@@ -234,3 +234,19 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
   - **Hızlı Durum Değiştirme (Optimistic Toggle):** Tablodan doğrudan tek tıkla ürünü satışa açma veya satıştan kaldırma.
 * **Müşteri Vitrini Entegrasyonu ([`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx), [`storefrontApi.ts`](../../frontend/src/api/storefront/storefrontApi.ts)):**
   - Vitrin listesinde `origin` ve `badge` eşleştirmeleri backend'den gelen gerçek verileri önceliklendirecek şekilde bağlandı.
+
+
+### ✅ CHECKPOINT 22: Görsel Yükleme Dizin Senkronizasyonu & Ürün Detay Sayfası Dinamikleştirmesi (13 Kasım 2026)
+* **Görsel Yükleme & Antiforgery Düzeltmesi ([`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs)):**
+  - .NET 10 Minimal API `IFormFile` varsayılan antiforgery doğrulaması sebebiyle oluşan `500 Internal Server Error` hatası `.DisableAntiforgery()` direktifiyle giderildi.
+  - Sunucunun nereden başlatıldığına (`repo kökü`, `backend`, `ApiHost` vb.) bakılmaksızın dosya ağacında yukarı doğru arama yapan `ResolveFrontendImagesFolder` fonksiyonu eklendi. Yüklenen ürün ve banner görselleri hem backend `wwwroot` hem de Vite'ın statik sunduğu `frontend/public/images/products/` klasörüne hatasız kopyalanır hale getirildi.
+* **Ürün Detay Sayfası Tam Dinamikleştirmesi ([`ProductDetailPage.tsx`](../../frontend/src/pages/products/ProductDetailPage.tsx)):**
+  - Sayfa başında ve sekmelerinde daha önce prototip olarak sabit (hardcoded) kalan zeytinyağı metinleri tamamen kaldırıldı.
+  - **Rozetler:** Fotoğraf üzerindeki sabit zeytin rozetleri yerine admin panelinde işaretlenen gerçek etiketler (`⭐ Çok Satan`, `🌱 Yeni Mahsul`, `🍂 Mevsimlik Ürün`, Kategori adı) bağlandı.
+  - **Açıklama & Hikaye:** Sabit Hatay zeytinyağı paragrafı yerine veritabanındaki gerçek `product.description` ve `product.shortDescription` bağlandı.
+  - **Ürün Özellikleri Tablosu:** Kategori, yöre/menşe, satış birimi, stok adedi ve SKU dinamik hale getirildi.
+  - **Ambalaj / Satış Birimi:** Tekli ambalajı olan ürünlerde (örn. Köy Yumurtası) sahte zeytinyağı hacim seçenekleri yerine doğrudan ürünün satış birimi (`📦 Satış Birimi: Adet`) gösterildi.
+  - **Saklama Koşulları:** Ürünün kategorisine ve `storageConditions` alanına uygun akıllı saklama talimatları (+4°C buzdolabı veya serin kiler) yerleştirildi.
+  - **Üretici Dayanışması:** Yöreye ve ürüne özel dinamik üretici anlatımı entegre edildi.
+* **Vitrin ve Mevsim Bölümleri Güçlendirmesi ([`StorefrontPage.tsx`](../../frontend/src/pages/storefront/StorefrontPage.tsx)):**
+  - Anasayfadaki *"Mevsiminde Taze Mahsuller"* ve *"En Çok Tercih Edilen Köy Lezzetleri"* bölümleri dinamik ürün etiketleriyle senkronize edildi; boş kalmayı engelleyen güvenli fallback mekanizması kuruldu.

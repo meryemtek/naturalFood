@@ -299,8 +299,6 @@ internal static class AdminEndpointsHandler
             var safeName = $"prod-{Guid.NewGuid():n}{ext}";
             var current = Directory.GetCurrentDirectory();
             var uploadsFolder = Path.Combine(current, "wwwroot", "images", "products");
-            var frontendFolder = Path.GetFullPath(Path.Combine(current, "..", "..", "frontend", "public", "images", "products"));
-
             Directory.CreateDirectory(uploadsFolder);
             var filePath = Path.Combine(uploadsFolder, safeName);
             await using (var stream = File.Create(filePath))
@@ -308,11 +306,11 @@ internal static class AdminEndpointsHandler
                 await file.CopyToAsync(stream, ct);
             }
 
-            if (Directory.Exists(Path.GetDirectoryName(frontendFolder)))
+            var frontendFolder = ResolveFrontendImagesFolder("products");
+            if (frontendFolder != null)
             {
                 try
                 {
-                    Directory.CreateDirectory(frontendFolder);
                     var frontendFilePath = Path.Combine(frontendFolder, safeName);
                     File.Copy(filePath, frontendFilePath, overwrite: true);
                 }
@@ -323,11 +321,12 @@ internal static class AdminEndpointsHandler
             }
 
             var relativeUrl = $"/images/products/{safeName}";
-            return Results.Ok(new { ImageUrl = relativeUrl, FileName = safeName });
+            return Results.Ok(new { imageUrl = relativeUrl, fileName = safeName });
         })
         .WithName("UploadProductImage")
         .Produces(StatusCodes.Status200OK)
-        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest)
+        .DisableAntiforgery();
 
         // PATCH /api/admin/products/{id:guid}/status
         products.MapPatch("/{id:guid}/status", async (
@@ -912,11 +911,7 @@ internal static class AdminEndpointsHandler
 
             var current = Directory.GetCurrentDirectory();
             var uploadsFolder = Path.Combine(current, "wwwroot", "images", "banners");
-            // Also try to place in frontend/public/images/banners if running from repo
-            var frontendFolder = Path.GetFullPath(Path.Combine(current, "..", "..", "frontend", "public", "images", "banners"));
-
             Directory.CreateDirectory(uploadsFolder);
-            try { Directory.CreateDirectory(frontendFolder); } catch { }
 
             var safeName = $"slider_{Guid.NewGuid():N}{ext}";
             var targetPath = Path.Combine(uploadsFolder, safeName);
@@ -925,12 +920,16 @@ internal static class AdminEndpointsHandler
                 await file.CopyToAsync(stream, ct);
             }
 
-            try
+            var frontendFolder = ResolveFrontendImagesFolder("banners");
+            if (frontendFolder != null)
             {
-                var frontendTargetPath = Path.Combine(frontendFolder, safeName);
-                File.Copy(targetPath, frontendTargetPath, overwrite: true);
+                try
+                {
+                    var frontendTargetPath = Path.Combine(frontendFolder, safeName);
+                    File.Copy(targetPath, frontendTargetPath, overwrite: true);
+                }
+                catch { }
             }
-            catch { }
 
             var relativeUrl = $"/images/banners/{safeName}";
             return Results.Ok(new { imageUrl = relativeUrl, fileName = safeName });
@@ -939,5 +938,21 @@ internal static class AdminEndpointsHandler
         .DisableAntiforgery();
 
         return group;
+    }
+
+    private static string? ResolveFrontendImagesFolder(string subfolder)
+    {
+        var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+        while (dir != null)
+        {
+            var test = Path.Combine(dir.FullName, "frontend", "public", "images", subfolder);
+            if (Directory.Exists(Path.Combine(dir.FullName, "frontend", "public")))
+            {
+                Directory.CreateDirectory(test);
+                return test;
+            }
+            dir = dir.Parent;
+        }
+        return null;
     }
 }
