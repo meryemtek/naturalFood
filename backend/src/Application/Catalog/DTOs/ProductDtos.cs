@@ -38,7 +38,8 @@ public record ProductDto(
     bool IsFeatured,
     bool IsSeasonal,
     bool IsActive,
-    int VariantCount);
+    int VariantCount,
+    string? Origin = null);
 
 public record ProductAttributeDto(string Name, string Value, int DisplayOrder);
 

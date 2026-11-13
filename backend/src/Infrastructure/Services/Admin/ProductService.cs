@@ -124,22 +124,35 @@ public class ProductService : IProductService
             sku = $"{sku}-{Guid.NewGuid().ToString("n")[..4].ToUpperInvariant()}";
 
         var basePrice = req.SellingPrice > 0 ? req.SellingPrice : req.BasePrice;
-        decimal? discountPrice = (req.BasePrice > 0 && req.BasePrice < basePrice) ? req.BasePrice : null;
+        decimal? discountPrice = req.DiscountPrice.HasValue && req.DiscountPrice.Value > 0
+            ? req.DiscountPrice.Value
+            : ((req.BasePrice > 0 && req.BasePrice < basePrice) ? req.BasePrice : null);
         var isActive = req.Status != "OutOfStock" && req.Status != "Draft";
         var stockQuantity = (int)Math.Max(0, req.StockQuantity);
         var unitInfo = !string.IsNullOrWhiteSpace(req.SaleUnit) ? req.SaleUnit.Trim() : "Adet";
 
+        var shortDescription = !string.IsNullOrWhiteSpace(req.ShortDescription)
+            ? req.ShortDescription.Trim()
+            : $"{req.Name.Trim()} - Doğal ve taze yöresel ürün.";
+        var description = req.Description?.Trim();
+        var origin = req.Origin?.Trim();
+
         var product = new Product(
             name: req.Name.Trim(),
             slug: slug,
-            shortDescription: $"{req.Name.Trim()} - Doğal ve taze yöresel ürün.",
-            description: null,
+            shortDescription: shortDescription,
+            description: description,
             categoryId: category.Id,
             basePrice: basePrice,
             discountPrice: discountPrice,
             stockQuantity: stockQuantity,
             sku: sku,
             unitInfo: unitInfo,
+            origin: origin,
+            isBestSeller: req.IsBestSeller,
+            isNew: req.IsNew,
+            isFeatured: req.IsFeatured,
+            isSeasonal: req.IsSeasonal,
             isActive: isActive
         );
 
@@ -208,16 +221,24 @@ public class ProductService : IProductService
             sku = product.Sku;
 
         var basePrice = req.SellingPrice > 0 ? req.SellingPrice : product.BasePrice;
-        decimal? discountPrice = (req.BasePrice > 0 && req.BasePrice < basePrice) ? req.BasePrice : product.DiscountPrice;
+        decimal? discountPrice = req.DiscountPrice.HasValue
+            ? (req.DiscountPrice.Value > 0 ? req.DiscountPrice.Value : null)
+            : ((req.BasePrice > 0 && req.BasePrice < basePrice) ? req.BasePrice : product.DiscountPrice);
         var isActive = req.Status != "OutOfStock" && req.Status != "Draft";
         var stockQuantity = (int)Math.Max(0, req.StockQuantity);
         var unitInfo = !string.IsNullOrWhiteSpace(req.SaleUnit) ? req.SaleUnit.Trim() : product.UnitInfo;
 
+        var shortDescription = !string.IsNullOrWhiteSpace(req.ShortDescription)
+            ? req.ShortDescription.Trim()
+            : product.ShortDescription;
+        var description = req.Description != null ? req.Description.Trim() : product.Description;
+        var origin = req.Origin != null ? req.Origin.Trim() : product.Origin;
+
         product.Update(
             name: req.Name.Trim(),
             slug: slug,
-            shortDescription: product.ShortDescription,
-            description: product.Description,
+            shortDescription: shortDescription,
+            description: description,
             categoryId: category.Id,
             basePrice: basePrice,
             discountPrice: discountPrice,
@@ -226,14 +247,16 @@ public class ProductService : IProductService
             unitInfo: unitInfo,
             ingredients: product.Ingredients,
             allergens: product.Allergens,
-            origin: product.Origin,
+            origin: origin,
             storageConditions: product.StorageConditions,
             shelfLife: product.ShelfLife,
-            isBestSeller: product.IsBestSeller,
-            isNew: product.IsNew,
-            isFeatured: product.IsFeatured,
-            isSeasonal: product.IsSeasonal,
-            isActive: isActive
+            isBestSeller: req.IsBestSeller,
+            isNew: req.IsNew,
+            isFeatured: req.IsFeatured,
+            isSeasonal: req.IsSeasonal,
+            isActive: isActive,
+            certifications: product.Certifications,
+            nutritionalValues: product.NutritionalValues
         );
 
         if (!string.IsNullOrWhiteSpace(req.ImageUrl))
@@ -364,6 +387,40 @@ public class ProductService : IProductService
         return true;
     }
 
+    public async Task<bool> UpdateProductStatusAsync(Guid id, bool isActive, CancellationToken cancellationToken = default)
+    {
+        var product = await _catalogDb.Products.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+        if (product == null) return false;
+
+        product.Update(
+            name: product.Name,
+            slug: product.Slug,
+            shortDescription: product.ShortDescription,
+            description: product.Description,
+            categoryId: product.CategoryId,
+            basePrice: product.BasePrice,
+            discountPrice: product.DiscountPrice,
+            stockQuantity: product.StockQuantity,
+            sku: product.Sku,
+            unitInfo: product.UnitInfo,
+            ingredients: product.Ingredients,
+            allergens: product.Allergens,
+            origin: product.Origin,
+            storageConditions: product.StorageConditions,
+            shelfLife: product.ShelfLife,
+            isBestSeller: product.IsBestSeller,
+            isNew: product.IsNew,
+            isFeatured: product.IsFeatured,
+            isSeasonal: product.IsSeasonal,
+            isActive: isActive,
+            certifications: product.Certifications,
+            nutritionalValues: product.NutritionalValues
+        );
+
+        await _catalogDb.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
     private static ProductDto MapToDto(Product p)
     {
         var status = !p.IsActive
@@ -386,7 +443,15 @@ public class ProductService : IProductService
             Status: status,
             ImageUrl: imageUrl,
             CreatedAtUtc: p.CreatedAtUtc,
-            UpdatedAtUtc: p.UpdatedAtUtc
+            UpdatedAtUtc: p.UpdatedAtUtc,
+            ShortDescription: p.ShortDescription,
+            Description: p.Description,
+            Origin: p.Origin,
+            IsBestSeller: p.IsBestSeller,
+            IsNew: p.IsNew,
+            IsFeatured: p.IsFeatured,
+            IsSeasonal: p.IsSeasonal,
+            DiscountPrice: p.DiscountPrice
         );
     }
 }

@@ -213,7 +213,8 @@ public class CatalogService : ICatalogService
                 p.IsFeatured,
                 p.IsSeasonal,
                 p.IsActive,
-                p.Variants.Count(v => v.IsActive)))
+                p.Variants.Count(v => v.IsActive),
+                p.Origin))
             .ToListAsync(cancellationToken);
 
         return new PagedResult<ProductDto>(items, totalCount, pageIndex, pageSize);
@@ -279,7 +280,8 @@ public class CatalogService : ICatalogService
                 p.IsFeatured,
                 p.IsSeasonal,
                 p.IsActive,
-                p.Variants.Count(v => v.IsActive)))
+                p.Variants.Count(v => v.IsActive),
+                p.Origin))
             .ToListAsync(cancellationToken);
     }
 

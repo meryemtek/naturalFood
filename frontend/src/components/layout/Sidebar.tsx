@@ -82,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </svg>
           ),
           subItems: [
-            { path: '/products/definition', label: 'Gelişmiş Ürün Tanımlama', requiredPermission: 'products.view' },
+            { path: '/products/definition', label: 'Ürün Kataloğu & Görsel Yönetimi', requiredPermission: 'products.view' },
             { path: '/products/allergens-nutrition', label: 'İçerik ve Alerjen Bilgileri', requiredPermission: 'products.view' },
             { path: '/products/lot-expiry', label: 'STT / TETT ve Parti (Lot) Takibi', requiredPermission: 'products.view' },
             { path: '/products/storage-conditions', label: 'Saklama Koşulları', requiredPermission: 'storage.view' },

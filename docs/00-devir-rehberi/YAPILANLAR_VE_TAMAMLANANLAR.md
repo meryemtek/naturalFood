@@ -210,3 +210,27 @@ Bu fazda "Ürün ve Menü Yönetimi" menüsündeki tüm ekranlar geçici bellekl
 * **Hata Giderimi ([`MainLayout.tsx`](../../frontend/src/components/layout/MainLayout.tsx), [`adminApi.ts`](../../frontend/src/api/adminApi.ts), [`BannerSliderPage.tsx`](../../frontend/src/pages/marketing/BannerSliderPage.tsx)):**
   - Git pull sonrasında admin paneline girmeye çalışan yöneticileri yetkisiz sayıp müşteri `/giris` sayfasına atan çakışan kontrol, izole admin oturum kontrolü (`isAdminAuthenticated`) ile değiştirilerek buton ve sayfa kaymaları giderildi.
   - Slayt silme işleminde `HTTP 204 No Content` yanıtının `adminApi.ts` içerisindeki JSON ayrıştırıcıyı tetiklemesi ve modalın açık kalarak mükerrer istekte `404 Not Found` hatasına yol açması giderildi; backend silme ucu idempotent hale getirildi ve silme butonuna `isDeleting` kilidi eklendi.
+
+
+---
+
+## 🌾 AŞAMA 10: Ürün Vitrin, Görsel ve Yöre/Etiket Yönetim Modülü (13 Kasım 2026)
+
+### ✅ CHECKPOINT 21: Ürün Kataloğu, Vitrin Görselleri & Yöre/Etiket Yönetim Modülü
+* **Kullanıcı Talebi:** Hero slider modülünde olduğu gibi, sistemdeki tüm ürünlerin vitrin fotoğraflarının, açıklamalarının (kısa ve detaylı), yöre/menşe bilgilerinin ve etiketlerinin yönetilebileceği bir modülün *"Ürün ve Menü Yönetimi"* menüsü altında devreye alınması (Kullanıcı ekran görüntüsü: 320px bento kartlar, `Çok Satan`, `Yeni Mahsul`, `%11 İndirim`, `📍 Kars & Erzurum Yaylaları`, üstü çizili fiyat).
+* **Menü & Navigasyon Entegrasyonu ([`Sidebar.tsx`](../../frontend/src/components/layout/Sidebar.tsx), [`App.tsx`](../../frontend/src/App.tsx)):**
+  - *"ÜRÜN VE MENÜ YÖNETİMİ"* başlığı altında menü adı **"Ürün Kataloğu & Görsel Yönetimi"** (`/products/definition` ve `/products`) olarak yapılandırıldı.
+  - `products.view` yetki denetimi korundu.
+* **Backend API & Servis Geliştirmeleri ([`ProductDtos.cs`](../../backend/src/Application/DTOs/Admin/ProductDtos.cs), [`ProductService.cs`](../../backend/src/Infrastructure/Services/Admin/ProductService.cs), [`AdminEndpointsHandler.cs`](../../backend/src/Endpoints/Admin/AdminEndpointsHandler.cs), [`CatalogService.cs`](../../backend/src/Infrastructure/Services/Catalog/CatalogService.cs)):**
+  - Admin `ProductDto`, `CreateProductRequest` ve `UpdateProductRequest` sözleşmelerine `ShortDescription`, `Description`, `Origin`, `IsBestSeller`, `IsNew`, `IsFeatured`, `IsSeasonal`, `DiscountPrice` parametreleri eklendi.
+  - `POST /api/admin/products/upload-image`: Bilgisayardan ürün fotoğrafı yükleyip anında statik dosya olarak sunan ve URL dönen multipart/form-data ucu eklendi.
+  - `PATCH /api/admin/products/{id}/status`: Ürünü anında satışa açma/kapatma (Aktif/Pasif) ucu eklendi.
+  - Public `GET /api/catalog/products` uç sözleşmesi ve `CatalogService` `Origin` bilgisini dışa aktaracak şekilde güncellendi.
+* **Admin Paneli Arayüzü ([`ProductDefinitionPage.tsx`](../../frontend/src/pages/products/ProductDefinitionPage.tsx)):**
+  - **Canlı Vitrin Kartı Önizleme (Storefront 1:1 Live Preview):** Ekran görüntüsündeki bento kart tasarımıyla birebir eşleşen canlı kart kutusu. Seçilen herhangi bir ürünün fotoğrafı, çok satan/yeni mahsul/mevsimlik rozetleri, % indirim rozeti, 📍 yöre/menşe satırı, 2 satırlık kısa açıklaması ve indirimli/üstü çizili fiyatı anlık görüntülenir.
+  - **Hazır Doğal Gıda Görsel Presetleri (`PRESET_PRODUCT_IMAGES`):** Ayvalık zeytinyağı, domates/biber salçası, Kars kaşarı, Karakovan çiçek balı, yayık tereyağı, el kesmesi erişte, Halhalı zeytin, sele zeytin, manda kaymağı, siyez unu vb. hazır görseller tek tıkla seçilebilir.
+  - **Hızlı Yöre / Menşe Çipleri (`PRESET_ORIGINS`):** Kars & Erzurum Yaylaları, Karadeniz (Trabzon/Tonya), Ege & Kaz Dağları, Hatay / Antakya, Gaziantep & Nizip, Malatya & Elazığ, Aydın & Germencik gibi yöresel etiketler tek tıkla forma aktarılabilir.
+  - **Gelişmiş Filtreleme & Arama:** Ürün adı, SKU, barkod veya yöre bazında anlık arama; kategori, vitrin rozeti (Çok Satan, Yeni Mahsul, İndirimli, Mevsimlik) ve satış durumu filtreleri.
+  - **Hızlı Durum Değiştirme (Optimistic Toggle):** Tablodan doğrudan tek tıkla ürünü satışa açma veya satıştan kaldırma.
+* **Müşteri Vitrini Entegrasyonu ([`ProductsPage.tsx`](../../frontend/src/pages/products/ProductsPage.tsx), [`storefrontApi.ts`](../../frontend/src/api/storefront/storefrontApi.ts)):**
+  - Vitrin listesinde `origin` ve `badge` eşleştirmeleri backend'den gelen gerçek verileri önceliklendirecek şekilde bağlandı.

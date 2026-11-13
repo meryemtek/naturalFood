@@ -124,14 +124,14 @@ export function ProductsPage() {
               variantCount: p.variantCount,
               unitInfo: p.unitInfo || fallback.unitInfo,
               mainImageUrl: p.mainImageUrl || fallback.mainImageUrl,
-              origin: fallback.origin,
+              origin: p.origin || fallback.origin,
               rating: fallback.rating,
               reviewCount: fallback.reviewCount,
               isBestSeller: p.isBestSeller,
               isNew: p.isNew,
               isFeatured: p.isFeatured,
               isColdChain: fallback.isColdChain,
-              badge: p.isBestSeller ? 'Çok Satan' : p.isNew ? 'Yeni Mahsul' : fallback.badge,
+              badge: p.isBestSeller ? 'Çok Satan' : p.isNew ? 'Yeni Mahsul' : (p.isSeasonal ? 'Mevsimlik' : fallback.badge),
             };
           });
           setProducts(mapped);

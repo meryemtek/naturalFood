@@ -283,6 +283,75 @@ internal static class AdminEndpointsHandler
         .Produces<ProductDetailsDto>(StatusCodes.Status200OK)
         .Produces<ProblemDetails>(StatusCodes.Status404NotFound);
 
+        // POST /api/admin/products/upload-image
+        products.MapPost("/upload-image", async (
+            IFormFile file,
+            CancellationToken ct) =>
+        {
+            if (file == null || file.Length == 0)
+                return Results.BadRequest(new ProblemDetails { Title = "Görsel Dosyası Eksik", Detail = "Yüklenecek dosya seçilmedi." });
+
+            var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".avif" };
+            if (!allowed.Contains(ext))
+                return Results.BadRequest(new ProblemDetails { Title = "Geçersiz Dosya Formatı", Detail = "Sadece JPG, PNG, WEBP veya AVIF formatında görseller yüklenebilir." });
+
+            var safeName = $"prod-{Guid.NewGuid():n}{ext}";
+            var current = Directory.GetCurrentDirectory();
+            var uploadsFolder = Path.Combine(current, "wwwroot", "images", "products");
+            var frontendFolder = Path.GetFullPath(Path.Combine(current, "..", "..", "frontend", "public", "images", "products"));
+
+            Directory.CreateDirectory(uploadsFolder);
+            var filePath = Path.Combine(uploadsFolder, safeName);
+            await using (var stream = File.Create(filePath))
+            {
+                await file.CopyToAsync(stream, ct);
+            }
+
+            if (Directory.Exists(Path.GetDirectoryName(frontendFolder)))
+            {
+                try
+                {
+                    Directory.CreateDirectory(frontendFolder);
+                    var frontendFilePath = Path.Combine(frontendFolder, safeName);
+                    File.Copy(filePath, frontendFilePath, overwrite: true);
+                }
+                catch
+                {
+                    // Ignore local dev copy errors
+                }
+            }
+
+            var relativeUrl = $"/images/products/{safeName}";
+            return Results.Ok(new { ImageUrl = relativeUrl, FileName = safeName });
+        })
+        .WithName("UploadProductImage")
+        .Produces(StatusCodes.Status200OK)
+        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+
+        // PATCH /api/admin/products/{id:guid}/status
+        products.MapPatch("/{id:guid}/status", async (
+            Guid id,
+            [FromBody] UpdateProductStatusRequest req,
+            IProductService productService,
+            IAdminDbContext adminDb,
+            CancellationToken ct) =>
+        {
+            var success = await productService.UpdateProductStatusAsync(id, req.IsActive, ct);
+            if (!success) return Results.NotFound();
+
+            await adminDb.AuditLogs.AddAsync(new AuditLog(
+                action: "ProductStatusChanged",
+                resource: "Catalog.Product",
+                details: $"Ürün aktiflik durumu güncellendi: {id} -> {(req.IsActive ? "Aktif (Satışta)" : "Pasif")}"
+            ), ct);
+            await adminDb.SaveChangesAsync(ct);
+            return Results.Ok(new { Success = true, IsActive = req.IsActive });
+        })
+        .WithName("UpdateAdminProductStatus")
+        .Produces(StatusCodes.Status200OK)
+        .Produces(StatusCodes.Status404NotFound);
+
         // =========================================================================
         // 5. Envanter ve Stok Yönetimi (Inventory - Vertical Slice 2)
         // =========================================================================

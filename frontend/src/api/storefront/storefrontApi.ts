@@ -17,6 +17,7 @@ export interface Product {
   isNew: boolean;
   isFeatured: boolean;
   isSeasonal?: boolean;
+  origin?: string | null;
   variantCount: number;
 }
 
