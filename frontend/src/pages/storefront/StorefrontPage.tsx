@@ -224,8 +224,11 @@ export function StorefrontPage() {
   };
 
   const bestSellers: UiProduct[] = useMemo(() => {
-    const apiItems: UiProduct[] = catalogProducts
-      .filter(p => p.isBestSeller)
+    const matching = catalogProducts.filter(p => p.isBestSeller);
+    const others = catalogProducts.filter(p => !p.isBestSeller);
+    const combined = matching.length >= 3 ? matching : [...matching, ...others];
+
+    const apiItems: UiProduct[] = combined
       .map(p => ({
         id: p.id,
         name: p.name,
@@ -235,7 +238,7 @@ export function StorefrontPage() {
         oldPrice: p.discountPrice != null ? p.basePrice : null,
         rating: 4.9,
         reviewCount: 84,
-        badge: 'Çok Satan',
+        badge: p.isBestSeller ? 'Çok Satan' : 'Tavsiye Edilen',
         badgeColor: 'bg-primary-container text-surface',
         variantCount: p.variantCount,
         imageUrl: p.mainImageUrl || '/images/products/prod-zeytinyagi-hatay.jpg',
@@ -252,19 +255,22 @@ export function StorefrontPage() {
   }, [bestSellers, selectedCategoryTab]);
 
   const seasonalProducts: SeasonalProduct[] = useMemo(() => {
-    const apiSeasonal = catalogProducts.filter(p => p.isSeasonal).map(p => ({
+    const seasonal = catalogProducts.filter(p => p.isSeasonal);
+    const others = catalogProducts.filter(p => !p.isSeasonal);
+    const combined = [...seasonal, ...others].slice(0, 4);
+
+    return combined.map(p => ({
       id: p.id,
       name: p.name,
       slug: p.slug,
-      region: p.categoryName ?? 'Anadolu Hasadı',
-      badge: 'Mevsimlik',
+      region: p.origin || p.categoryName || 'Anadolu Hasadı',
+      badge: p.isSeasonal ? 'Mevsimlik' : (p.isBestSeller ? 'Çok Satan' : 'Yeni Mahsul'),
       priceInfo: `${money(p.discountPrice ?? p.basePrice)} / ${p.unitInfo}`,
       price: p.discountPrice ?? p.basePrice,
       description: p.shortDescription,
       imageUrl: p.mainImageUrl || '/images/products/prod-ceviz-ici.jpg',
       variantCount: p.variantCount,
     }));
-    return apiSeasonal.slice(0, 4);
   }, [catalogProducts]);
 
   const activeBanner = banners[currentSlide] ?? banners[0] ?? DEFAULT_HERO_BANNER;
