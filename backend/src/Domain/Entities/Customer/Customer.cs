@@ -16,6 +16,8 @@ public class Customer
     public bool IsActive { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
     public DateTime? LastLoginAtUtc { get; private set; }
+    public string? PasswordResetTokenHash { get; private set; }
+    public DateTime? PasswordResetTokenExpiresAtUtc { get; private set; }
 
     // Navigation
     public ICollection<CustomerAddress> Addresses { get; private set; } = new List<CustomerAddress>();
@@ -98,6 +100,18 @@ public class Customer
     public void ChangePassword(string newPasswordHash)
     {
         PasswordHash = newPasswordHash;
+    }
+
+    public void SetPasswordResetToken(string tokenHash, DateTime expiresAtUtc)
+    {
+        PasswordResetTokenHash = tokenHash;
+        PasswordResetTokenExpiresAtUtc = expiresAtUtc;
+    }
+
+    public void ClearPasswordResetToken()
+    {
+        PasswordResetTokenHash = null;
+        PasswordResetTokenExpiresAtUtc = null;
     }
 
     public void RecordLogin()

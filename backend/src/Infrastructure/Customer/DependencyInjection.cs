@@ -22,8 +22,9 @@ public static class DependencyInjection
             ?? configuration.GetConnectionString("AdminDb")
             ?? throw new InvalidOperationException("Veritabanı bağlantısı yapılandırılmalı.");
 
-        // JWT Ayarları
+        // JWT & E-posta Ayarları
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
 
         // DbContext
         services.AddDbContext<CustomerDbContext>(options =>
@@ -37,6 +38,7 @@ public static class DependencyInjection
         // Servisler
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         // Doğrulayıcılar (FluentValidation)
         services.AddValidatorsFromAssemblyContaining<RegisterRequestValidator>();
@@ -64,9 +66,13 @@ public static class DependencyInjection
                 // Tablolar zaten mevcutsa devam et
             }
 
-            // Mevcut veritabanında Role sütununun bulunduğundan emin ol
+            // Mevcut veritabanında Role ve şifre sıfırlama sütunlarının bulunduğundan emin ol
             await db.Database.ExecuteSqlRawAsync(
-                """ALTER TABLE customer."Customers" ADD COLUMN IF NOT EXISTS "Role" character varying(50) NOT NULL DEFAULT 'Customer';""");
+                """
+                ALTER TABLE customer."Customers" ADD COLUMN IF NOT EXISTS "Role" character varying(50) NOT NULL DEFAULT 'Customer';
+                ALTER TABLE customer."Customers" ADD COLUMN IF NOT EXISTS "PasswordResetTokenHash" character varying(128);
+                ALTER TABLE customer."Customers" ADD COLUMN IF NOT EXISTS "PasswordResetTokenExpiresAtUtc" timestamp with time zone;
+                """);
 
             // Tohum verileri: Örnek müşteri ve adres
             if (!await db.Customers.AnyAsync(c => c.Email == "musteri@koykokusu.com.tr"))

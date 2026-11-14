@@ -266,6 +266,42 @@ export const authApi = {
   },
 
   /**
+   * Şifre sıfırlama bağlantısı talep eder
+   */
+  forgotPassword: async (email: string): Promise<{ message: string; devResetUrl?: string | null }> => {
+    const response = await fetch('/api/auth/forgot-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.detail || data?.message || data?.title || 'Şifre sıfırlama talebi gönderilemedi.');
+    }
+    return data;
+  },
+
+  /**
+   * Token ile yeni şifre belirler
+   */
+  resetPassword: async (payload: { token: string; email: string; newPassword: string; newPasswordConfirm: string }): Promise<{ message: string }> => {
+    const response = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      if (data?.errors) {
+        const first = Object.values(data.errors as Record<string, string[]>)[0];
+        if (first?.length) throw new Error(first[0]);
+      }
+      throw new Error(data?.message || data?.detail || data?.title || 'Şifre sıfırlanamadı.');
+    }
+    return data;
+  },
+
+  /**
    * Misafir sepetini giriş yapan kullanıcının hesabıyla birleştirir
    */
   mergeCart: async (): Promise<void> => {

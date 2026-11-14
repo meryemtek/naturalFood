@@ -44,6 +44,12 @@ function changed(cart: Cart, owner: string): Cart {
   return cart;
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function normalizeVariantId(variantId: string | null | undefined): string | null {
+  return variantId && UUID_RE.test(variantId) ? variantId : null;
+}
+
 export const cartApi = {
   async get(signal?: AbortSignal): Promise<Cart | null> {
     if (authStorage.getAccessToken()) await ensureAccessToken();
@@ -51,17 +57,19 @@ export const cartApi = {
     return headers ? request<Cart>('/api/cart/', { headers, signal }) : null;
   },
   async add(productId: string, variantId: string | null, quantity: number): Promise<Cart> {
+    const safeVariantId = normalizeVariantId(variantId);
     const headers = await ensureCredentials();
     const owner = ownerFromHeaders(headers); checkOwner(owner);
     const current = await request<Cart>('/api/cart/', { headers });
-    const previous = current.items.find(item => item.productId === productId && item.variantId === variantId);
+    const previous = current.items.find(item => item.productId === productId && item.variantId === safeVariantId);
     checkOwner(owner);
-    return changed(await request<Cart>('/api/cart/items', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, variantId, quantity: (previous?.quantity ?? 0) + quantity }) }), owner);
+    return changed(await request<Cart>('/api/cart/items', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, variantId: safeVariantId, quantity: (previous?.quantity ?? 0) + quantity }) }), owner);
   },
   async set(productId: string, variantId: string | null, quantity: number): Promise<Cart> {
+    const safeVariantId = normalizeVariantId(variantId);
     const headers = await ensureCredentials();
     const owner = ownerFromHeaders(headers); checkOwner(owner);
-    return changed(await request<Cart>('/api/cart/items', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, variantId, quantity }) }), owner);
+    return changed(await request<Cart>('/api/cart/items', { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify({ productId, variantId: safeVariantId, quantity }) }), owner);
   },
   async remove(id: string): Promise<Cart> {
     const headers = await ensureCredentials(); const owner = ownerFromHeaders(headers); checkOwner(owner);

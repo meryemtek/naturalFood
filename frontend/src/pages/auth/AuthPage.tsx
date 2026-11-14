@@ -9,7 +9,7 @@ import { authApi, authStorage, type CustomerProfile } from '../../api/authApi';
 import { rbacService, clearAdminSession, setAdminSession, setActiveAdminRole } from '../../services/rbacService';
 import './AuthPage.css';
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'forgot';
 
 export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) {
   const navigate = useNavigate();
@@ -25,6 +25,8 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
   const [rememberMe, setRememberMe] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [infoMessage, setInfoMessage] = useState('');
+  const [devResetUrl, setDevResetUrl] = useState('');
   const [customer, setCustomer] = useState<CustomerProfile | null>(() => authStorage.getCustomer());
 
   const returnTo = searchParams.get('returnUrl');
@@ -46,6 +48,8 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
   const switchMode = (next: AuthMode) => {
     setMode(next);
     setError('');
+    setInfoMessage('');
+    setDevResetUrl('');
     setPassword('');
     setPasswordConfirm('');
   };
@@ -53,6 +57,8 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError('');
+    setInfoMessage('');
+    setDevResetUrl('');
     if (mode === 'register' && password !== passwordConfirm) {
       setError('Şifreler eşleşmiyor. Lütfen tekrar kontrol edin.');
       return;
@@ -60,6 +66,15 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
 
     setBusy(true);
     try {
+      if (mode === 'forgot') {
+        const res = await authApi.forgotPassword(email.trim());
+        setInfoMessage(res.message || 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.');
+        if (res.devResetUrl) {
+          setDevResetUrl(res.devResetUrl);
+        }
+        return;
+      }
+
       if (mode === 'login') {
         // Yönetici hesabı (rol bazlı yetkilendirme) önce denenir; başarılıysa yönetim paneli açılır.
         try {
@@ -178,12 +193,14 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
 
                   <div className="auth-intro mb-7">
                     <h1 className="text-xl font-bold tracking-tight text-primary sm:text-2xl">
-                      {mode === 'login' ? 'Köy Sofrasına Giriş Yapın' : 'Köy Sofrasına Katılın'}
+                      {mode === 'login' ? 'Köy Sofrasına Giriş Yapın' : mode === 'register' ? 'Köy Sofrasına Katılın' : 'Şifrenizi Sıfırlayın'}
                     </h1>
                     <p className="mt-1 text-sm leading-6 text-on-surface-variant">
                       {mode === 'login'
                         ? 'Kayıtlı hesabınızla siparişlerinizi ve sepetinizi yönetin.'
-                        : 'Üyeliğinizi oluşturun, yöresel lezzetleri keşfetmeye başlayın.'}
+                        : mode === 'register'
+                          ? 'Üyeliğinizi oluşturun, yöresel lezzetleri keşfetmeye başlayın.'
+                          : 'Kayıtlı e-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.'}
                     </p>
                   </div>
 
@@ -198,22 +215,24 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
                     {mode === 'register' && (
                       <AuthField id="phone" label="Cep Telefonu (isteğe bağlı)" icon="call" type="tel" value={phone} onChange={setPhone} placeholder="05XX XXX XX XX" autoComplete="tel" required={false} />
                     )}
-                    <AuthPasswordField
-                      id="auth-password"
-                      label="Şifre"
-                      value={password}
-                      onChange={setPassword}
-                      visible={showPassword}
-                      onToggleVisibility={() => setShowPassword(value => !value)}
-                      autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                      minLength={mode === 'register' ? 8 : undefined}
-                      description={mode === 'register' ? 'En az 8 karakter; büyük harf, küçük harf ve rakam içermelidir.' : undefined}
-                      rightAction={mode === 'login' && (
-                        <button type="button" onClick={() => setError('Şifre sıfırlama e-posta hizmeti henüz etkinleştirilmedi. Lütfen destek ekibiyle iletişim kurun.')} className="text-xs font-bold text-primary underline underline-offset-2 hover:text-primary-container">
-                          Şifremi Unuttum?
-                        </button>
-                      )}
-                    />
+                    {mode !== 'forgot' && (
+                      <AuthPasswordField
+                        id="auth-password"
+                        label="Şifre"
+                        value={password}
+                        onChange={setPassword}
+                        visible={showPassword}
+                        onToggleVisibility={() => setShowPassword(value => !value)}
+                        autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                        minLength={mode === 'register' ? 8 : undefined}
+                        description={mode === 'register' ? 'En az 8 karakter; büyük harf, küçük harf ve rakam içermelidir.' : undefined}
+                        rightAction={mode === 'login' && (
+                          <button type="button" onClick={() => switchMode('forgot')} className="text-xs font-bold text-primary underline underline-offset-2 hover:text-primary-container">
+                            Şifremi Unuttum?
+                          </button>
+                        )}
+                      />
+                    )}
                     {mode === 'register' && (
                       <AuthPasswordField
                         id="auth-password-confirm"
@@ -246,14 +265,38 @@ export function AuthPage({ initialMode = 'login' }: { initialMode?: AuthMode }) 
                       </div>
                     )}
 
+                    {infoMessage && (
+                      <div role="status" className="rounded-lg border border-primary/25 bg-primary/10 px-4 py-3 text-sm font-medium text-primary space-y-2">
+                        <p>{infoMessage}</p>
+                        {devResetUrl && (
+                          <p className="text-xs text-on-surface-variant break-all">
+                            <strong>Geliştirici Test Bağlantısı (SMTP henüz girilmedi):</strong>{' '}
+                            <Link to={devResetUrl.replace(/^https?:\/\/[^/]+/, '')} className="font-bold text-primary underline">
+                              Şifre Sıfırlama Sayfasını Aç
+                            </Link>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <button
                       disabled={busy}
                       className="mt-2 flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-primary-container text-base font-bold text-on-primary shadow-sm transition-colors hover:bg-primary active:translate-y-px disabled:cursor-wait disabled:opacity-65"
                       type="submit"
                     >
-                      <span>{busy ? 'Lütfen bekleyin…' : mode === 'login' ? 'Giriş Yap' : 'Hesabımı Oluştur'}</span>
+                      <span>{busy ? 'Lütfen bekleyin…' : mode === 'login' ? 'Giriş Yap' : mode === 'register' ? 'Hesabımı Oluştur' : 'Sıfırlama Bağlantısı Gönder'}</span>
                       <AuthIcon>{busy ? 'progress_activity' : 'arrow_forward'}</AuthIcon>
                     </button>
+
+                    {mode === 'forgot' && (
+                      <button
+                        type="button"
+                        onClick={() => switchMode('login')}
+                        className="w-full text-center text-sm font-semibold text-secondary hover:text-primary underline underline-offset-4"
+                      >
+                        Giriş ekranına geri dön
+                      </button>
+                    )}
                   </form>
 
                   {mode === 'login' && (

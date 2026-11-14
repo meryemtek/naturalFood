@@ -119,14 +119,26 @@ public static class CustomerEndpointsHandler
             ForgotPasswordRequest request,
             IValidator<ForgotPasswordRequest> validator,
             IAuthService authService,
+            HttpContext httpContext,
+            Microsoft.Extensions.Hosting.IHostEnvironment env,
             CancellationToken ct) =>
         {
             var valResult = await validator.ValidateAsync(request, ct);
             if (!valResult.IsValid)
                 return Results.ValidationProblem(valResult.ToDictionary());
 
-            await authService.ForgotPasswordAsync(request, ct);
-            return Results.Problem(statusCode: 503, title: "Şifre sıfırlama henüz kullanılamıyor.");
+            var origin = httpContext.Request.Headers.Origin.FirstOrDefault();
+            var resetBaseUrl = !string.IsNullOrWhiteSpace(origin)
+                ? origin
+                : $"{httpContext.Request.Scheme}://{httpContext.Request.Host}";
+
+            var isDevelopment = string.Equals(env.EnvironmentName, "Development", StringComparison.OrdinalIgnoreCase);
+            var devResetUrl = await authService.ForgotPasswordAsync(request, resetBaseUrl, ct);
+            return Results.Ok(new
+            {
+                message = "Eğer bu e-posta adresiyle kayıtlı bir hesabınız varsa, şifre sıfırlama bağlantısı gönderildi.",
+                devResetUrl = isDevelopment ? devResetUrl : null
+            });
         })
         .WithName("ForgotPassword")
         .WithSummary("Şifre sıfırlama talebi oluşturur.");

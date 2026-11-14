@@ -18,17 +18,23 @@ public class AuthService : IAuthService
     private readonly CustomerDbContext _db;
     private readonly AdminDbContext _adminDb;
     private readonly JwtSettings _jwtSettings;
+    private readonly EmailSettings _emailSettings;
+    private readonly IEmailSender _emailSender;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         CustomerDbContext db,
         AdminDbContext adminDb,
         IOptions<JwtSettings> jwtSettings,
+        IOptions<EmailSettings> emailSettings,
+        IEmailSender emailSender,
         ILogger<AuthService> logger)
     {
         _db = db;
         _adminDb = adminDb;
         _jwtSettings = jwtSettings.Value;
+        _emailSettings = emailSettings.Value;
+        _emailSender = emailSender;
         _logger = logger;
     }
 
@@ -155,14 +161,62 @@ public class AuthService : IAuthService
         }
     }
 
-    public async Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default)
+    public async Task<string?> ForgotPasswordAsync(ForgotPasswordRequest request, string resetBaseUrl, CancellationToken ct = default)
     {
-        // E-posta teslimi yapılandırılana kadar token üretilmez veya kaydedilmez.
-        await Task.CompletedTask;
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var customer = await _db.Customers
+            .FirstOrDefaultAsync(c => c.Email == normalizedEmail && !c.IsGuest && c.IsActive, ct);
+
+        if (customer == null)
+            return null;
+
+        var rawToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .Replace('+', '-')
+            .Replace('/', '_')
+            .TrimEnd('=');
+
+        customer.SetPasswordResetToken(HashRefreshToken(rawToken), DateTime.UtcNow.AddMinutes(30));
+        await _db.SaveChangesAsync(ct);
+
+        var baseUrl = string.IsNullOrWhiteSpace(_emailSettings.FrontendBaseUrl)
+            ? resetBaseUrl.TrimEnd('/')
+            : _emailSettings.FrontendBaseUrl.TrimEnd('/');
+
+        var resetUrl = $"{baseUrl}/sifre-sifirla?token={Uri.EscapeDataString(rawToken)}&email={Uri.EscapeDataString(customer.Email)}";
+        var sent = await _emailSender.SendPasswordResetEmailAsync(customer.Email, customer.FirstName, resetUrl, ct);
+
+        return sent ? null : resetUrl;
     }
 
-    public Task<bool> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default)
-        => Task.FromResult(false);
+    public async Task<bool> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default)
+    {
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var tokenHash = HashRefreshToken(request.Token.Trim());
+
+        var customer = await _db.Customers
+            .FirstOrDefaultAsync(c =>
+                c.Email == normalizedEmail &&
+                !c.IsGuest &&
+                c.IsActive &&
+                c.PasswordResetTokenHash == tokenHash &&
+                c.PasswordResetTokenExpiresAtUtc != null &&
+                c.PasswordResetTokenExpiresAtUtc > DateTime.UtcNow, ct);
+
+        if (customer == null)
+            return false;
+
+        customer.ChangePassword(HashPassword(request.NewPassword));
+        customer.ClearPasswordResetToken();
+
+        var activeTokens = await _db.RefreshTokens
+            .Where(r => r.CustomerId == customer.Id && r.RevokedAtUtc == null)
+            .ToListAsync(ct);
+        foreach (var token in activeTokens)
+            token.Revoke();
+
+        await _db.SaveChangesAsync(ct);
+        return true;
+    }
 
     public async Task<bool> ChangePasswordAsync(Guid customerId, ChangePasswordRequest request, CancellationToken ct = default)
     {

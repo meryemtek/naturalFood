@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { simulatePaytrPayment, type CreatedOrder } from '../../api/storefront/orderApi';
-import { money } from '../../api/storefront/storefrontApi';
+import { createUuid, money } from '../../api/storefront/storefrontApi';
 
 interface PaytrSimulationPanelProps {
   order: CreatedOrder;
@@ -21,7 +21,7 @@ export function PaytrSimulationPanel({ order, onPaid, onSkip }: PaytrSimulationP
     setBusy(true);
     setError('');
     try {
-      const attemptKey = crypto.randomUUID();
+      const attemptKey = createUuid();
       const response = await simulatePaytrPayment(order.id, result, attemptKey);
       if (result === 'Success') {
         onPaid(response.orderStatus || 'Paid');

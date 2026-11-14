@@ -19,8 +19,8 @@ public interface IAuthService
     /// <summary>Aktif refresh token'ı iptal ederek oturumu kapatır.</summary>
     Task LogoutAsync(Guid customerId, string refreshToken, CancellationToken ct = default);
 
-    /// <summary>Şifre sıfırlama bağlantısı gönderir (loglara yazar — gerçek e-posta entegrasyonu sonradan).</summary>
-    Task ForgotPasswordAsync(ForgotPasswordRequest request, CancellationToken ct = default);
+    /// <summary>Şifre sıfırlama bağlantısı gönderir. SMTP yapılandırılmamışsa test bağlantısını döner.</summary>
+    Task<string?> ForgotPasswordAsync(ForgotPasswordRequest request, string resetBaseUrl, CancellationToken ct = default);
 
     /// <summary>Şifre sıfırlama token'ı ile yeni şifre belirler.</summary>
     Task<bool> ResetPasswordAsync(ResetPasswordRequest request, CancellationToken ct = default);

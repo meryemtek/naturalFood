@@ -28,6 +28,7 @@ import {
 import { BannerSliderPage } from './pages/marketing/BannerSliderPage';
 
 const AuthPage = React.lazy(() => import('./pages/auth/AuthPage').then(module => ({ default: module.AuthPage })));
+const ResetPasswordPage = React.lazy(() => import('./pages/auth/ResetPasswordPage').then(module => ({ default: module.ResetPasswordPage })));
 const AccountPage = React.lazy(() => import('./pages/account/AccountPage').then(module => ({ default: module.AccountPage })));
 
 function AuthRoute({ initialMode = 'login' }: { initialMode?: 'login' | 'register' }) {
@@ -47,6 +48,7 @@ export default function App() {
         <Route path="/hesabim/*" element={<React.Suspense fallback={<main>Hesap ekranı açılıyor…</main>}><AccountPage /></React.Suspense>} />
         <Route path="/giris" element={<AuthRoute />} />
         <Route path="/uye-ol" element={<AuthRoute initialMode="register" />} />
+        <Route path="/sifre-sifirla" element={<React.Suspense fallback={<main className="grid min-h-[50vh] place-items-center bg-background text-primary">Şifre sıfırlama ekranı açılıyor…</main>}><ResetPasswordPage /></React.Suspense>} />
         <Route path="/products" element={<ProductsPage />} />
         <Route path="/urunler" element={<ProductsPage />} />
         <Route path="/products/:slug" element={<ProductDetailPage />} />

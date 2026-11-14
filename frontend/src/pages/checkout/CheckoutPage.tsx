@@ -5,7 +5,7 @@ import { AuthFooter } from '../../components/auth/AuthFooter';
 import { authStorage } from '../../api/authApi';
 import { cartApi } from '../../api/storefront/cartApi';
 import { createOrder, quoteOrder, type CreatedOrder, type OrderRequest } from '../../api/storefront/orderApi';
-import { money, type Cart } from '../../api/storefront/storefrontApi';
+import { createUuid, money, type Cart } from '../../api/storefront/storefrontApi';
 import { CheckoutAddressFields, emptyCheckoutAddress, formatCheckoutAddress } from './CheckoutAddressFields';
 import { PaytrSimulationPanel } from './PaytrSimulationPanel';
 import { accountApi, type Address } from '../../api/accountApi';
@@ -56,7 +56,7 @@ export function CheckoutPage() {
       setCart(value);
       if (value?.id) {
         const storageKey = `naturalfood.checkout.${value.id}`;
-        keyRef.current = sessionStorage.getItem(storageKey) || crypto.randomUUID();
+        keyRef.current = sessionStorage.getItem(storageKey) || createUuid();
         sessionStorage.setItem(storageKey, keyRef.current);
         if (value.items.length) setQuote(await quoteOrder(controller.signal));
       }

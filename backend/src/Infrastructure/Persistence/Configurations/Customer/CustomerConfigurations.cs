@@ -38,6 +38,9 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Domain.Entities.Cu
             .HasMaxLength(50)
             .HasDefaultValue("Customer");
 
+        builder.Property(c => c.PasswordResetTokenHash)
+            .HasMaxLength(128);
+
         // Navigation'lar
         builder.HasMany(c => c.Addresses)
             .WithOne(a => a.Customer)
