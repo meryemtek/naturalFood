@@ -146,5 +146,8 @@ await app.Services.InitializeCatalogModuleDatabaseAsync();
 await app.Services.InitializeCustomerModuleDatabaseAsync();
 await app.Services.InitializeOrdersDatabaseAsync();
 await app.Services.InitializeContentModuleDatabaseAsync();
+await app.Services.InitializeCartDatabaseAsync();
+await app.Services.InitializePromotionsDatabaseAsync();
+await app.Services.InitializeExperienceDatabaseAsync();
 
 app.Run();

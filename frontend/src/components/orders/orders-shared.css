@@ -119,17 +119,18 @@
 }
 
 .order-panel {
-  background: #fffdf9;
-  border: 1px solid #e9ddd0;
+  background: #ffffff;
+  border: 1px solid #e7e5e0;
   border-radius: 10px;
   padding: 18px 20px;
+  box-shadow: 0 1px 3px rgba(45, 36, 30, 0.03);
 }
 
 .order-panel h3 {
   margin: 0 0 12px 0;
   font-size: 14px;
   font-weight: 800;
-  color: #132f1d;
+  color: #2d241e;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -147,7 +148,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #eee5da;
+  border-bottom: 1px solid #efece6;
   font-size: 13.5px;
 }
 
@@ -158,12 +159,12 @@
 .order-summary-rows {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px dashed #dfd1bd;
+  border-top: 1px dashed #e7e5e0;
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 13px;
-  color: #5b6158;
+  color: #6b5e55;
 }
 
 .order-summary-row {
@@ -175,10 +176,10 @@
 .order-summary-row--total {
   margin-top: 6px;
   padding-top: 8px;
-  border-top: 1px solid #e9ddd0;
+  border-top: 1px solid #e7e5e0;
   font-size: 15px;
   font-weight: 800;
-  color: #132f1d;
+  color: #2d241e;
 }
 
 .order-shipment-box {
@@ -194,12 +195,12 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: 7px;
-  background: #f6eddb;
-  border: 1px solid #dfd1bd;
+  background: #ebf2ea;
+  border: 1px solid #c8dec9;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 13px;
   font-weight: 700;
-  color: #132f1d;
+  color: #2d5a27;
 }
 
 .order-workflow {
@@ -211,7 +212,7 @@
   list-style: none;
   margin: 0;
   padding: 0 0 0 18px;
-  border-left: 2px solid #d8cab6;
+  border-left: 2px solid #c8dec9;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -230,8 +231,9 @@
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: #294532;
-  border: 2px solid #fff8f0;
+  background: #2d5a27;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px rgba(45, 90, 39, 0.2);
 }
 
 .order-timeline-head {
@@ -244,20 +246,20 @@
 
 .order-timeline-head span {
   font-size: 12px;
-  color: #696e65;
+  color: #8c827a;
 }
 
 .order-timeline-note {
   margin: 4px 0 0;
   font-size: 13px;
-  color: #4d514a;
+  color: #4a3b32;
 }
 
 .order-request {
   padding: 12px 14px;
   border-radius: 8px;
-  background: #f6eddb;
-  border: 1px solid #e9ddd0;
+  background: #faf9f6;
+  border: 1px solid #e7e5e0;
   margin-bottom: 10px;
   font-size: 13px;
 }
@@ -270,22 +272,23 @@
   cursor: pointer;
   font-weight: 700;
   font-size: 13.5px;
-  color: #294532;
+  color: #2d5a27;
 }
 
 .order-invoice {
   padding: 20px;
   border-radius: 10px;
-  border: 2px dashed #b79051;
-  background: #fffbef;
+  border: 1px solid #2d5a27;
+  background: #ffffff;
   overflow-wrap: anywhere;
   font-size: 13.5px;
+  box-shadow: 0 4px 14px rgba(45, 36, 30, 0.05);
 }
 
 .order-invoice h3 {
   margin: 0 0 8px;
   font-weight: 800;
-  color: #7d553d;
+  color: #2d241e;
 }
 
 .order-controls {
@@ -297,7 +300,7 @@
   margin: 0;
   font-size: 14px;
   font-weight: 800;
-  color: #132f1d;
+  color: #2d241e;
 }
 
 .order-controls label {
@@ -305,7 +308,7 @@
   gap: 6px;
   font-size: 12.5px;
   font-weight: 700;
-  color: #333;
+  color: #4a3b32;
 }
 
 .order-controls input,
@@ -313,22 +316,37 @@
 .order-controls select {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #dfd1bd;
+  border: 1px solid #e7e5e0;
   border-radius: 7px;
-  background: #f6eddb;
-  color: #24352c;
+  background: #ffffff;
+  color: #2d241e;
   font-size: 13.5px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.order-controls input:focus,
+.order-controls textarea:focus,
+.order-controls select:focus {
+  outline: none;
+  border-color: #2d5a27;
+  box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.12);
 }
 
 .order-controls button {
   justify-self: start;
   padding: 10px 18px;
   border-radius: 7px;
-  background: #294532;
+  background: #2d5a27;
   color: #ffffff;
   font-weight: 700;
   font-size: 13px;
+  border: none;
   cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.order-controls button:hover:not(:disabled) {
+  background: #23471e;
 }
 
 .order-controls button:disabled {

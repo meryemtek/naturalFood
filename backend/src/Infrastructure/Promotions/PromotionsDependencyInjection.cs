@@ -6,6 +6,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Infrastructure.Promotions;
 public static class PromotionsDependencyInjection
 {
+    public static async Task InitializePromotionsDatabaseAsync(this IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<PromotionsDbContext>().Database.MigrateAsync();
+    }
+
     public static IServiceCollection AddPromotions(this IServiceCollection services, IConfiguration configuration)
     {
         var connection = configuration.GetConnectionString("DefaultConnection") ?? configuration.GetConnectionString("AdminDb")

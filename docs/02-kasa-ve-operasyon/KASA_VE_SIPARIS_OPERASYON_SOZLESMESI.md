@@ -56,11 +56,15 @@ stateDiagram-v2
 
 ---
 
-## 🖥️ 4. Hedef Admin Ekran Davranışları
+## 🖥️ 4. Admin Sipariş ve Operasyon Ekran Davranışları
 
-1. **Sipariş Yönetimi Ekranı (`OrdersPage.tsx`):**
-   - Sipariş durum sekmeleri: `[ Tümü ]`, `[ Yeni (3) ]`, `[ Hazırlanıyor (12) ]`, `[ Kargoda (45) ]`, `[ İade/İptal (2) ]`.
-   - Sipariş detay çekmecesi (Drawer): Müşteri adresi, sipariş verilen ürünler, uygulanan kupon ve kargo barkodu dökümü.
+1. **Sipariş Yönetimi Ekranı (`OrdersPage.tsx` & `OrderManagement.tsx`):**
+   - **4 Sade KPI Kartı:** Toplam Sipariş, Hazırlanmayı Bekleyenler (`Paid`/`Preparing`), Kargodakiler (`Shipped`), İptal/İade Talepleri (`Cancelled`/`Returned`).
+   - **Canlı Arama & Filtre:** Sipariş kodu (`#NF-XXXXXX` / GUID), müşteri e-posta, telefon ve ürün adına göre canlı anlık arama.
+   - **Durum Sekmeleri:** `[ Tüm Siparişler ]`, `[ Ödeme Bekleyen ]`, `[ Hazırlanıyor ]`, `[ Kargoda ]`, `[ Teslim Edildi ]`, `[ İptal / İade ]`.
+   - **Sipariş Detay ve Yönetim Çekmecesi (2 Sütunlu Drawer):**
+     - *Sol Sütun:* Sipariş kalemleri (adet, birim fiyat, satır toplamı, kupon indirimi, kargo ücreti, genel toplam), teslimat ve fatura adresleri, **🧊 Soğuk Zincir & Hassas Taşıma Uyarısı** (süt, peynir, yumurta, tereyağı vb. ürünlerde otomatik koruma protokolü) ve Demo E-Arşiv Fatura önizleme/oluşturma.
+     - *Sağ Sütun:* Durum güncelleme formu (`Paid`, `Preparing`, `Shipped`, `Delivered`, `Cancelled`), hızlı kargo firması seçim butonları (Yurtiçi, Aras, MNG, Sürat, PTT), takip kodu ve HTTPS takip bağlantısı, tahmini teslimat tarihi, sevk notu, açık müşteri iade/iptal taleplerini tek tıkla onayla/reddet paneli, kronolojik sipariş hareketleri (timeline) ve varsayılan olarak kapalı **📬 Sistem & Bildirim Geçmişi** akordeonu.
 2. **Kasa & Tahsilat Monitörü (`CashierPage.tsx`):**
    - Anlık başarılı/başarısız tahsilat akışı.
    - Başarısız ödemelerin hata sebepleri (Kart limiti, banka güvenlik bloğu vb.).

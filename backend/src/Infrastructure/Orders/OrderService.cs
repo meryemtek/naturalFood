@@ -15,22 +15,51 @@ namespace Infrastructure.Orders;
 
 public class OrderService(OrdersDbContext db, IConfiguration config) : IOrderService
 {
-    public async Task<AdminOrderPage> ListAdminAsync(int page, int pageSize, string? filter, CancellationToken ct)
+    public async Task<AdminOrderPage> ListAdminAsync(int page, int pageSize, string? filter, string? search = null, CancellationToken ct = default)
     {
         page = Math.Clamp(page, 1, 1000000);
         pageSize = Math.Clamp(pageSize, 1, 100);
         var query = db.Orders.AsNoTracking();
-        query = filter switch
+        query = (filter?.Trim()) switch
         {
             "pending" => query.Where(x => x.Status == "PendingPayment" || x.Status == "Paid" || x.Status == "Preparing" || x.Status == "Processing" || x.Status == "Shipped"),
             "completed" => query.Where(x => x.Status == "Delivered" || x.Status == "Completed"),
             "returns" => query.Where(x => x.Status == "Cancelled" || x.Status == "Refunded" || x.Status == "Returned" || db.CustomerRequests.Any(r => r.OrderId == x.Id)),
+            "PendingPayment" or "pending_payment" => query.Where(x => x.Status == "PendingPayment"),
+            "preparing" or "Preparing" or "Paid" => query.Where(x => x.Status == "Paid" || x.Status == "Preparing" || x.Status == "Processing"),
+            "shipped" or "Shipped" => query.Where(x => x.Status == "Shipped"),
+            "delivered" or "Delivered" => query.Where(x => x.Status == "Delivered" || x.Status == "Completed"),
             _ => query
         };
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var raw = search.Trim();
+            var normalized = raw.StartsWith("#NF-", StringComparison.OrdinalIgnoreCase)
+                ? raw[4..]
+                : raw.StartsWith('#')
+                    ? raw[1..]
+                    : raw;
+            query = query.Where(x =>
+                EF.Functions.ILike(x.Number, $"%{raw}%") ||
+                EF.Functions.ILike(x.Number, $"%{normalized}%") ||
+                EF.Functions.ILike(x.Email, $"%{raw}%") ||
+                EF.Functions.ILike(x.Phone, $"%{raw}%") ||
+                EF.Functions.ILike(x.DeliveryAddress, $"%{raw}%") ||
+                EF.Functions.ILike(x.BillingAddress, $"%{raw}%") ||
+                x.Lines.Any(l => EF.Functions.ILike(l.Name, $"%{raw}%") || EF.Functions.ILike(l.Sku, $"%{raw}%")));
+        }
         var total = await query.CountAsync(ct);
         var orders = await query.Include(x => x.Lines).OrderByDescending(x => x.CreatedAtUtc).ThenByDescending(x => x.Id)
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
         return new(orders.Select(x => new AdminOrderView(View(x), x.CustomerId == null, x.Email, x.Phone, x.DeliveryAddress, x.BillingAddress)).ToList(), total, page, pageSize);
+    }
+    public async Task<OrderSummaryView> SummaryAsync(CancellationToken ct = default)
+    {
+        var total = await db.Orders.CountAsync(ct);
+        var waiting = await db.Orders.CountAsync(x => x.Status == "Paid" || x.Status == "Preparing" || x.Status == "Processing", ct);
+        var inTransit = await db.Orders.CountAsync(x => x.Status == "Shipped", ct);
+        var returns = await db.Orders.CountAsync(x => x.Status == "Cancelled" || x.Status == "Refunded" || x.Status == "Returned" || db.CustomerRequests.Any(r => r.OrderId == x.Id), ct);
+        return new(total, waiting, inTransit, returns);
     }
     private static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     private static OrderView View(Order x) => new(x.Id, x.Number, x.Status, x.Subtotal, x.ShippingFee, x.Total, x.CreatedAtUtc, x.ReservationExpiresAtUtc, x.Lines.Select(l => new OrderLineView(l.Name, l.Sku, l.Quantity, l.UnitPrice)).ToList(), x.CouponCode, x.Discount ?? 0);
