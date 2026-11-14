@@ -162,9 +162,27 @@ export function StorefrontPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal })
-      .then(result => setCatalogProducts(result.items))
-      .catch(() => { if (!controller.signal.aborted) setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.'); });
+    const loadCatalogProducts = async () => {
+      try {
+        const result = await request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal });
+        setCatalogProducts(result.items);
+        setToastMessage('');
+      } catch {
+        if (controller.signal.aborted) return;
+        await new Promise(resolve => setTimeout(resolve, 800));
+        if (controller.signal.aborted) return;
+        try {
+          const result = await request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal });
+          setCatalogProducts(result.items);
+          setToastMessage('');
+        } catch {
+          if (!controller.signal.aborted) {
+            setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
+          }
+        }
+      }
+    };
+    void loadCatalogProducts();
 
     // Fetch active hero banners from CMS / Content API
     request<BannerDto[]>('/api/content/banners', { signal: controller.signal })

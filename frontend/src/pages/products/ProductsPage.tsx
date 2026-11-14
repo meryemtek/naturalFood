@@ -53,6 +53,7 @@ export function ProductsPage() {
   // State
   const [products, setProducts] = useState<UiProduct[]>([]);
   const [catalogCategories, setCatalogCategories] = useState<CatalogCategory[]>([]);
+  const [allOrigins, setAllOrigins] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [search, setSearch] = useState(searchParams.get('search') || '');
@@ -101,12 +102,30 @@ export function ProductsPage() {
     setSearchParams(params, { replace: true });
   };
 
-  // Load categories with product counts once on mount
+  // Load categories & all product origins once on mount
   useEffect(() => {
     const controller = new AbortController();
     request<CatalogCategory[]>('/api/catalog/categories', { signal: controller.signal })
       .then(cats => setCatalogCategories(cats))
       .catch(() => {});
+
+    const loadAllOrigins = async () => {
+      try {
+        const res = await request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal });
+        setAllOrigins((res.items ?? []).map(p => p.origin || '').filter(Boolean));
+      } catch {
+        if (controller.signal.aborted) return;
+        await new Promise(resolve => setTimeout(resolve, 800));
+        if (controller.signal.aborted) return;
+        try {
+          const res = await request<{ items: Product[] }>('/api/catalog/products?pageSize=100', { signal: controller.signal });
+          setAllOrigins((res.items ?? []).map(p => p.origin || '').filter(Boolean));
+        } catch {
+          // ignore secondary failure
+        }
+      }
+    };
+    void loadAllOrigins();
 
     return () => controller.abort();
   }, []);
@@ -125,43 +144,60 @@ export function ProductsPage() {
     if (selectedRegions.length > 0) params.set('origin', selectedRegions.join(','));
     if (sortBy && sortBy !== 'rating') params.set('sortBy', sortBy);
 
-    setIsLoading(true);
-    request<{ items: Product[]; totalCount: number }>(`/api/catalog/products?${params.toString()}`, { signal: controller.signal })
-      .then(res => {
-        const mapped: UiProduct[] = (res.items || []).map((p, idx) => {
-          const fallback = STITCH_PRODUCTS[idx % STITCH_PRODUCTS.length];
-          return {
-            id: p.id,
-            name: p.name,
-            slug: p.slug,
-            shortDescription: p.shortDescription || fallback.shortDescription,
-            categoryName: p.categoryName || fallback.categoryName,
-            categorySlug: p.categorySlug || fallback.categorySlug,
-            basePrice: p.basePrice,
-            discountPrice: p.discountPrice,
-            stockQuantity: p.stockQuantity,
-            variantCount: p.variantCount,
-            unitInfo: p.unitInfo || fallback.unitInfo,
-            mainImageUrl: p.mainImageUrl || fallback.mainImageUrl,
-            origin: p.origin || undefined,
-            rating: fallback.rating,
-            reviewCount: fallback.reviewCount,
-            isBestSeller: p.isBestSeller,
-            isNew: p.isNew,
-            isFeatured: p.isFeatured,
-            isColdChain: fallback.isColdChain,
-            badge: p.isBestSeller ? 'Çok Satan' : p.isNew ? 'Yeni Mahsul' : fallback.badge,
-          };
-        });
-        setProducts(mapped);
-        setTotalCount(res.totalCount ?? mapped.length);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
+    const applyProducts = (res: { items: Product[]; totalCount: number }) => {
+      const mapped: UiProduct[] = (res.items || []).map((p, idx) => {
+        const fallback = STITCH_PRODUCTS[idx % STITCH_PRODUCTS.length];
+        return {
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          shortDescription: p.shortDescription || fallback.shortDescription,
+          categoryName: p.categoryName || fallback.categoryName,
+          categorySlug: p.categorySlug || fallback.categorySlug,
+          basePrice: p.basePrice,
+          discountPrice: p.discountPrice,
+          stockQuantity: p.stockQuantity,
+          variantCount: p.variantCount,
+          unitInfo: p.unitInfo || fallback.unitInfo,
+          mainImageUrl: p.mainImageUrl || fallback.mainImageUrl,
+          origin: p.origin || undefined,
+          rating: fallback.rating,
+          reviewCount: fallback.reviewCount,
+          isBestSeller: p.isBestSeller,
+          isNew: p.isNew,
+          isFeatured: p.isFeatured,
+          isColdChain: fallback.isColdChain,
+          badge: p.isBestSeller ? 'Çok Satan' : p.isNew ? 'Yeni Mahsul' : fallback.badge,
+        };
       });
+      setProducts(mapped);
+      setTotalCount(res.totalCount ?? mapped.length);
+      setToastMessage('');
+    };
+
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const res = await request<{ items: Product[]; totalCount: number }>(`/api/catalog/products?${params.toString()}`, { signal: controller.signal });
+        applyProducts(res);
+      } catch {
+        if (controller.signal.aborted) return;
+        await new Promise(resolve => setTimeout(resolve, 800));
+        if (controller.signal.aborted) return;
+        try {
+          const res = await request<{ items: Product[]; totalCount: number }>(`/api/catalog/products?${params.toString()}`, { signal: controller.signal });
+          applyProducts(res);
+        } catch {
+          if (!controller.signal.aborted) {
+            setToastMessage('Ürünler yüklenemedi. Bağlantınızı kontrol edip tekrar deneyin.');
+          }
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    };
+
+    void fetchProducts();
 
     return () => controller.abort();
   }, [page, selectedCategory, search, minPrice, maxPrice, selectedRegions, sortBy]);
@@ -517,7 +553,8 @@ export function ProductsPage() {
                 <div className="space-y-2.5 font-label-md text-label-md mt-3">
                   {REGIONS.map(reg => {
                     const isChecked = selectedRegions.includes(reg);
-                    const regionCount = products.filter(p => p.origin === reg).length;
+                    const keyword = reg.split('&')[0].split('(')[0].trim().toLocaleLowerCase('tr-TR');
+                    const regionCount = allOrigins.filter(o => o.toLocaleLowerCase('tr-TR').includes(keyword)).length;
                     return (
                       <label key={reg} className="flex items-center justify-between cursor-pointer group">
                         <span className="flex items-center gap-2 text-on-surface group-hover:text-primary">

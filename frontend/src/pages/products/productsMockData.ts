@@ -54,7 +54,8 @@ export const REGIONS = [
   'Antep & Güneydoğu',
   'Kars & Erzurum Yaylaları',
   'Karadeniz (Trabzon/Tonya)',
-  'Elazığ & Malatya',
+  'Malatya & Doğu Anadolu',
+  'Marmara & Mudanya',
 ];
 
 export const STITCH_PRODUCTS: UiProduct[] = [
